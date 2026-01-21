@@ -9,15 +9,14 @@ import {
   Users, 
   Tag, 
   MapPin, 
-  Calendar, 
-  Car, 
-  Compass, 
   Sparkles, 
   Globe,
   Info,
-  Luggage
+  Luggage,
+  Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -31,7 +30,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   {
     label: "Group Trips",
-    icon: <Users className="w-4 h-4" />,
+    icon: <Users className="w-4 h-4 text-primary" />,
     children: [
       { label: "Upcoming Group Trips", href: "/trips/upcoming" },
       { label: "Fixed Departure Trips", href: "/trips/fixed-departure" },
@@ -39,7 +38,7 @@ const navItems: NavItem[] = [
   },
   {
     label: "Deals",
-    icon: <Tag className="w-4 h-4" />,
+    icon: <Tag className="w-4 h-4 text-amber-500" />,
     children: [
       { label: "Seasonal Deals", href: "/deals/seasonal" },
       { label: "Limited Time Offers", href: "/deals/limited" },
@@ -47,7 +46,7 @@ const navItems: NavItem[] = [
   },
   {
     label: "Travel Styles",
-    icon: <MapPin className="w-4 h-4" />,
+    icon: <MapPin className="w-4 h-4 text-rose-500" />,
     children: [
       { label: "Pilgrimage Trips", href: "/trips/pilgrimage" },
       { label: "Solo Trips", href: "/style/solo" },
@@ -59,22 +58,11 @@ const navItems: NavItem[] = [
   {
     label: "Upcoming Group Trips",
     href: "/trips/upcoming",
-    icon: <Luggage className="w-4 h-4" />,
-  },
-  {
-    label: "Weekend Trip",
-    href: "/trips/weekend",
-    icon: <Car className="w-4 h-4" />,
-  },
-  {
-    label: "Pilgrimage Trips",
-    href: "/trips/pilgrimage",
-    icon: <Compass className="w-4 h-4" />,
-    highlighted: true,
+    icon: <Luggage className="w-4 h-4 text-sky-500" />,
   },
   {
     label: "Retreats",
-    icon: <Sparkles className="w-4 h-4" />,
+    icon: <Sparkles className="w-4 h-4 text-purple-500" />,
     children: [
       { label: "Meditation Retreats", href: "/retreats/meditation" },
       { label: "Spiritual Retreats", href: "/retreats/spiritual" },
@@ -85,11 +73,11 @@ const navItems: NavItem[] = [
   {
     label: "Customised Trips",
     href: "/custom",
-    icon: <Globe className="w-4 h-4" />,
+    icon: <Globe className="w-4 h-4 text-teal-500" />,
   },
   {
     label: "More about us",
-    icon: <Info className="w-4 h-4" />,
+    icon: <Info className="w-4 h-4 text-slate-500" />,
     children: [
       { label: "About Us", href: "/about" },
       { label: "FAQs", href: "/faqs" },
@@ -103,6 +91,7 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -127,17 +116,30 @@ export function Navbar() {
       </div>
 
       <nav className="container-custom">
-        {/* Top row: Logo + Phone + CTA */}
+        {/* Top row: Logo + Search + Phone + CTA */}
         <div className="flex items-center justify-between h-16 border-b border-border">
           {/* Logo */}
-          <Link to="/" className="flex items-baseline gap-1">
-            <span className="text-2xl font-display font-medium text-primary tracking-tight" style={{ fontStyle: 'italic' }}>
-              Padmasambhava
-            </span>
-            <span className="text-2xl font-display font-light text-foreground">
-              Trip
-            </span>
+          <Link to="/" className="flex-shrink-0">
+            <img 
+              src="https://res.cloudinary.com/dihev9qxc/image/upload/v1768991877/453207561_122102729312441160_4787222294410407220_n-removebg-preview_voy795.png" 
+              alt="Padmasambhava Trip" 
+              className="h-12 w-auto"
+            />
           </Link>
+
+          {/* Search Bar */}
+          <div className="hidden md:flex flex-1 max-w-md mx-6">
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search your trip..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 rounded-full border-border bg-muted/50 focus:bg-background"
+              />
+            </div>
+          </div>
 
           {/* Right side: Phone + CTA */}
           <div className="flex items-center gap-4">
