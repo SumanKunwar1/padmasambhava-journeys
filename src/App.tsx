@@ -13,6 +13,7 @@ import DomesticTrips from "./pages/DomesticTrips";
 import Retreats from "./pages/Retreats";
 import SeasonalDeals from "./pages/SeasonalDeals";
 import CustomisedTrips from "./pages/CustomisedTrips";
+import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,29 +30,46 @@ const App = () => (
           
           {/* Trip Category Pages */}
           <Route path="/group-trips" element={<GroupTrips />} />
-          <Route path="/group-trips/upcoming" element={<GroupTrips />} />
-          <Route path="/group-trips/fixed-departure" element={<GroupTrips />} />
+          <Route path="/trips/upcoming" element={<GroupTrips />} />
+          <Route path="/trips/fixed-departure" element={<GroupTrips />} />
+          <Route path="/trips/group" element={<GroupTrips />} />
+          <Route path="/trips/pilgrimage" element={<PilgrimageTrips />} />
+          <Route path="/trips/weekend" element={<WeekendTrips />} />
           <Route path="/pilgrimage-trips" element={<PilgrimageTrips />} />
           <Route path="/weekend-trips" element={<WeekendTrips />} />
           <Route path="/international-trips" element={<InternationalTrips />} />
           <Route path="/domestic-trips" element={<DomesticTrips />} />
+          
+          {/* Retreats */}
           <Route path="/retreats" element={<Retreats />} />
           <Route path="/retreats/meditation" element={<Retreats />} />
           <Route path="/retreats/spiritual" element={<Retreats />} />
           <Route path="/retreats/wellness" element={<Retreats />} />
           <Route path="/retreats/yoga" element={<Retreats />} />
+          
+          {/* Customised Trips */}
+          <Route path="/custom" element={<CustomisedTrips />} />
           <Route path="/customised-trips" element={<CustomisedTrips />} />
           
           {/* Deals Pages */}
           <Route path="/deals/seasonal" element={<SeasonalDeals />} />
+          <Route path="/deals/limited" element={<SeasonalDeals />} />
           <Route path="/deals/limited-time" element={<SeasonalDeals />} />
           
           {/* Travel Styles */}
           <Route path="/travel-styles/pilgrimage" element={<PilgrimageTrips />} />
+          <Route path="/style/solo" element={<GroupTrips />} />
           <Route path="/travel-styles/solo" element={<GroupTrips />} />
           <Route path="/travel-styles/group" element={<GroupTrips />} />
           <Route path="/travel-styles/weekend" element={<WeekendTrips />} />
+          <Route path="/style/adventure" element={<GroupTrips />} />
           <Route path="/travel-styles/adventure" element={<GroupTrips />} />
+          
+          {/* Contact & More */}
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/about" element={<Contact />} />
+          <Route path="/faqs" element={<Contact />} />
+          <Route path="/blogs" element={<Contact />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

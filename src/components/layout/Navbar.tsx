@@ -150,9 +150,11 @@ export function Navbar() {
               <Phone className="w-4 h-4" />
               <span className="font-medium">(+91) 8287636079</span>
             </a>
-            <Button className="hidden sm:inline-flex rounded-full px-6" size="sm">
-              Plan Your Trip
-            </Button>
+            <Link to="/contact">
+              <Button className="hidden sm:inline-flex rounded-full px-6" size="sm">
+                Plan Your Trip
+              </Button>
+            </Link>
 
             {/* Mobile menu button */}
             <button
@@ -278,7 +280,9 @@ export function Navbar() {
                     <Phone className="w-4 h-4" />
                     <span>(+91) 8287636079</span>
                   </a>
-                  <Button className="w-full">Plan Your Trip</Button>
+                  <Link to="/contact" onClick={() => setMobileOpen(false)}>
+                    <Button className="w-full">Plan Your Trip</Button>
+                  </Link>
                 </div>
               </div>
             </motion.div>

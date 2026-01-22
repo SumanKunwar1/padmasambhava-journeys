@@ -53,7 +53,7 @@ export function FAQSection() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-3xl sm:text-4xl font-display font-bold mb-8"
+          className="text-3xl sm:text-4xl font-display font-bold mb-8 text-center"
         >
           Frequently Asked Questions
         </motion.h2>
@@ -62,7 +62,7 @@ export function FAQSection() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="max-w-3xl"
+          className="max-w-3xl mx-auto"
         >
           <Accordion type="single" collapsible className="space-y-3">
             {faqs.map((faq, index) => (

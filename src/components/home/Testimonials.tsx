@@ -9,6 +9,7 @@ const testimonials = [
     rating: 5,
     review: "The most spiritual journey I've ever experienced. The team's attention to detail and deep knowledge of Buddhist sites made this trip unforgettable. Highly recommend for anyone seeking inner peace.",
     avatar: "PS",
+    image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face",
   },
   {
     id: 2,
@@ -17,6 +18,7 @@ const testimonials = [
     rating: 5,
     review: "From the monasteries to the mountain passes, every moment was perfectly planned. The trip captain was amazing and made sure everyone was comfortable throughout the journey.",
     avatar: "RV",
+    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
   },
   {
     id: 3,
@@ -25,6 +27,7 @@ const testimonials = [
     rating: 5,
     review: "Best decision ever! Met incredible people, visited stunning places, and created memories for a lifetime. Padmasambhava Trip truly understands what travelers need.",
     avatar: "AP",
+    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
   },
   {
     id: 4,
@@ -33,6 +36,7 @@ const testimonials = [
     rating: 5,
     review: "International trip with Indian comfort! The itinerary was perfect, accommodations were great, and the group vibes were amazing. Can't wait for my next adventure with them.",
     avatar: "VS",
+    image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face",
   },
 ];
 
@@ -77,9 +81,11 @@ export function Testimonials() {
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold text-sm">
-                  {testimonial.avatar}
-                </div>
+                <img 
+                  src={testimonial.image} 
+                  alt={testimonial.name}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
                 <div>
                   <p className="font-semibold text-sm">{testimonial.name}</p>
                   <p className="text-xs text-muted-foreground">{testimonial.trip}</p>

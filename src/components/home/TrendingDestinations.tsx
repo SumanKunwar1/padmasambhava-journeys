@@ -61,7 +61,7 @@ export function TrendingDestinations() {
         </motion.h2>
 
         <div className="overflow-x-auto hide-scrollbar -mx-4 px-4">
-          <div className="flex gap-6 pb-4 min-w-max lg:grid lg:grid-cols-5 lg:min-w-0">
+          <div className="flex gap-6 pb-4" style={{ minWidth: "max-content" }}>
             {trendingDestinations.map((destination, index) => (
               <motion.div
                 key={destination.slug}

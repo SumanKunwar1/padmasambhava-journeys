@@ -507,10 +507,57 @@ const TripListingPage = ({
   const [isDateOpen, setIsDateOpen] = useState(false);
   const [isTripTypeOpen, setIsTripTypeOpen] = useState(true);
   const [isBudgetOpen, setIsBudgetOpen] = useState(true);
+  const [selectedTripTypes, setSelectedTripTypes] = useState<string[]>([]);
+  const [selectedBudgets, setSelectedBudgets] = useState<string[]>([]);
 
-  const filteredTrips = activeDestination === "All" 
-    ? trips 
-    : trips.filter(trip => trip.destination === activeDestination);
+  // Filter logic
+  const filteredTrips = trips.filter(trip => {
+    // Destination filter
+    const matchesDestination = activeDestination === "All" || trip.destination === activeDestination;
+    
+    // Trip type filter
+    const tripTypeMap: Record<string, string> = {
+      "Group Trips": "group",
+      "Solo Trips": "solo",
+      "Pilgrimage Trips": "pilgrimage",
+      "Adventure Trips": "adventure",
+      "Weekend Trips": "weekend",
+      "Luxury Trips": "luxury",
+    };
+    const matchesTripType = selectedTripTypes.length === 0 || 
+      selectedTripTypes.some(type => trip.category.includes(tripTypeMap[type] || type.toLowerCase()));
+    
+    // Budget filter
+    const matchesBudget = selectedBudgets.length === 0 || selectedBudgets.some(budget => {
+      const price = trip.price;
+      switch (budget) {
+        case "Under ₹25,000": return price < 25000;
+        case "₹25,000 - ₹50,000": return price >= 25000 && price <= 50000;
+        case "₹50,000 - ₹75,000": return price >= 50000 && price <= 75000;
+        case "₹75,000 - ₹1,00,000": return price >= 75000 && price <= 100000;
+        case "Above ₹1,00,000": return price > 100000;
+        default: return true;
+      }
+    });
+    
+    return matchesDestination && matchesTripType && matchesBudget;
+  });
+
+  const handleTripTypeChange = (type: string, checked: boolean) => {
+    if (checked) {
+      setSelectedTripTypes([...selectedTripTypes, type]);
+    } else {
+      setSelectedTripTypes(selectedTripTypes.filter(t => t !== type));
+    }
+  };
+
+  const handleBudgetChange = (budget: string, checked: boolean) => {
+    if (checked) {
+      setSelectedBudgets([...selectedBudgets, budget]);
+    } else {
+      setSelectedBudgets(selectedBudgets.filter(b => b !== budget));
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -603,7 +650,11 @@ const TripListingPage = ({
                 <CollapsibleContent className="py-3 space-y-3">
                   {tripTypes.map((type) => (
                     <label key={type} className="flex items-center gap-2 cursor-pointer">
-                      <Checkbox id={type} />
+                      <Checkbox 
+                        id={type} 
+                        checked={selectedTripTypes.includes(type)}
+                        onCheckedChange={(checked) => handleTripTypeChange(type, checked as boolean)}
+                      />
                       <span className="text-sm text-muted-foreground">{type}</span>
                     </label>
                   ))}
@@ -622,7 +673,11 @@ const TripListingPage = ({
                 <CollapsibleContent className="py-3 space-y-3">
                   {budgetRanges.map((range) => (
                     <label key={range} className="flex items-center gap-2 cursor-pointer">
-                      <Checkbox id={range} />
+                      <Checkbox 
+                        id={range}
+                        checked={selectedBudgets.includes(range)}
+                        onCheckedChange={(checked) => handleBudgetChange(range, checked as boolean)}
+                      />
                       <span className="text-sm text-muted-foreground">{range}</span>
                     </label>
                   ))}
