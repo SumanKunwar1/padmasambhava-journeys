@@ -49,7 +49,7 @@ const trendingDestinations = [
 
 export function TrendingDestinations() {
   return (
-    <section className="sticky top-[132px] z-40 bg-muted py-6 border-b border-border">
+    <section className="bg-muted py-8 border-b border-border">
       <div className="container-custom">
         <motion.h2
           initial={{ opacity: 0, y: 10 }}
