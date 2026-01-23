@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 // Import destination images
@@ -19,25 +20,26 @@ interface Destination {
   name: string;
   image: string;
   type: "international" | "domestic" | "weekend";
+  slug: string;
 }
 
 const destinations: Destination[] = [
-  { name: "Bali", image: destBali, type: "international" },
-  { name: "Japan", image: destJapan, type: "international" },
-  { name: "Vietnam", image: destVietnam, type: "international" },
-  { name: "Thailand", image: destThailand, type: "international" },
-  { name: "Dubai", image: destDubai, type: "international" },
-  { name: "Georgia", image: destGeorgia, type: "international" },
-  { name: "Bhutan", image: destBhutan, type: "international" },
-  { name: "Ladakh", image: destLadakh, type: "domestic" },
-  { name: "Spiti Valley", image: destSpiti, type: "domestic" },
-  { name: "Meghalaya", image: destBali, type: "domestic" },
-  { name: "Himachal", image: destSpiti, type: "weekend" },
-  { name: "Manali", image: destLadakh, type: "weekend" },
-  { name: "Kerala", image: destBali, type: "domestic" },
-  { name: "Rajasthan", image: destDubai, type: "domestic" },
-  { name: "Uttarakhand", image: destSpiti, type: "domestic" },
-  { name: "Tawang", image: destBhutan, type: "domestic" },
+  { name: "Bali", image: destBali, type: "international", slug: "bali-tour" },
+  { name: "Japan", image: destJapan, type: "international", slug: "japan-tour" },
+  { name: "Vietnam", image: destVietnam, type: "international", slug: "vietnam-tour" },
+  { name: "Thailand", image: destThailand, type: "international", slug: "thailand-tour" },
+  { name: "Dubai", image: destDubai, type: "international", slug: "dubai-tour" },
+  { name: "Georgia", image: destGeorgia, type: "international", slug: "georgia-tour" },
+  { name: "Bhutan", image: destBhutan, type: "international", slug: "bhutan-tour" },
+  { name: "Ladakh", image: destLadakh, type: "domestic", slug: "ladakh-tour" },
+  { name: "Spiti Valley", image: destSpiti, type: "domestic", slug: "spiti-tour" },
+  { name: "Meghalaya", image: destBali, type: "domestic", slug: "meghalaya-tour" },
+  { name: "Himachal", image: destSpiti, type: "weekend", slug: "himachal-tour" },
+  { name: "Manali", image: destLadakh, type: "weekend", slug: "manali-tour" },
+  { name: "Kerala", image: destBali, type: "domestic", slug: "kerala-tour" },
+  { name: "Rajasthan", image: destDubai, type: "domestic", slug: "rajasthan-tour" },
+  { name: "Uttarakhand", image: destSpiti, type: "domestic", slug: "uttarakhand-tour" },
+  { name: "Tawang", image: destBhutan, type: "domestic", slug: "tawang-tour" },
 ];
 
 const filters: { label: string; value: FilterType; icon: string }[] = [
@@ -85,7 +87,7 @@ export function ExploreDestinations() {
           </div>
         </motion.div>
 
-        {/* Destinations Grid */}
+        {/* Destinations Grid - Clickable */}
         <div className="overflow-x-auto hide-scrollbar -mx-4 px-4">
           <div className="flex gap-6 pb-4 min-w-max lg:grid lg:grid-cols-8 lg:min-w-0">
             {filteredDestinations.map((destination, index) => (
@@ -95,18 +97,22 @@ export function ExploreDestinations() {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.05 }}
-                className="flex flex-col items-center gap-3 cursor-pointer group"
               >
-                <div className="destination-circle w-28 h-28 lg:w-full lg:h-auto lg:aspect-square shadow-md">
-                  <img
-                    src={destination.image}
-                    alt={destination.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
-                  {destination.name}
-                </span>
+                <Link
+                  to={`/trip/${destination.slug}`}
+                  className="flex flex-col items-center gap-3 cursor-pointer group"
+                >
+                  <div className="destination-circle w-24 h-24 lg:w-full lg:h-auto lg:aspect-square shadow-md">
+                    <img
+                      src={destination.image}
+                      alt={destination.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                    {destination.name}
+                  </span>
+                </Link>
               </motion.div>
             ))}
           </div>

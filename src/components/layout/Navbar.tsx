@@ -141,6 +141,8 @@ export function Navbar() {
     setSearchQuery("");
     setShowSearchResults(false);
     navigate(href);
+    // Scroll to top after navigation
+    window.scrollTo(0, 0);
   };
 
   return (
@@ -165,7 +167,7 @@ export function Navbar() {
             <img 
               src="https://res.cloudinary.com/dihev9qxc/image/upload/v1768991877/453207561_122102729312441160_4787222294410407220_n-removebg-preview_voy795.png" 
               alt="Padmasambhava Trip" 
-              className="h-16 w-auto"
+              className="h-20 w-auto"
             />
           </Link>
 

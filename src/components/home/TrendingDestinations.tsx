@@ -49,30 +49,30 @@ const trendingDestinations = [
 
 export function TrendingDestinations() {
   return (
-    <section className="section-padding bg-muted">
+    <section className="sticky top-[132px] z-40 bg-muted py-6 border-b border-border">
       <div className="container-custom">
         <motion.h2
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-3xl sm:text-4xl font-display font-bold mb-8"
+          className="text-xl font-display font-bold mb-4"
         >
           Trending Destinations
         </motion.h2>
 
         <div className="overflow-x-auto hide-scrollbar -mx-4 px-4">
-          <div className="flex gap-6 pb-4" style={{ minWidth: "max-content" }}>
+          <div className="flex gap-4" style={{ minWidth: "max-content" }}>
             {trendingDestinations.map((destination, index) => (
               <motion.div
                 key={destination.slug}
                 initial={{ opacity: 0, x: 20 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
+                transition={{ delay: index * 0.05 }}
               >
                 <Link
-                  to={`/destination/${destination.slug}`}
-                  className="block relative w-64 lg:w-full aspect-[3/4] rounded-2xl overflow-hidden group"
+                  to={`/trip/${destination.slug}-tour`}
+                  className="block relative w-32 aspect-[3/4] rounded-xl overflow-hidden group"
                 >
                   <img
                     src={destination.image}
@@ -80,12 +80,12 @@ export function TrendingDestinations() {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="gradient-overlay" />
-                  <div className="absolute bottom-0 left-0 right-0 p-4 text-primary-foreground">
-                    <h3 className="font-semibold text-lg mb-1">
+                  <div className="absolute bottom-0 left-0 right-0 p-2 text-primary-foreground">
+                    <h3 className="font-medium text-xs mb-0.5 line-clamp-2">
                       {destination.name}
                     </h3>
-                    <p className="text-sm text-primary-foreground/80">
-                      Starting ₹{destination.price.toLocaleString()}
+                    <p className="text-xs text-primary-foreground/80">
+                      ₹{destination.price.toLocaleString()}
                     </p>
                   </div>
                 </Link>

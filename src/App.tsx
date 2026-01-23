@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ScrollToTop } from "@/components/shared/ScrollToTop";
 import Index from "./pages/Index";
 import TripDetail from "./pages/TripDetail";
 import GroupTrips from "./pages/GroupTrips";
@@ -24,6 +25,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <ScrollToTop />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/trip/:id" element={<TripDetail />} />
@@ -39,6 +41,9 @@ const App = () => (
           <Route path="/weekend-trips" element={<WeekendTrips />} />
           <Route path="/international-trips" element={<InternationalTrips />} />
           <Route path="/domestic-trips" element={<DomesticTrips />} />
+          
+          {/* Destination Routes */}
+          <Route path="/destination/:slug" element={<TripDetail />} />
           
           {/* Retreats */}
           <Route path="/retreats" element={<Retreats />} />
@@ -70,6 +75,10 @@ const App = () => (
           <Route path="/about" element={<Contact />} />
           <Route path="/faqs" element={<Contact />} />
           <Route path="/blogs" element={<Contact />} />
+          <Route path="/privacy" element={<Contact />} />
+          <Route path="/cancellation" element={<Contact />} />
+          <Route path="/terms" element={<Contact />} />
+          <Route path="/corporate" element={<Contact />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
