@@ -136,16 +136,16 @@ export function Footer() {
           <div className="space-y-6">
             <h3 className="font-display text-base font-bold text-foreground">Address</h3>
             
-            {/* Delhi Office */}
+            {/* Siliguri office */}
             <div>
-              <p className="font-semibold text-sm mb-2">Padmasambhava Trip Pvt Ltd - Delhi</p>
+              <p className="font-semibold text-sm mb-2">Padmasambhava Trip Pvt Ltd - Siliguri</p>
               <p className="text-sm text-muted-foreground flex items-start gap-2 mb-1">
                 <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
-                1473-G NN-1/9619, Bramh Gali, West Rohtash Nagar, Shahdara, New Delhi -110032
+                Matigara, Siliguri, India, 734001
               </p>
               <p className="text-sm text-muted-foreground flex items-center gap-2 mb-3">
                 <Phone className="w-4 h-4 shrink-0" />
-                (+91) 8287636079
+                (+91) 75016 10109
               </p>
               <button className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-full text-sm hover:bg-muted transition-colors">
                 <MapPin className="w-4 h-4" />
@@ -153,14 +153,14 @@ export function Footer() {
               </button>
             </div>
             
-            {/* Faridabad Office */}
+            {/* Kathmandu office */}
             <div>
-              <p className="font-semibold text-sm mb-2">Padmasambhava Trip Pvt Ltd - Faridabad</p>
+              <p className="font-semibold text-sm mb-2">Padmasambhava Trip Pvt Ltd - Kathmandu</p>
               <p className="text-sm text-muted-foreground mb-3">
-                Office No 304, 3rd floor, SRS Tower, Sector-31, Near Mewla Maharajpur Metro Station, Faridabad, Haryana 121003, India
+                Trinity Tower, Maharajgunj, Kathmandu, Nepal
               </p>
               <p className="text-sm text-muted-foreground flex items-center gap-2 mb-3">
-                Mobile: +91-8287636079 / 8076760552
+                (+977) 986-3593271
               </p>
               <button className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-full text-sm hover:bg-muted transition-colors">
                 <MapPin className="w-4 h-4" />
@@ -168,21 +168,7 @@ export function Footer() {
               </button>
             </div>
 
-            {/* Gurgaon Office */}
-            <div>
-              <p className="font-semibold text-sm mb-2">Padmasambhava Trip Pvt Ltd - Gurgaon</p>
-              <button className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-full text-sm hover:bg-muted transition-colors mb-2">
-                <MapPin className="w-4 h-4" />
-                View on Map
-              </button>
-              <p className="text-sm text-muted-foreground flex items-start gap-2 mb-1">
-                <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
-                Plot no-376, Udyog Vihar Phase 2, opposite Vi John WeWork, Gurgaon, Haryana 122016, India
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Mobile: +91-8368653222
-              </p>
-            </div>
+          
           </div>
 
           {/* Quick Links */}
@@ -257,7 +243,7 @@ export function Footer() {
                 </svg>
               </a>
               {/* Facebook */}
-              <a href="#" className="w-8 h-8 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity">
+              <a href="https://www.facebook.com/padmasambhavatrip" className="w-8 h-8 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity">
                 <svg className="w-6 h-6" viewBox="0 0 24 24" fill="#1877F2">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                 </svg>
