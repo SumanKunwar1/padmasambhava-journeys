@@ -101,10 +101,7 @@ const navItems: NavItem[] = [
     label: "More about us",
     icon: <Info className="w-4 h-4 text-slate-500" />,
     children: [
-      { label: "About Us", href: "/about" },
       { label: "FAQs", href: "/faqs" },
-      { label: "Blogs", href: "/blogs" },
-      { label: "Contact", href: "/contact" },
     ],
   },
 ];
@@ -161,13 +158,13 @@ export function Navbar() {
 
       <nav className="container-custom">
         {/* Top row: Logo + Search + Phone + CTA */}
-        <div className="flex items-center justify-between h-20 border-b border-border">
+        <div className="flex items-center justify-between h-24 border-b border-border">
           {/* Logo - Made bigger */}
           <Link to="/" className="flex-shrink-0">
             <img 
               src="https://res.cloudinary.com/dihev9qxc/image/upload/v1768991877/453207561_122102729312441160_4787222294410407220_n-removebg-preview_voy795.png" 
               alt="Padmasambhava Trip" 
-              className="h-20 w-auto"
+              className="h-28 w-auto"
             />
           </Link>
 
