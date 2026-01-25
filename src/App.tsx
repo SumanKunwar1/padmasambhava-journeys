@@ -15,6 +15,7 @@ import Retreats from "./pages/Retreats";
 import SeasonalDeals from "./pages/SeasonalDeals";
 import CustomisedTrips from "./pages/CustomisedTrips";
 import Contact from "./pages/Contact";
+import FAQs from "./pages/FAQs";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -73,7 +74,7 @@ const App = () => (
           {/* Contact & More */}
           <Route path="/contact" element={<Contact />} />
           <Route path="/about" element={<Contact />} />
-          <Route path="/faqs" element={<Contact />} />
+          <Route path="/faqs" element={<FAQs />} />
           <Route path="/blogs" element={<Contact />} />
           <Route path="/privacy" element={<Contact />} />
           <Route path="/cancellation" element={<Contact />} />
