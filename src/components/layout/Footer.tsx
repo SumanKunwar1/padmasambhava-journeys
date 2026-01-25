@@ -5,6 +5,16 @@ import {
   Mail
 } from "lucide-react";
 
+import destBhutan from "@/assets/dest-bhutan.jpg";
+import destSpiti from "@/assets/dest-spiti.jpg";
+import destLadakh from "@/assets/dest-ladakh.jpg";
+import destJapan from "@/assets/dest-japan.jpg";
+import destThailand from "@/assets/dest-thailand.jpg";
+import destVietnam from "@/assets/dest-vietnam.jpg";
+import destDubai from "@/assets/dest-dubai.jpg";
+import destGeorgia from "@/assets/dest-georgia.jpg";
+import destBali from "@/assets/dest-bali.jpg";
+
 const domesticTrips = [
   { name: "Meghalaya Tour Packages", href: "/trip/meghalaya-tour" },
   { name: "Spiti Tour Packages", href: "/trip/spiti-tour" },
@@ -50,9 +60,40 @@ const quickLinks = [
   { label: "Corporate Tours", href: "/corporate" },
 ];
 
+const galleryImages = [
+  destBhutan,
+  destSpiti,
+  destLadakh,
+  destJapan,
+  destThailand,
+  destVietnam,
+  destDubai,
+  destGeorgia,
+  destBali,
+];
+
 export function Footer() {
   return (
     <footer className="bg-cream-warm">
+      {/* Gallery Section */}
+      <div className="container-custom py-10 border-b border-border/30">
+        <h3 className="font-display text-base font-bold text-foreground mb-6">Gallery</h3>
+        <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-9 gap-2">
+          {galleryImages.map((image, index) => (
+            <div 
+              key={index} 
+              className="aspect-square overflow-hidden rounded-lg group cursor-pointer"
+            >
+              <img
+                src={image}
+                alt={`Gallery image ${index + 1}`}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Trips Section - matching reference image styling */}
       <div className="container-custom py-10 border-b border-border/30">
         {/* Domestic Trips */}
