@@ -1,9 +1,13 @@
+// src/App.tsx
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ScrollToTop } from "@/components/shared/ScrollToTop";
+import { AuthProvider } from "@/context/AuthContext";
+
+// Pages
 import Index from "./pages/Index";
 import TripDetail from "./pages/TripDetail";
 import GroupTrips from "./pages/GroupTrips";
@@ -19,6 +23,15 @@ import AboutUs from "./pages/AboutUs";
 import Blogs from "./pages/Blogs";
 import NotFound from "./pages/NotFound";
 
+// New Auth Pages
+import SignUp from "./pages/SignUp";
+import Login from "./pages/Login";
+
+// New Visa & Documentation Pages
+import VisaApplication from "./pages/VisaApplication";
+import Documentation from "./pages/Documentation";
+import Dashboard from "./pages/Dashboard";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -26,66 +39,78 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <ScrollToTop />
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/trip/:id" element={<TripDetail />} />
-          
-          {/* Trip Category Pages */}
-          <Route path="/group-trips" element={<GroupTrips />} />
-          <Route path="/trips/upcoming" element={<GroupTrips />} />
-          <Route path="/trips/fixed-departure" element={<GroupTrips />} />
-          <Route path="/trips/group" element={<GroupTrips />} />
-          <Route path="/trips/pilgrimage" element={<PilgrimageTrips />} />
-          <Route path="/trips/weekend" element={<WeekendTrips />} />
-          <Route path="/pilgrimage-trips" element={<PilgrimageTrips />} />
-          <Route path="/weekend-trips" element={<WeekendTrips />} />
-          <Route path="/international-trips" element={<InternationalTrips />} />
-          <Route path="/domestic-trips" element={<DomesticTrips />} />
-          
-          {/* Destination Routes */}
-          <Route path="/destination/:slug" element={<TripDetail />} />
-          
-          {/* Retreats */}
-          <Route path="/retreats" element={<Retreats />} />
-          <Route path="/retreats/meditation" element={<Retreats />} />
-          <Route path="/retreats/spiritual" element={<Retreats />} />
-          <Route path="/retreats/wellness" element={<Retreats />} />
-          <Route path="/retreats/yoga" element={<Retreats />} />
-          
-          {/* Customised Trips */}
-          <Route path="/custom" element={<CustomisedTrips />} />
-          <Route path="/customised-trips" element={<CustomisedTrips />} />
-          
-          {/* Deals Pages */}
-          <Route path="/deals/seasonal" element={<SeasonalDeals />} />
-          <Route path="/deals/limited" element={<SeasonalDeals />} />
-          <Route path="/deals/limited-time" element={<SeasonalDeals />} />
-          
-          {/* Travel Styles */}
-          <Route path="/travel-styles/pilgrimage" element={<PilgrimageTrips />} />
-          <Route path="/style/solo" element={<GroupTrips />} />
-          <Route path="/travel-styles/solo" element={<GroupTrips />} />
-          <Route path="/travel-styles/group" element={<GroupTrips />} />
-          <Route path="/travel-styles/weekend" element={<WeekendTrips />} />
-          <Route path="/style/adventure" element={<GroupTrips />} />
-          <Route path="/travel-styles/adventure" element={<GroupTrips />} />
-          
-          {/* Contact & More */}
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/about" element={<AboutUs />} />
-          <Route path="/blogs" element={<Blogs />} />
-          <Route path="/blog/:id" element={<Blogs />} />
-          <Route path="/privacy" element={<Contact />} />
-          <Route path="/cancellation" element={<Contact />} />
-          <Route path="/terms" element={<Contact />} />
-          <Route path="/corporate" element={<Contact />} />
-          
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
+          <ScrollToTop />
+          <Routes>
+            {/* Main Pages */}
+            <Route path="/" element={<Index />} />
+            <Route path="/trip/:id" element={<TripDetail />} />
+            
+            {/* Authentication Routes */}
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            
+            {/* Visa & Documentation Routes */}
+            <Route path="/visa-application" element={<VisaApplication />} />
+            <Route path="/documentation" element={<Documentation />} />
+            
+            {/* Trip Category Pages */}
+            <Route path="/group-trips" element={<GroupTrips />} />
+            <Route path="/trips/upcoming" element={<GroupTrips />} />
+            <Route path="/trips/fixed-departure" element={<GroupTrips />} />
+            <Route path="/trips/group" element={<GroupTrips />} />
+            <Route path="/trips/pilgrimage" element={<PilgrimageTrips />} />
+            <Route path="/trips/weekend" element={<WeekendTrips />} />
+            <Route path="/pilgrimage-trips" element={<PilgrimageTrips />} />
+            <Route path="/weekend-trips" element={<WeekendTrips />} />
+            <Route path="/international-trips" element={<InternationalTrips />} />
+            <Route path="/domestic-trips" element={<DomesticTrips />} />
+            
+            {/* Destination Routes */}
+            <Route path="/destination/:slug" element={<TripDetail />} />
+            
+            {/* Retreats */}
+            <Route path="/retreats" element={<Retreats />} />
+            <Route path="/retreats/meditation" element={<Retreats />} />
+            <Route path="/retreats/spiritual" element={<Retreats />} />
+            <Route path="/retreats/wellness" element={<Retreats />} />
+            <Route path="/retreats/yoga" element={<Retreats />} />
+            
+            {/* Customised Trips */}
+            <Route path="/custom" element={<CustomisedTrips />} />
+            <Route path="/customised-trips" element={<CustomisedTrips />} />
+            
+            {/* Deals Pages */}
+            <Route path="/deals/seasonal" element={<SeasonalDeals />} />
+            <Route path="/deals/limited" element={<SeasonalDeals />} />
+            <Route path="/deals/limited-time" element={<SeasonalDeals />} />
+            
+            {/* Travel Styles */}
+            <Route path="/travel-styles/pilgrimage" element={<PilgrimageTrips />} />
+            <Route path="/style/solo" element={<GroupTrips />} />
+            <Route path="/travel-styles/solo" element={<GroupTrips />} />
+            <Route path="/travel-styles/group" element={<GroupTrips />} />
+            <Route path="/travel-styles/weekend" element={<WeekendTrips />} />
+            <Route path="/style/adventure" element={<GroupTrips />} />
+            <Route path="/travel-styles/adventure" element={<GroupTrips />} />
+            
+            {/* Contact & More */}
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/about" element={<AboutUs />} />
+            <Route path="/blogs" element={<Blogs />} />
+            <Route path="/blog/:id" element={<Blogs />} />
+            <Route path="/privacy" element={<Contact />} />
+            <Route path="/cancellation" element={<Contact />} />
+            <Route path="/terms" element={<Contact />} />
+            <Route path="/corporate" element={<Contact />} />
+            
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

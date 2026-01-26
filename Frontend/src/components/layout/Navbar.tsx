@@ -1,3 +1,4 @@
+// src/components/layout/Navbar.tsx
 import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,11 +14,16 @@ import {
   Globe,
   Info,
   Luggage,
-  Search
+  Search,
+  LogIn,
+  UserPlus,
+  LogOut,
+  LayoutDashboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 
 interface NavItem {
   label: string;
@@ -101,9 +107,8 @@ const navItems: NavItem[] = [
     label: "Visa & Documentation",
     icon: <Info className="w-4 h-4 text-purple-500" />,
     children: [
-      { label: "Visa Assistance", href: "/retreats/meditation" },
-      { label: "Documentation", href: "/retreats/spiritual" },
-      
+      { label: "Visa Application", href: "/visa-application" },
+      { label: "Documentation Portal", href: "/documentation" },
     ],
   },
 ];
@@ -115,6 +120,7 @@ export function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -133,15 +139,20 @@ export function Navbar() {
         trip.name.toLowerCase().includes(query) ||
         trip.destination.toLowerCase().includes(query) ||
         trip.category.toLowerCase().includes(query)
-    ).slice(0, 6); // Limit to 6 results
+    ).slice(0, 6);
   }, [searchQuery]);
 
   const handleSearchSelect = (href: string) => {
     setSearchQuery("");
     setShowSearchResults(false);
     navigate(href);
-    // Scroll to top after navigation
     window.scrollTo(0, 0);
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+    setMobileOpen(false);
   };
 
   return (
@@ -161,7 +172,7 @@ export function Navbar() {
       <nav className="container-custom">
         {/* Top row: Logo + Search + Phone + CTA */}
         <div className="flex items-center justify-between h-24 border-b border-border">
-          {/* Logo - Made bigger */}
+          {/* Logo */}
           <Link to="/" className="flex-shrink-0">
             <img 
               src="https://res.cloudinary.com/dihev9qxc/image/upload/v1768991877/453207561_122102729312441160_4787222294410407220_n-removebg-preview_voy795.png" 
@@ -170,7 +181,7 @@ export function Navbar() {
             />
           </Link>
 
-          {/* Search Bar with Results Dropdown */}
+          {/* Search Bar */}
           <div className="hidden md:flex flex-1 max-w-md mx-6 relative">
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -221,13 +232,13 @@ export function Navbar() {
                   exit={{ opacity: 0, y: 10 }}
                   className="absolute top-full left-0 right-0 mt-2 bg-popover border border-border rounded-xl shadow-lg p-4 z-50"
                 >
-                  <p className="text-sm text-muted-foreground text-center">No trips found for "{searchQuery}"</p>
+                  <p className="text-sm text-muted-foreground text-center">No trips found</p>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
-          {/* Right side: Phone + CTA */}
+          {/* Right side: Phone + Auth + CTA */}
           <div className="flex items-center gap-4">
             <a
               href="tel:(+91)75016 10109"
@@ -236,11 +247,31 @@ export function Navbar() {
               <Phone className="w-4 h-4" />
               <span className="font-medium">(+91) 75016 10109</span>
             </a>
-            <Link to="/contact">
-              <Button className="hidden sm:inline-flex rounded-full px-6" size="sm">
-                Plan Your Trip
-              </Button>
-            </Link>
+
+            {/* Auth Buttons */}
+            {!user ? (
+              <div className="hidden sm:flex items-center gap-2">
+                <Link to="/login">
+                  <Button variant="ghost" size="sm">
+                    <LogIn className="w-4 h-4 mr-1" />
+                    Login
+                  </Button>
+                </Link>
+                <Link to="/signup">
+                  <Button size="sm" className="rounded-full">
+                    <UserPlus className="w-4 h-4 mr-1" />
+                    Sign Up
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <Link to="/dashboard" className="hidden sm:inline-flex">
+                <Button variant="ghost" size="sm">
+                  <LayoutDashboard className="w-4 h-4 mr-1" />
+                  Dashboard
+                </Button>
+              </Link>
+            )}
 
             {/* Mobile menu button */}
             <button
@@ -358,10 +389,45 @@ export function Navbar() {
                     )}
                   </div>
                 ))}
-                <div className="pt-4 px-4 space-y-3">
+                
+                {/* Mobile Auth Section */}
+                <div className="pt-4 px-4 space-y-3 border-t border-border">
+                  {!user ? (
+                    <>
+                      <Link to="/login" onClick={() => setMobileOpen(false)}>
+                        <Button variant="outline" className="w-full">
+                          <LogIn className="w-4 h-4 mr-2" />
+                          Login
+                        </Button>
+                      </Link>
+                      <Link to="/signup" onClick={() => setMobileOpen(false)}>
+                        <Button className="w-full">
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Sign Up
+                        </Button>
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <Link to="/dashboard" onClick={() => setMobileOpen(false)}>
+                        <Button variant="outline" className="w-full">
+                          <LayoutDashboard className="w-4 h-4 mr-2" />
+                          Dashboard
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="outline"
+                        onClick={handleLogout}
+                        className="w-full"
+                      >
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Logout
+                      </Button>
+                    </>
+                  )}
                   <a
                     href="tel:(+91)7501610109"
-                    className="flex items-center gap-2 text-sm text-foreground"
+                    className="flex items-center gap-2 text-sm text-foreground px-4 py-3"
                   >
                     <Phone className="w-4 h-4" />
                     <span>(+91)7501610109</span>
