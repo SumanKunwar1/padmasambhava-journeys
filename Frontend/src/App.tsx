@@ -23,14 +23,29 @@ import AboutUs from "./pages/AboutUs";
 import Blogs from "./pages/Blogs";
 import NotFound from "./pages/NotFound";
 
-// New Auth Pages
+// Auth Pages
 import SignUp from "./pages/SignUp";
 import Login from "./pages/Login";
 
-// New Visa & Documentation Pages
+// Visa & Documentation Pages
 import VisaApplication from "./pages/VisaApplication";
 import Documentation from "./pages/Documentation";
 import Dashboard from "./pages/Dashboard";
+
+// Admin Pages
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminTrips from "./pages/admin/AdminTrips";
+import AdminTripForm from "./pages/admin/AdminTripForm";
+import AdminBlogs from "./pages/admin/AdminBlogs";
+import AdminBlogForm from "./pages/admin/AdminBlogForm";
+import AdminBookings from "./pages/admin/AdminBookings";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminApplications from "./pages/admin/AdminApplications";
+import AdminSettings from "./pages/admin/AdminSettings";
+
+// Admin Components
+import ProtectedAdminRoute from "./components/admin/ProtectedAdminRoute";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +70,97 @@ const App = () => (
             {/* Visa & Documentation Routes */}
             <Route path="/visa-application" element={<VisaApplication />} />
             <Route path="/documentation" element={<Documentation />} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route
+              path="/admin/dashboard"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminDashboard />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/trips"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminTrips />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/trips/create"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminTripForm />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/trips/edit/:id"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminTripForm />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/blogs"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminBlogs />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/blogs/create"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminBlogForm />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/blogs/edit/:id"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminBlogForm />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/bookings"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminBookings />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminUsers />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/applications"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminApplications />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/settings"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminSettings />
+                </ProtectedAdminRoute>
+              }
+            />
             
             {/* Trip Category Pages */}
             <Route path="/group-trips" element={<GroupTrips />} />
