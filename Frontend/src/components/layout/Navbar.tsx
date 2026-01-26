@@ -78,7 +78,7 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    label: "Upcoming Group Trips",
+    label: "Combo Trips",
     href: "/trips/upcoming",
     icon: <Luggage className="w-4 h-4 text-sky-500" />,
   },
@@ -98,9 +98,13 @@ const navItems: NavItem[] = [
     icon: <Globe className="w-4 h-4 text-teal-500" />,
   },
   {
-    label: "More about us", href: "/about",
-    icon: <Info className="w-4 h-4 text-slate-500" />,
-    
+    label: "Visa & Documentation",
+    icon: <Info className="w-4 h-4 text-purple-500" />,
+    children: [
+      { label: "Visa Assistance", href: "/retreats/meditation" },
+      { label: "Documentation", href: "/retreats/spiritual" },
+      
+    ],
   },
 ];
 
