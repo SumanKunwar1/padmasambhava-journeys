@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import axios from "axios";
+
+// API Base URL - get from environment variable
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -44,34 +48,43 @@ export default function AdminLogin() {
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Demo admin credentials
-      if (formData.email === "admin@padmasambhavatrip.com" && formData.password === "admin123") {
-        const adminUser = {
-          id: "admin-1",
+      // Call backend API
+      const response = await axios.post(
+        `${API_URL}/auth/login`,
+        {
           email: formData.email,
-          name: "Admin User",
-          role: "admin",
-          loginTime: new Date().toISOString(),
-        };
+          password: formData.password,
+        },
+        {
+          withCredentials: true, // Important for cookies
+        }
+      );
 
-        localStorage.setItem("adminUser", JSON.stringify(adminUser));
+      if (response.data.status === 'success') {
+        const adminData = response.data.data.admin;
+        const token = response.data.token;
+
+        // Store admin data and token
+        localStorage.setItem("adminUser", JSON.stringify(adminData));
+        localStorage.setItem("adminToken", token);
         
         toast({
           title: "Login successful!",
-          description: "Welcome to Admin Dashboard",
+          description: `Welcome back, ${adminData.name}!`,
         });
         
         navigate("/admin/dashboard");
-      } else {
-        throw new Error("Invalid credentials");
       }
     } catch (error: any) {
+      console.error("Login error:", error);
+      
+      const errorMessage = error.response?.data?.message || 
+                          error.message || 
+                          "Invalid email or password";
+      
       toast({
         title: "Login failed",
-        description: error.message || "Invalid email or password",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -90,7 +103,7 @@ export default function AdminLogin() {
   const fillDemoCredentials = () => {
     setFormData({
       email: "admin@padmasambhavatrip.com",
-      password: "admin123",
+      password: "P@dm@2026",
     });
   };
 
@@ -204,7 +217,7 @@ export default function AdminLogin() {
         >
           <p className="font-semibold mb-1">Demo Admin Account</p>
           <p>Email: admin@padmasambhavatrip.com</p>
-          <p>Password: admin123</p>
+          <p>Password: P@dm@2026</p>
         </motion.div>
 
         {/* Back to Home */}

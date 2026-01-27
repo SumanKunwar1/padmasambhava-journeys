@@ -9,13 +9,8 @@ import { config } from './config/env';
 import { errorHandler } from './middleware/errorHandler';
 import { AppError } from './utils/appError';
 
-// Import routes (will be created later)
-// import authRoutes from './routes/authRoutes';
-// import tripRoutes from './routes/tripRoutes';
-// import blogRoutes from './routes/blogRoutes';
-// import userRoutes from './routes/userRoutes';
-// import bookingRoutes from './routes/bookingRoutes';
-// import applicationRoutes from './routes/applicationRoutes';
+// Import routes
+import authRoutes from './routes/auth.routes';
 
 const app: Application = express();
 
@@ -52,8 +47,10 @@ app.get('/health', (_req: Request, res: Response) => {
   });
 });
 
-// API Routes (uncomment when routes are created)
-// app.use('/api/v1/auth', authRoutes);
+// API Routes
+app.use('/api/v1/auth', authRoutes);
+
+// More routes can be added here:
 // app.use('/api/v1/trips', tripRoutes);
 // app.use('/api/v1/blogs', blogRoutes);
 // app.use('/api/v1/users', userRoutes);
