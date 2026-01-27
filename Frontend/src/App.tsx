@@ -46,6 +46,7 @@ import AdminSettings from "./pages/admin/AdminSettings";
 
 // Admin Components
 import ProtectedAdminRoute from "./components/admin/ProtectedAdminRoute";
+import ComboTrips from "./pages/Combotrips";
 
 const queryClient = new QueryClient();
 
@@ -201,6 +202,9 @@ const App = () => (
             <Route path="/travel-styles/weekend" element={<WeekendTrips />} />
             <Route path="/style/adventure" element={<GroupTrips />} />
             <Route path="/travel-styles/adventure" element={<GroupTrips />} />
+
+            {/* Combo Trips */}
+            <Route path="/trips/combo" element={<ComboTrips />} />
             
             {/* Contact & More */}
             <Route path="/contact" element={<Contact />} />
