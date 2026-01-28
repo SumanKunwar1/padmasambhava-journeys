@@ -17,12 +17,16 @@ import {
   User,
   Plane,
   X,
+  FileDown,
+  Image as ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { cn } from "@/lib/utils";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 
 interface VisaApplication {
   id: string;
@@ -88,6 +92,245 @@ export default function AdminVisaApplications() {
 
     if (selectedApplication?.id === id) {
       setSelectedApplication({ ...selectedApplication, status: newStatus });
+    }
+  };
+
+  const downloadApplicationData = (application: VisaApplication) => {
+    // Create text content with all application data
+    const textContent = `
+VISA APPLICATION DETAILS
+========================
+
+Application ID: ${application.id}
+Submission Date: ${new Date(application.submittedDate).toLocaleString()}
+Status: ${application.status}
+
+PERSONAL INFORMATION
+--------------------
+Full Name: ${application.data.fullName || 'N/A'}
+Gender: ${application.data.gender || 'N/A'}
+Date of Birth: ${application.data.dateOfBirth || 'N/A'}
+Place of Birth: ${application.data.placeOfBirth || 'N/A'}
+Nationality: ${application.data.nationality || 'N/A'}
+Marital Status: ${application.data.maritalStatus || 'N/A'}
+Occupation: ${application.data.occupation || 'N/A'}
+Religion: ${application.data.religion || 'N/A'}
+
+PASSPORT INFORMATION
+-------------------
+Passport Type: ${application.data.passportType || 'N/A'}
+Passport Number: ${application.data.passportNumber || 'N/A'}
+Place of Issue: ${application.data.placeOfIssue || 'N/A'}
+Date of Issue: ${application.data.dateOfIssue || 'N/A'}
+Date of Expiry: ${application.data.dateOfExpiry || 'N/A'}
+Issuing Country: ${application.data.issuingCountry || 'N/A'}
+
+CONTACT DETAILS
+--------------
+Email: ${application.data.email || 'N/A'}
+Phone: ${application.data.phone || 'N/A'}
+Residential Address: ${application.data.residentialAddress || 'N/A'}
+City: ${application.data.city || 'N/A'}
+Country: ${application.data.country || 'N/A'}
+Postal Code: ${application.data.postalCode || 'N/A'}
+
+TRAVEL INFORMATION
+-----------------
+Destination Country: ${application.data.destinationCountry || 'N/A'}
+Purpose of Visit: ${application.data.purposeOfVisit || 'N/A'}
+Arrival Date: ${application.data.arrivalDate || 'N/A'}
+Departure Date: ${application.data.departureDate || 'N/A'}
+Duration of Stay: ${application.data.durationOfStay || 'N/A'}
+Number of Entries: ${application.data.numberOfEntries || 'N/A'}
+
+ACCOMMODATION & TRAVEL PLAN
+--------------------------
+Accommodation Type: ${application.data.accommodationType || 'N/A'}
+Accommodation Address: ${application.data.accommodationAddress || 'N/A'}
+Travel Package Name: ${application.data.travelPackageName || 'N/A'}
+Places to Visit: ${application.data.placesToVisit || 'N/A'}
+
+FINANCIAL INFORMATION
+--------------------
+Expenses Bearer: ${application.data.expensesBearer || 'N/A'}
+Estimated Budget: ${application.data.estimatedBudget || 'N/A'}
+Sufficient Funds: ${application.data.sufficientFunds || 'N/A'}
+
+SPONSOR INFORMATION
+------------------
+Sponsor Name: ${application.data.sponsorName || 'N/A'}
+Sponsor Relationship: ${application.data.sponsorRelationship || 'N/A'}
+Sponsor Address: ${application.data.sponsorAddress || 'N/A'}
+Sponsor Phone: ${application.data.sponsorPhone || 'N/A'}
+
+TRAVEL HISTORY
+-------------
+Travelled Before: ${application.data.travelledBefore || 'N/A'}
+Countries Visited: ${application.data.countriesVisited || 'N/A'}
+Overstayed Visa: ${application.data.overstayedVisa || 'N/A'}
+Refused Visa: ${application.data.refusedVisa || 'N/A'}
+Refusal Details: ${application.data.refusalDetails || 'N/A'}
+
+HEALTH & INSURANCE
+-----------------
+Has Insurance: ${application.data.hasInsurance || 'N/A'}
+Medical Condition: ${application.data.medicalCondition || 'N/A'}
+
+DECLARATION
+----------
+Agreed to Terms: ${application.data.agreeToTerms ? 'Yes' : 'No'}
+
+========================
+Generated on: ${new Date().toLocaleString()}
+`;
+
+    const blob = new Blob([textContent], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `visa_application_${application.id}_data.txt`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+
+    toast({
+      title: "Download Started",
+      description: "Application data downloaded as text file",
+    });
+  };
+
+  const downloadApplicationZip = async (application: VisaApplication) => {
+    try {
+      const zip = new JSZip();
+
+      // Add text data
+      const textContent = `
+VISA APPLICATION DETAILS
+========================
+
+Application ID: ${application.id}
+Submission Date: ${new Date(application.submittedDate).toLocaleString()}
+Status: ${application.status}
+
+PERSONAL INFORMATION
+--------------------
+Full Name: ${application.data.fullName || 'N/A'}
+Gender: ${application.data.gender || 'N/A'}
+Date of Birth: ${application.data.dateOfBirth || 'N/A'}
+Place of Birth: ${application.data.placeOfBirth || 'N/A'}
+Nationality: ${application.data.nationality || 'N/A'}
+Marital Status: ${application.data.maritalStatus || 'N/A'}
+Occupation: ${application.data.occupation || 'N/A'}
+Religion: ${application.data.religion || 'N/A'}
+
+PASSPORT INFORMATION
+-------------------
+Passport Type: ${application.data.passportType || 'N/A'}
+Passport Number: ${application.data.passportNumber || 'N/A'}
+Place of Issue: ${application.data.placeOfIssue || 'N/A'}
+Date of Issue: ${application.data.dateOfIssue || 'N/A'}
+Date of Expiry: ${application.data.dateOfExpiry || 'N/A'}
+Issuing Country: ${application.data.issuingCountry || 'N/A'}
+
+CONTACT DETAILS
+--------------
+Email: ${application.data.email || 'N/A'}
+Phone: ${application.data.phone || 'N/A'}
+Residential Address: ${application.data.residentialAddress || 'N/A'}
+City: ${application.data.city || 'N/A'}
+Country: ${application.data.country || 'N/A'}
+Postal Code: ${application.data.postalCode || 'N/A'}
+
+TRAVEL INFORMATION
+-----------------
+Destination Country: ${application.data.destinationCountry || 'N/A'}
+Purpose of Visit: ${application.data.purposeOfVisit || 'N/A'}
+Arrival Date: ${application.data.arrivalDate || 'N/A'}
+Departure Date: ${application.data.departureDate || 'N/A'}
+Duration of Stay: ${application.data.durationOfStay || 'N/A'}
+Number of Entries: ${application.data.numberOfEntries || 'N/A'}
+
+ACCOMMODATION & TRAVEL PLAN
+--------------------------
+Accommodation Type: ${application.data.accommodationType || 'N/A'}
+Accommodation Address: ${application.data.accommodationAddress || 'N/A'}
+Travel Package Name: ${application.data.travelPackageName || 'N/A'}
+Places to Visit: ${application.data.placesToVisit || 'N/A'}
+
+FINANCIAL INFORMATION
+--------------------
+Expenses Bearer: ${application.data.expensesBearer || 'N/A'}
+Estimated Budget: ${application.data.estimatedBudget || 'N/A'}
+Sufficient Funds: ${application.data.sufficientFunds || 'N/A'}
+
+SPONSOR INFORMATION
+------------------
+Sponsor Name: ${application.data.sponsorName || 'N/A'}
+Sponsor Relationship: ${application.data.sponsorRelationship || 'N/A'}
+Sponsor Address: ${application.data.sponsorAddress || 'N/A'}
+Sponsor Phone: ${application.data.sponsorPhone || 'N/A'}
+
+TRAVEL HISTORY
+-------------
+Travelled Before: ${application.data.travelledBefore || 'N/A'}
+Countries Visited: ${application.data.countriesVisited || 'N/A'}
+Overstayed Visa: ${application.data.overstayedVisa || 'N/A'}
+Refused Visa: ${application.data.refusedVisa || 'N/A'}
+Refusal Details: ${application.data.refusalDetails || 'N/A'}
+
+HEALTH & INSURANCE
+-----------------
+Has Insurance: ${application.data.hasInsurance || 'N/A'}
+Medical Condition: ${application.data.medicalCondition || 'N/A'}
+
+DECLARATION
+----------
+Agreed to Terms: ${application.data.agreeToTerms ? 'Yes' : 'No'}
+
+========================
+Generated on: ${new Date().toLocaleString()}
+`;
+
+      zip.file("application_details.txt", textContent);
+
+      // Add uploaded files (Note: Files are stored as File objects in localStorage)
+      // In a real scenario, you'd need to convert them properly
+      if (application.data.passportBioFile) {
+        zip.file("passport_bio_page.pdf", "File data would be here in production");
+      }
+      if (application.data.passportPhotoFile) {
+        zip.file("passport_photo.jpg", "File data would be here in production");
+      }
+      if (application.data.supportingDocumentsFile) {
+        zip.file("supporting_documents.pdf", "File data would be here in production");
+      }
+
+      // Add a README
+      zip.file("README.txt", `
+This ZIP file contains the visa application for ${application.data.fullName}.
+
+Contents:
+- application_details.txt: Complete application information
+- Document files (if uploaded)
+
+Application ID: ${application.id}
+Status: ${application.status}
+Submitted: ${new Date(application.submittedDate).toLocaleString()}
+      `);
+
+      // Generate and download
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, `visa_application_${application.id}.zip`);
+
+      toast({
+        title: "Download Started",
+        description: "Application package downloaded as ZIP",
+      });
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Failed to create ZIP file",
+        variant: "destructive",
+      });
     }
   };
 
@@ -309,6 +552,14 @@ export default function AdminVisaApplications() {
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => downloadApplicationZip(app)}
+                            title="Download as ZIP"
+                          >
+                            <FileDown className="w-4 h-4" />
+                          </Button>
                         </div>
                       </td>
                     </motion.tr>
@@ -322,29 +573,47 @@ export default function AdminVisaApplications() {
 
       {/* Details Modal */}
       {showDetailsModal && selectedApplication && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-card rounded-lg border border-border max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-card rounded-lg border border-border max-w-4xl w-full my-8"
           >
-            <div className="sticky top-0 bg-card border-b border-border p-6 flex items-center justify-between">
+            <div className="sticky top-0 bg-card border-b border-border p-6 flex items-center justify-between rounded-t-lg">
               <div>
                 <h2 className="text-2xl font-bold">Application Details</h2>
                 <p className="text-sm text-muted-foreground mt-1">
                   ID: {selectedApplication.id}
                 </p>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowDetailsModal(false)}
-              >
-                <X className="w-5 h-5" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => downloadApplicationData(selectedApplication)}
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Download TXT
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => downloadApplicationZip(selectedApplication)}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download ZIP
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowDetailsModal(false)}
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-6 max-h-[calc(90vh-200px)] overflow-y-auto">
               {/* Status Update */}
               <div className="bg-muted/50 rounded-lg p-4">
                 <label className="block text-sm font-semibold mb-2">Update Status</label>
@@ -371,6 +640,68 @@ export default function AdminVisaApplications() {
                 </div>
               </div>
 
+              {/* Uploaded Documents Section */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Uploaded Documents
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {selectedApplication.data.passportBioFile && (
+                    <div className="bg-muted/30 rounded-lg p-4 border-2 border-dashed border-border">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FileText className="w-5 h-5 text-primary" />
+                        <span className="font-semibold text-sm">Passport Bio Page</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        {selectedApplication.data.passportBioFile.name || "passport_bio.pdf"}
+                      </p>
+                      <Button size="sm" variant="outline" className="w-full">
+                        <Download className="w-3 h-3 mr-2" />
+                        Download
+                      </Button>
+                    </div>
+                  )}
+                  {selectedApplication.data.passportPhotoFile && (
+                    <div className="bg-muted/30 rounded-lg p-4 border-2 border-dashed border-border">
+                      <div className="flex items-center gap-2 mb-2">
+                        <ImageIcon className="w-5 h-5 text-primary" />
+                        <span className="font-semibold text-sm">Passport Photo</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        {selectedApplication.data.passportPhotoFile.name || "passport_photo.jpg"}
+                      </p>
+                      <Button size="sm" variant="outline" className="w-full">
+                        <Download className="w-3 h-3 mr-2" />
+                        Download
+                      </Button>
+                    </div>
+                  )}
+                  {selectedApplication.data.supportingDocumentsFile && (
+                    <div className="bg-muted/30 rounded-lg p-4 border-2 border-dashed border-border">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FileText className="w-5 h-5 text-primary" />
+                        <span className="font-semibold text-sm">Supporting Documents</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        {selectedApplication.data.supportingDocumentsFile.name || "supporting_docs.pdf"}
+                      </p>
+                      <Button size="sm" variant="outline" className="w-full">
+                        <Download className="w-3 h-3 mr-2" />
+                        Download
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                {!selectedApplication.data.passportBioFile && 
+                 !selectedApplication.data.passportPhotoFile && 
+                 !selectedApplication.data.supportingDocumentsFile && (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No documents uploaded
+                  </p>
+                )}
+              </div>
+
               {/* Personal Information */}
               <div>
                 <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
@@ -381,9 +712,11 @@ export default function AdminVisaApplications() {
                   <DetailField label="Full Name" value={selectedApplication.data.fullName} />
                   <DetailField label="Gender" value={selectedApplication.data.gender} />
                   <DetailField label="Date of Birth" value={selectedApplication.data.dateOfBirth} />
+                  <DetailField label="Place of Birth" value={selectedApplication.data.placeOfBirth} />
                   <DetailField label="Nationality" value={selectedApplication.data.nationality} />
                   <DetailField label="Marital Status" value={selectedApplication.data.maritalStatus} />
                   <DetailField label="Occupation" value={selectedApplication.data.occupation} />
+                  <DetailField label="Religion" value={selectedApplication.data.religion} />
                 </div>
               </div>
 
@@ -435,6 +768,17 @@ export default function AdminVisaApplications() {
                 </div>
               </div>
 
+              {/* Accommodation */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Accommodation & Travel Plan</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <DetailField label="Accommodation Type" value={selectedApplication.data.accommodationType} />
+                  <DetailField label="Accommodation Address" value={selectedApplication.data.accommodationAddress} />
+                  <DetailField label="Travel Package Name" value={selectedApplication.data.travelPackageName} />
+                  <DetailField label="Places to Visit" value={selectedApplication.data.placesToVisit} />
+                </div>
+              </div>
+
               {/* Financial Information */}
               <div>
                 <h3 className="text-lg font-semibold mb-3">Financial Information</h3>
@@ -444,9 +788,47 @@ export default function AdminVisaApplications() {
                   <DetailField label="Sufficient Funds" value={selectedApplication.data.sufficientFunds} />
                 </div>
               </div>
+
+              {/* Sponsor Information */}
+              {selectedApplication.data.sponsorName && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Sponsor Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <DetailField label="Sponsor Name" value={selectedApplication.data.sponsorName} />
+                    <DetailField label="Relationship" value={selectedApplication.data.sponsorRelationship} />
+                    <DetailField label="Sponsor Address" value={selectedApplication.data.sponsorAddress} />
+                    <DetailField label="Sponsor Phone" value={selectedApplication.data.sponsorPhone} />
+                  </div>
+                </div>
+              )}
+
+              {/* Travel History */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Travel History</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <DetailField label="Travelled Before" value={selectedApplication.data.travelledBefore} />
+                  <DetailField label="Countries Visited" value={selectedApplication.data.countriesVisited} />
+                  <DetailField label="Overstayed Visa" value={selectedApplication.data.overstayedVisa} />
+                  <DetailField label="Refused Visa" value={selectedApplication.data.refusedVisa} />
+                  {selectedApplication.data.refusalDetails && (
+                    <div className="md:col-span-2">
+                      <DetailField label="Refusal Details" value={selectedApplication.data.refusalDetails} />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Health & Insurance */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Health & Insurance</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <DetailField label="Has Insurance" value={selectedApplication.data.hasInsurance} />
+                  <DetailField label="Medical Condition" value={selectedApplication.data.medicalCondition} />
+                </div>
+              </div>
             </div>
 
-            <div className="sticky bottom-0 bg-card border-t border-border p-6">
+            <div className="sticky bottom-0 bg-card border-t border-border p-6 rounded-b-lg">
               <Button
                 onClick={() => setShowDetailsModal(false)}
                 className="w-full"

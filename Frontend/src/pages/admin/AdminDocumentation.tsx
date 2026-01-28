@@ -17,12 +17,15 @@ import {
   Upload,
   AlertCircle,
   X,
+  FileDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { cn } from "@/lib/utils";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 
 interface DocumentSubmission {
   id: string;
@@ -36,6 +39,7 @@ interface DocumentSubmission {
       category: string;
       uploadDate: string;
       fileName: string;
+      file?: File;
     };
   };
   completionPercentage: number;
@@ -170,6 +174,163 @@ export default function AdminDocumentation() {
 
     if (selectedSubmission?.id === id) {
       setSelectedSubmission({ ...selectedSubmission, status: newStatus });
+    }
+  };
+
+  const downloadSubmissionInfo = (submission: DocumentSubmission) => {
+    const textContent = `
+DOCUMENTATION SUBMISSION DETAILS
+================================
+
+Submission ID: ${submission.id}
+User: ${submission.userName}
+Email: ${submission.userEmail}
+Destination: ${submission.destination}
+Status: ${submission.status}
+Completion: ${submission.completionPercentage}%
+Submitted: ${new Date(submission.submittedDate).toLocaleString()}
+
+UPLOADED DOCUMENTS
+-----------------
+${Object.entries(submission.uploadedDocs)
+  .map(([key, doc]) => `
+Document: ${doc.name}
+Category: ${doc.category}
+File Name: ${doc.fileName}
+Upload Date: ${new Date(doc.uploadDate).toLocaleDateString()}
+`)
+  .join('\n')}
+
+MISSING DOCUMENTS
+----------------
+${Object.entries(DOCUMENT_CATEGORIES)
+  .flatMap(([category, docs]) =>
+    docs
+      .filter(
+        (docName) =>
+          !Object.values(submission.uploadedDocs).some((d) => d.name === docName)
+      )
+      .map((docName) => `- ${docName} (${category})`)
+  )
+  .join('\n')}
+
+================================
+Generated on: ${new Date().toLocaleString()}
+`;
+
+    const blob = new Blob([textContent], { type: "text/plain" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `documentation_${submission.id}_info.txt`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+
+    toast({
+      title: "Download Started",
+      description: "Documentation info downloaded as text file",
+    });
+  };
+
+  const downloadSubmissionZip = async (submission: DocumentSubmission) => {
+    try {
+      const zip = new JSZip();
+
+      // Add submission info
+      const infoContent = `
+DOCUMENTATION SUBMISSION DETAILS
+================================
+
+Submission ID: ${submission.id}
+User: ${submission.userName}
+Email: ${submission.userEmail}
+Destination: ${submission.destination}
+Status: ${submission.status}
+Completion: ${submission.completionPercentage}%
+Submitted: ${new Date(submission.submittedDate).toLocaleString()}
+
+UPLOADED DOCUMENTS
+-----------------
+${Object.entries(submission.uploadedDocs)
+  .map(([key, doc]) => `
+Document: ${doc.name}
+Category: ${doc.category}
+File Name: ${doc.fileName}
+Upload Date: ${new Date(doc.uploadDate).toLocaleDateString()}
+`)
+  .join('\n')}
+
+MISSING DOCUMENTS
+----------------
+${Object.entries(DOCUMENT_CATEGORIES)
+  .flatMap(([category, docs]) =>
+    docs
+      .filter(
+        (docName) =>
+          !Object.values(submission.uploadedDocs).some((d) => d.name === docName)
+      )
+      .map((docName) => `- ${docName} (${category})`)
+  )
+  .join('\n')}
+
+================================
+Generated on: ${new Date().toLocaleString()}
+`;
+
+      zip.file("submission_info.txt", infoContent);
+
+      // Add documents folder
+      const docsFolder = zip.folder("documents");
+      
+      Object.entries(submission.uploadedDocs).forEach(([key, doc]) => {
+        // In production, you would read the actual file data
+        // For now, we'll add placeholder text
+        if (docsFolder) {
+          docsFolder.file(
+            doc.fileName,
+            `File content for ${doc.name}\n\nIn production, this would be the actual file data.`
+          );
+        }
+      });
+
+      // Add README
+      zip.file(
+        "README.txt",
+        `
+Documentation Submission Package
+===============================
+
+User: ${submission.userName}
+Email: ${submission.userEmail}
+Destination: ${submission.destination}
+
+This ZIP file contains:
+- submission_info.txt: Complete submission details
+- documents/: Uploaded documents folder
+
+Submission ID: ${submission.id}
+Status: ${submission.status}
+Completion: ${submission.completionPercentage}%
+Submitted: ${new Date(submission.submittedDate).toLocaleString()}
+
+Total Documents Uploaded: ${Object.keys(submission.uploadedDocs).length}
+`
+      );
+
+      // Generate and download
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, `documentation_${submission.id}.zip`);
+
+      toast({
+        title: "Download Started",
+        description: "Documentation package downloaded as ZIP",
+      });
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Failed to create ZIP file",
+        variant: "destructive",
+      });
     }
   };
 
@@ -403,16 +564,26 @@ export default function AdminDocumentation() {
                         </div>
                       </td>
                       <td className="p-4">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setSelectedSubmission(sub);
-                            setShowDetailsModal(true);
-                          }}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setSelectedSubmission(sub);
+                              setShowDetailsModal(true);
+                            }}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => downloadSubmissionZip(sub)}
+                            title="Download as ZIP"
+                          >
+                            <FileDown className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </td>
                     </motion.tr>
                   ))
@@ -425,29 +596,47 @@ export default function AdminDocumentation() {
 
       {/* Details Modal */}
       {showDetailsModal && selectedSubmission && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-card rounded-lg border border-border max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-card rounded-lg border border-border max-w-3xl w-full my-8"
           >
-            <div className="sticky top-0 bg-card border-b border-border p-6 flex items-center justify-between">
+            <div className="sticky top-0 bg-card border-b border-border p-6 flex items-center justify-between rounded-t-lg">
               <div>
                 <h2 className="text-2xl font-bold">Documentation Details</h2>
                 <p className="text-sm text-muted-foreground mt-1">
                   Submission ID: {selectedSubmission.id}
                 </p>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowDetailsModal(false)}
-              >
-                <X className="w-5 h-5" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => downloadSubmissionInfo(selectedSubmission)}
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Download TXT
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => downloadSubmissionZip(selectedSubmission)}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download ZIP
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowDetailsModal(false)}
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-6 max-h-[calc(90vh-200px)] overflow-y-auto">
               {/* Status Update */}
               <div className="bg-muted/50 rounded-lg p-4">
                 <label className="block text-sm font-semibold mb-2">Update Status</label>
@@ -506,9 +695,9 @@ export default function AdminDocumentation() {
                   {Object.entries(selectedSubmission.uploadedDocs).map(([key, doc]) => (
                     <div
                       key={key}
-                      className="flex items-center justify-between p-4 bg-muted/30 rounded-lg"
+                      className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border-2 border-dashed border-border"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 flex-1">
                         <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                           <FileText className="w-5 h-5 text-primary" />
                         </div>
@@ -522,8 +711,9 @@ export default function AdminDocumentation() {
                           </div>
                         </div>
                       </div>
-                      <Button size="sm" variant="ghost">
-                        <Download className="w-4 h-4" />
+                      <Button size="sm" variant="outline">
+                        <Download className="w-4 h-4 mr-2" />
+                        Download
                       </Button>
                     </div>
                   ))}
@@ -537,36 +727,47 @@ export default function AdminDocumentation() {
               </div>
 
               {/* Missing Documents */}
-              <div>
-                <h3 className="text-lg font-semibold mb-3 text-amber-600 dark:text-amber-400">
-                  Missing Documents
-                </h3>
-                <div className="space-y-2">
-                  {Object.entries(DOCUMENT_CATEGORIES).map(([category, docs]) =>
-                    docs
-                      .filter(
-                        (docName) =>
-                          !Object.values(selectedSubmission.uploadedDocs).some(
-                            (d) => d.name === docName
-                          )
+              {Object.entries(DOCUMENT_CATEGORIES)
+                .flatMap(([category, docs]) =>
+                  docs.filter(
+                    (docName) =>
+                      !Object.values(selectedSubmission.uploadedDocs).some(
+                        (d) => d.name === docName
                       )
-                      .map((docName) => (
-                        <div
-                          key={docName}
-                          className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg"
-                        >
-                          <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                          <span className="text-sm font-medium text-amber-900 dark:text-amber-200">
-                            {docName}
-                          </span>
-                          <span className="text-xs text-amber-700 dark:text-amber-300 ml-auto">
-                            {category}
-                          </span>
-                        </div>
-                      ))
-                  )}
+                  )
+                )
+                .length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-3 text-amber-600 dark:text-amber-400">
+                    Missing Documents
+                  </h3>
+                  <div className="space-y-2">
+                    {Object.entries(DOCUMENT_CATEGORIES).map(([category, docs]) =>
+                      docs
+                        .filter(
+                          (docName) =>
+                            !Object.values(selectedSubmission.uploadedDocs).some(
+                              (d) => d.name === docName
+                            )
+                        )
+                        .map((docName) => (
+                          <div
+                            key={docName}
+                            className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg"
+                          >
+                            <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                            <span className="text-sm font-medium text-amber-900 dark:text-amber-200">
+                              {docName}
+                            </span>
+                            <span className="text-xs text-amber-700 dark:text-amber-300 ml-auto">
+                              {category}
+                            </span>
+                          </div>
+                        ))
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Contact Actions */}
               <div className="flex gap-3">
@@ -579,7 +780,7 @@ export default function AdminDocumentation() {
               </div>
             </div>
 
-            <div className="sticky bottom-0 bg-card border-t border-border p-6">
+            <div className="sticky bottom-0 bg-card border-t border-border p-6 rounded-b-lg">
               <Button
                 onClick={() => setShowDetailsModal(false)}
                 variant="outline"
