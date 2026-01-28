@@ -11,6 +11,7 @@ import { AppError } from './utils/appError';
 
 // Import routes
 import authRoutes from './routes/auth.routes';
+import tripRoutes from './routes/trip.routes';
 
 const app: Application = express();
 
@@ -49,9 +50,9 @@ app.get('/health', (_req: Request, res: Response) => {
 
 // API Routes
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/trips', tripRoutes);
 
 // More routes can be added here:
-// app.use('/api/v1/trips', tripRoutes);
 // app.use('/api/v1/blogs', blogRoutes);
 // app.use('/api/v1/users', userRoutes);
 // app.use('/api/v1/bookings', bookingRoutes);
