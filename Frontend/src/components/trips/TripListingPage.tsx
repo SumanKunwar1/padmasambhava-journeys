@@ -61,6 +61,7 @@ const TripListingPage = ({
   const [isBudgetOpen, setIsBudgetOpen] = useState(false);
   const [selectedTripTypes, setSelectedTripTypes] = useState<string[]>([]);
   const [selectedBudgets, setSelectedBudgets] = useState<string[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string>("");
 
   const tripTypes = ["Domestic", "International", "Pilgrimage", "Adventure", "Retreat"];
   const budgetRanges = [
@@ -117,6 +118,17 @@ const TripListingPage = ({
     }
   };
 
+  const filterTripsByDate = (trip: Trip, selectedDate: string): boolean => {
+    if (!selectedDate) return true;
+    
+    // Check if any of the trip dates match the selected date
+    return trip.dates.some((dateObj) => {
+      // Format trip date to match selected date format (YYYY-MM-DD)
+      const tripDate = new Date(dateObj.date).toISOString().split('T')[0];
+      return tripDate === selectedDate;
+    });
+  };
+
   const filteredTrips = trips.filter((trip) => {
     // Search filter
     const matchesSearch =
@@ -134,7 +146,10 @@ const TripListingPage = ({
       selectedBudgets.length === 0 ||
       selectedBudgets.some((budget) => filterTripsByBudget(trip, budget));
 
-    return matchesSearch && matchesDestination && matchesBudget;
+    // Date filter
+    const matchesDate = filterTripsByDate(trip, selectedDate);
+
+    return matchesSearch && matchesDestination && matchesBudget && matchesDate;
   });
 
   const handleTripTypeChange = (type: string, checked: boolean) => {
@@ -240,7 +255,32 @@ const TripListingPage = ({
                   <ChevronDown className={`w-4 h-4 transition-transform ${isDateOpen ? "rotate-180" : ""}`} />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="py-3">
-                  <p className="text-sm text-muted-foreground">Calendar picker coming soon</p>
+                  <div className="space-y-3">
+                    <Input
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      className="w-full"
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                    {selectedDate && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">
+                          Showing trips on {new Date(selectedDate).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric', 
+                            year: 'numeric' 
+                          })}
+                        </span>
+                        <button
+                          onClick={() => setSelectedDate("")}
+                          className="text-primary hover:underline"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </CollapsibleContent>
               </Collapsible>
 
@@ -277,6 +317,19 @@ const TripListingPage = ({
               </div>
             ) : (
               <>
+                {/* Results count */}
+                {selectedDate && (
+                  <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                    <p className="text-sm text-primary">
+                      <strong>{filteredTrips.length}</strong> {filteredTrips.length === 1 ? 'trip' : 'trips'} available on {new Date(selectedDate).toLocaleDateString('en-US', { 
+                        month: 'long', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                      })}
+                    </p>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {filteredTrips.map((trip) => (
                     <Link 
@@ -343,8 +396,19 @@ const TripListingPage = ({
                 {filteredTrips.length === 0 && (
                   <div className="text-center py-12">
                     <p className="text-muted-foreground">
-                      No trips found matching your criteria.
+                      {selectedDate 
+                        ? `No trips found for ${new Date(selectedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+                        : "No trips found matching your criteria."
+                      }
                     </p>
+                    {selectedDate && (
+                      <button
+                        onClick={() => setSelectedDate("")}
+                        className="mt-4 text-primary hover:underline"
+                      >
+                        Clear date filter to see all trips
+                      </button>
+                    )}
                   </div>
                 )}
               </>
