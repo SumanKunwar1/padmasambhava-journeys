@@ -8,20 +8,21 @@ import {
   Edit,
   Trash2,
   Eye,
-  Filter,
-  MoreVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { cn } from "@/lib/utils";
+import axios from "axios";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
 
 interface Trip {
-  id: string;
+  _id: string;
   name: string;
   destination: string;
-  category: string;
+  tripCategory: string;
   duration: string;
   price: number;
   status: "Active" | "Inactive" | "Draft";
@@ -36,67 +37,78 @@ export default function AdminTrips() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("All");
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalTrips: 0,
+    activeTrips: 0,
+    totalBookings: 0,
+    avgPrice: 0,
+  });
 
   useEffect(() => {
-    // Simulate loading trips from API
-    setTimeout(() => {
-      const mockTrips: Trip[] = [
-        {
-          id: "1",
-          name: "Spiti Valley Winter Expedition",
-          destination: "Spiti Valley",
-          category: "Domestic",
-          duration: "7 Days / 6 Nights",
-          price: 25000,
-          status: "Active",
-          bookings: 45,
-          image: "/placeholder.jpg",
-        },
-        {
-          id: "2",
-          name: "Bhutan Cultural Tour",
-          destination: "Bhutan",
-          category: "International",
-          duration: "5 Days / 4 Nights",
-          price: 65000,
-          status: "Active",
-          bookings: 32,
-          image: "/placeholder.jpg",
-        },
-        {
-          id: "3",
-          name: "Ladakh Adventure",
-          destination: "Ladakh",
-          category: "Domestic",
-          duration: "6 Days / 5 Nights",
-          price: 35000,
-          status: "Active",
-          bookings: 58,
-          image: "/placeholder.jpg",
-        },
-        {
-          id: "4",
-          name: "Thailand Beach Escape",
-          destination: "Thailand",
-          category: "International",
-          duration: "5 Days / 4 Nights",
-          price: 45000,
-          status: "Inactive",
-          bookings: 12,
-          image: "/placeholder.jpg",
-        },
-      ];
-      setTrips(mockTrips);
-      setLoading(false);
-    }, 500);
+    fetchTrips();
+    fetchStats();
   }, []);
 
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this trip?")) {
-      setTrips(trips.filter((trip) => trip.id !== id));
+  const fetchTrips = async () => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      const response = await axios.get(`${API_URL}/trips?status=`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.data.status === 'success') {
+        setTrips(response.data.data.trips);
+      }
+    } catch (error) {
+      console.error("Error fetching trips:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch trips",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      const response = await axios.get(`${API_URL}/trips/admin/stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.data.status === 'success') {
+        setStats(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this trip?")) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("adminToken");
+      await axios.delete(`${API_URL}/trips/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setTrips(trips.filter((trip) => trip._id !== id));
       toast({
         title: "Trip deleted",
         description: "The trip has been deleted successfully",
+      });
+      fetchStats(); // Refresh stats
+    } catch (error: any) {
+      console.error("Error deleting trip:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to delete trip",
+        variant: "destructive",
       });
     }
   };
@@ -106,11 +118,28 @@ export default function AdminTrips() {
       trip.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       trip.destination.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory =
-      filterCategory === "All" || trip.category === filterCategory;
+      filterCategory === "All" || trip.tripCategory === filterCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const categories = ["All", "Domestic", "International", "Pilgrimage", "Weekend"];
+  const categories = [
+    "All",
+    "group-trips",
+    "travel-styles",
+    "destinations",
+    "combo-trips",
+    "retreats",
+    "customised",
+    "deals"
+  ];
+
+  const formatCategoryName = (category: string) => {
+    if (category === "All") return "All";
+    return category
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
 
   return (
     <AdminLayout>
@@ -148,7 +177,7 @@ export default function AdminTrips() {
                 size="sm"
                 onClick={() => setFilterCategory(category)}
               >
-                {category}
+                {formatCategoryName(category)}
               </Button>
             ))}
           </div>
@@ -158,24 +187,20 @@ export default function AdminTrips() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-card rounded-lg border border-border p-4">
             <p className="text-sm text-muted-foreground">Total Trips</p>
-            <p className="text-2xl font-bold">{trips.length}</p>
+            <p className="text-2xl font-bold">{stats.totalTrips}</p>
           </div>
           <div className="bg-card rounded-lg border border-border p-4">
             <p className="text-sm text-muted-foreground">Active Trips</p>
-            <p className="text-2xl font-bold">
-              {trips.filter((t) => t.status === "Active").length}
-            </p>
+            <p className="text-2xl font-bold">{stats.activeTrips}</p>
           </div>
           <div className="bg-card rounded-lg border border-border p-4">
             <p className="text-sm text-muted-foreground">Total Bookings</p>
-            <p className="text-2xl font-bold">
-              {trips.reduce((sum, t) => sum + t.bookings, 0)}
-            </p>
+            <p className="text-2xl font-bold">{stats.totalBookings}</p>
           </div>
           <div className="bg-card rounded-lg border border-border p-4">
             <p className="text-sm text-muted-foreground">Avg. Price</p>
             <p className="text-2xl font-bold">
-              ₹{Math.round(trips.reduce((sum, t) => sum + t.price, 0) / trips.length).toLocaleString()}
+              ₹{stats.avgPrice.toLocaleString()}
             </p>
           </div>
         </div>
@@ -211,7 +236,7 @@ export default function AdminTrips() {
                 ) : (
                   filteredTrips.map((trip, index) => (
                     <motion.tr
-                      key={trip.id}
+                      key={trip._id}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: index * 0.05 }}
@@ -227,7 +252,7 @@ export default function AdminTrips() {
                       </td>
                       <td className="p-4">
                         <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs font-medium">
-                          {trip.category}
+                          {formatCategoryName(trip.tripCategory)}
                         </span>
                       </td>
                       <td className="p-4 text-sm">{trip.duration}</td>
@@ -256,21 +281,21 @@ export default function AdminTrips() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => navigate(`/trip/${trip.id}`)}
+                            onClick={() => navigate(`/trip/${trip._id}`)}
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => navigate(`/admin/trips/edit/${trip.id}`)}
+                            onClick={() => navigate(`/admin/trips/edit/${trip._id}`)}
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDelete(trip.id)}
+                            onClick={() => handleDelete(trip._id)}
                           >
                             <Trash2 className="w-4 h-4 text-destructive" />
                           </Button>

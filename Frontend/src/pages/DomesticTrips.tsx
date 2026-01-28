@@ -1,4 +1,5 @@
-import TripListingPage, { domesticTrips } from "@/components/trips/TripListingPage";
+// src/pages/DomesticTrips.tsx
+import TripListingPage from "@/components/trips/TripListingPage";
 import destLadakh from "@/assets/dest-ladakh.jpg";
 
 const destinations = [
@@ -15,7 +16,7 @@ const DomesticTrips = () => {
       description="India is a land of diverse landscapes, rich culture, and endless adventures. Our domestic trips take you to the most breathtaking destinations across the country. Whether it's the snow-capped peaks of the Himalayas, the serene backwaters of Kerala, or the golden deserts of Rajasthan - experience the best of India."
       heroImage={destLadakh}
       filterDestinations={destinations}
-      trips={domesticTrips}
+      tripType="domestic"
     />
   );
 };

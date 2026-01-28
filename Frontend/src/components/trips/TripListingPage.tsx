@@ -1,29 +1,23 @@
-import { useState } from "react";
+// src/pages/TripListingPage.tsx
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Calendar, Filter, ChevronDown, Clock, CalendarDays, Gift } from "lucide-react";
+import { Calendar, Filter, ChevronDown, Clock, CalendarDays, Gift, Search } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { WhatsAppButton } from "@/components/shared/WhatsAppButton";
+import axios from "axios";
 
-// Assets
-import destBali from "@/assets/dest-bali.jpg";
-import destGeorgia from "@/assets/dest-georgia.jpg";
-import destThailand from "@/assets/dest-thailand.jpg";
-import destVietnam from "@/assets/dest-vietnam.jpg";
-import destDubai from "@/assets/dest-dubai.jpg";
-import destJapan from "@/assets/dest-japan.jpg";
-import destBhutan from "@/assets/dest-bhutan.jpg";
-import destSpiti from "@/assets/dest-spiti.jpg";
-import destLadakh from "@/assets/dest-ladakh.jpg";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
 
 interface Trip {
-  id: string;
+  _id: string;
   name: string;
   destination: string;
   image: string;
@@ -31,9 +25,10 @@ interface Trip {
   price: number;
   originalPrice: number;
   discount: number;
-  dates: string[];
+  dates: Array<{ date: string; price: number }>;
   hasGoodies: boolean;
-  category: string[];
+  tripCategory: string;
+  tripType: string;
 }
 
 interface TripListingPageProps {
@@ -43,638 +38,103 @@ interface TripListingPageProps {
   description: string;
   heroImage: string;
   filterDestinations?: string[];
-  trips?: Trip[];
+  tripCategory?: string;
+  tripType?: string;
 }
 
-// All available trips database
-const allTripsDatabase: Trip[] = [
-  {
-    id: "georgia-winter",
-    name: "Georgia Winter Trip",
-    destination: "Georgia",
-    image: destGeorgia,
-    duration: "7 days / 6 nights",
-    price: 52999,
-    originalPrice: 62999,
-    discount: 10000,
-    dates: ["Jan 23", "Feb 21", "Mar 4"],
-    hasGoodies: true,
-    category: ["international", "group", "winter"],
-  },
-  {
-    id: "thailand-full-moon",
-    name: "Full Moon Party Thailand Package",
-    destination: "Thailand",
-    image: destThailand,
-    duration: "7 days / 6 nights",
-    price: 46999,
-    originalPrice: 51999,
-    discount: 5000,
-    dates: ["Jan 31", "Mar 1", "Mar 31"],
-    hasGoodies: false,
-    category: ["international", "group", "party"],
-  },
-  {
-    id: "vietnam-8days",
-    name: "Vietnam 8 Days Tour Package",
-    destination: "Vietnam",
-    image: destVietnam,
-    duration: "8 days / 7 nights",
-    price: 49999,
-    originalPrice: 54999,
-    discount: 5000,
-    dates: ["Feb 10", "Mar 15", "Apr 5"],
-    hasGoodies: true,
-    category: ["international", "group"],
-  },
-  {
-    id: "bali-adventure",
-    name: "Bali Adventure & Culture Trip",
-    destination: "Bali",
-    image: destBali,
-    duration: "6 days / 5 nights",
-    price: 45999,
-    originalPrice: 52999,
-    discount: 7000,
-    dates: ["Feb 5", "Mar 10", "Apr 1"],
-    hasGoodies: true,
-    category: ["international", "group", "adventure"],
-  },
-  {
-    id: "dubai-luxury",
-    name: "Dubai Luxury Experience",
-    destination: "Dubai",
-    image: destDubai,
-    duration: "5 days / 4 nights",
-    price: 55999,
-    originalPrice: 65999,
-    discount: 10000,
-    dates: ["Jan 28", "Feb 15", "Mar 20"],
-    hasGoodies: false,
-    category: ["international", "group", "luxury"],
-  },
-  {
-    id: "japan-cherry-blossom",
-    name: "Japan Cherry Blossom Tour",
-    destination: "Japan",
-    image: destJapan,
-    duration: "10 days / 9 nights",
-    price: 125999,
-    originalPrice: 145999,
-    discount: 20000,
-    dates: ["Mar 25", "Apr 5", "Apr 15"],
-    hasGoodies: true,
-    category: ["international", "group", "seasonal"],
-  },
-  {
-    id: "bhutan-pilgrimage",
-    name: "Bhutan Spiritual Pilgrimage",
-    destination: "Bhutan",
-    image: destBhutan,
-    duration: "7 days / 6 nights",
-    price: 75999,
-    originalPrice: 85999,
-    discount: 10000,
-    dates: ["Feb 1", "Mar 8", "Apr 12"],
-    hasGoodies: true,
-    category: ["international", "pilgrimage", "spiritual"],
-  },
-  {
-    id: "spiti-valley",
-    name: "Spiti Valley Winter Expedition",
-    destination: "Spiti Valley",
-    image: destSpiti,
-    duration: "8 days / 7 nights",
-    price: 22999,
-    originalPrice: 27999,
-    discount: 5000,
-    dates: ["Jan 20", "Feb 15", "Mar 10"],
-    hasGoodies: true,
-    category: ["domestic", "group", "adventure", "weekend"],
-  },
-  {
-    id: "ladakh-adventure",
-    name: "Ladakh Adventure Trip",
-    destination: "Ladakh",
-    image: destLadakh,
-    duration: "7 days / 6 nights",
-    price: 28999,
-    originalPrice: 34999,
-    discount: 6000,
-    dates: ["Jun 5", "Jul 10", "Aug 15"],
-    hasGoodies: true,
-    category: ["domestic", "group", "adventure"],
-  },
-];
-
-// Category-specific trip sets
-const pilgrimageTrips: Trip[] = [
-  {
-    id: "bhutan-pilgrimage",
-    name: "Bhutan Spiritual Pilgrimage",
-    destination: "Bhutan",
-    image: destBhutan,
-    duration: "7 days / 6 nights",
-    price: 75999,
-    originalPrice: 85999,
-    discount: 10000,
-    dates: ["Feb 1", "Mar 8", "Apr 12"],
-    hasGoodies: true,
-    category: ["pilgrimage", "spiritual"],
-  },
-  {
-    id: "varanasi-kashi",
-    name: "Varanasi Kashi Darshan",
-    destination: "Varanasi",
-    image: destGeorgia,
-    duration: "4 days / 3 nights",
-    price: 15999,
-    originalPrice: 19999,
-    discount: 4000,
-    dates: ["Every Weekend"],
-    hasGoodies: false,
-    category: ["pilgrimage", "domestic"],
-  },
-  {
-    id: "char-dham-yatra",
-    name: "Char Dham Yatra Package",
-    destination: "Char Dham",
-    image: destSpiti,
-    duration: "12 days / 11 nights",
-    price: 45999,
-    originalPrice: 55999,
-    discount: 10000,
-    dates: ["May 1", "Jun 15", "Sep 5"],
-    hasGoodies: true,
-    category: ["pilgrimage", "domestic"],
-  },
-  {
-    id: "tibet-kailash",
-    name: "Kailash Mansarovar Yatra",
-    destination: "Tibet",
-    image: destLadakh,
-    duration: "15 days / 14 nights",
-    price: 185999,
-    originalPrice: 210000,
-    discount: 24001,
-    dates: ["Jun 1", "Jul 10"],
-    hasGoodies: true,
-    category: ["pilgrimage", "international"],
-  },
-];
-
-// Combo trips set
-const comboTrips: Trip[] = [
-  {
-    id: "combo-1",
-    name: "Laos - Thailand - Cambodia - Vietnam",
-    destination: "Southeast Asia",
-    image: destThailand,
-    duration: "18 days / 17 nights",
-    price: 125000,
-    originalPrice: 155000,
-    discount: 30000,
-    dates: ["Nov 10", "Dec 5", "Jan 15"],
-    hasGoodies: true,
-    category: ["combo", "international"],
-  },
-  {
-    id: "combo-2",
-    name: "Thailand - Singapore - Malaysia",
-    destination: "Southeast Asia",
-    image: destThailand,
-    duration: "12 days / 11 nights",
-    price: 95000,
-    originalPrice: 120000,
-    discount: 25000,
-    dates: ["Dec 1", "Jan 10", "Feb 5"],
-    hasGoodies: true,
-    category: ["combo", "international"],
-  },
-  {
-    id: "combo-3",
-    name: "Bhutan - India - Sri Lanka",
-    destination: "South Asia",
-    image: destBhutan,
-    duration: "15 days / 14 nights",
-    price: 110000,
-    originalPrice: 140000,
-    discount: 30000,
-    dates: ["Mar 1", "Apr 15", "Sep 10"],
-    hasGoodies: true,
-    category: ["combo", "international", "pilgrimage"],
-  },
-  {
-    id: "combo-4",
-    name: "Malaysia - Singapore - Bali",
-    destination: "Southeast Asia",
-    image: destBali,
-    duration: "10 days / 9 nights",
-    price: 85000,
-    originalPrice: 108000,
-    discount: 23000,
-    dates: ["Jan 20", "Feb 15", "Mar 10"],
-    hasGoodies: true,
-    category: ["combo", "international"],
-  },
-  {
-    id: "combo-5",
-    name: "Thailand - Vietnam - Philippines - Singapore - Malaysia",
-    destination: "Southeast Asia",
-    image: destVietnam,
-    duration: "21 days / 20 nights",
-    price: 165000,
-    originalPrice: 210000,
-    discount: 45000,
-    dates: ["Nov 15", "Dec 20", "Jan 25"],
-    hasGoodies: true,
-    category: ["combo", "international"],
-  },
-  {
-    id: "combo-6",
-    name: "Taiwan - Japan - Korea",
-    destination: "East Asia",
-    image: destJapan,
-    duration: "16 days / 15 nights",
-    price: 185000,
-    originalPrice: 235000,
-    discount: 50000,
-    dates: ["Mar 20", "Apr 10", "Oct 5"],
-    hasGoodies: true,
-    category: ["combo", "international"],
-  },
-  {
-    id: "combo-7",
-    name: "Italy - Switzerland - France",
-    destination: "Europe",
-    image: destGeorgia,
-    duration: "14 days / 13 nights",
-    price: 245000,
-    originalPrice: 310000,
-    discount: 65000,
-    dates: ["May 1", "Jun 15", "Sep 5"],
-    hasGoodies: true,
-    category: ["combo", "international"],
-  },
-  {
-    id: "combo-8",
-    name: "Switzerland - Germany - France",
-    destination: "Europe",
-    image: destGeorgia,
-    duration: "12 days / 11 nights",
-    price: 225000,
-    originalPrice: 285000,
-    discount: 60000,
-    dates: ["May 10", "Jun 20", "Sep 15"],
-    hasGoodies: true,
-    category: ["combo", "international"],
-  },
-  {
-    id: "combo-9",
-    name: "Italy - Switzerland - Austria - Germany - Belgium - France - Spain - Portugal",
-    destination: "Europe",
-    image: destGeorgia,
-    duration: "28 days / 27 nights",
-    price: 425000,
-    originalPrice: 540000,
-    discount: 115000,
-    dates: ["May 15", "Jun 10", "Sep 1"],
-    hasGoodies: true,
-    category: ["combo", "international"],
-  },
-  {
-    id: "combo-10",
-    name: "Estonia - Latvia - Lithuania - Poland - Germany - Belgium - France",
-    destination: "Europe",
-    image: destGeorgia,
-    duration: "18 days / 17 nights",
-    price: 285000,
-    originalPrice: 360000,
-    discount: 75000,
-    dates: ["Jun 1", "Jul 15", "Aug 10"],
-    hasGoodies: true,
-    category: ["combo", "international"],
-  },
-];
-
-const weekendTrips: Trip[] = [
-  {
-    id: "mcleodganj-weekend",
-    name: "Mcleodganj Weekend Escape",
-    destination: "Mcleodganj",
-    image: destSpiti,
-    duration: "3 days / 2 nights",
-    price: 8999,
-    originalPrice: 11999,
-    discount: 3000,
-    dates: ["Every Fri-Sun"],
-    hasGoodies: false,
-    category: ["weekend", "domestic"],
-  },
-  {
-    id: "kasol-kheerganga",
-    name: "Kasol & Kheerganga Trek",
-    destination: "Kasol",
-    image: destLadakh,
-    duration: "3 days / 2 nights",
-    price: 6999,
-    originalPrice: 8999,
-    discount: 2000,
-    dates: ["Every Fri-Sun"],
-    hasGoodies: true,
-    category: ["weekend", "adventure"],
-  },
-  {
-    id: "rishikesh-rafting",
-    name: "Rishikesh Rafting Adventure",
-    destination: "Rishikesh",
-    image: destBali,
-    duration: "2 days / 1 night",
-    price: 4999,
-    originalPrice: 6499,
-    discount: 1500,
-    dates: ["Every Weekend"],
-    hasGoodies: false,
-    category: ["weekend", "adventure"],
-  },
-  {
-    id: "nainital-relaxation",
-    name: "Nainital Lake Getaway",
-    destination: "Nainital",
-    image: destVietnam,
-    duration: "3 days / 2 nights",
-    price: 9999,
-    originalPrice: 12999,
-    discount: 3000,
-    dates: ["Every Sat-Mon"],
-    hasGoodies: false,
-    category: ["weekend", "domestic"],
-  },
-];
-
-const retreatTrips: Trip[] = [
-  {
-    id: "rishikesh-yoga",
-    name: "Rishikesh Yoga Retreat",
-    destination: "Rishikesh",
-    image: destBali,
-    duration: "7 days / 6 nights",
-    price: 32999,
-    originalPrice: 39999,
-    discount: 7000,
-    dates: ["Jan 15", "Feb 20", "Mar 25"],
-    hasGoodies: true,
-    category: ["retreat", "yoga"],
-  },
-  {
-    id: "bali-wellness",
-    name: "Bali Wellness Retreat",
-    destination: "Bali",
-    image: destBali,
-    duration: "8 days / 7 nights",
-    price: 65999,
-    originalPrice: 79999,
-    discount: 14000,
-    dates: ["Feb 1", "Mar 15", "Apr 20"],
-    hasGoodies: true,
-    category: ["retreat", "wellness", "international"],
-  },
-  {
-    id: "dharamsala-meditation",
-    name: "Dharamsala Meditation Retreat",
-    destination: "Dharamsala",
-    image: destBhutan,
-    duration: "5 days / 4 nights",
-    price: 22999,
-    originalPrice: 28999,
-    discount: 6000,
-    dates: ["Every Month"],
-    hasGoodies: false,
-    category: ["retreat", "meditation"],
-  },
-  {
-    id: "kerala-ayurveda",
-    name: "Kerala Ayurveda Experience",
-    destination: "Kerala",
-    image: destThailand,
-    duration: "10 days / 9 nights",
-    price: 55999,
-    originalPrice: 69999,
-    discount: 14000,
-    dates: ["Jan 10", "Feb 25", "Mar 30"],
-    hasGoodies: true,
-    category: ["retreat", "wellness"],
-  },
-];
-
-const domesticTrips: Trip[] = [
-  {
-    id: "spiti-valley",
-    name: "Spiti Valley Winter Expedition",
-    destination: "Spiti Valley",
-    image: destSpiti,
-    duration: "8 days / 7 nights",
-    price: 22999,
-    originalPrice: 27999,
-    discount: 5000,
-    dates: ["Jan 20", "Feb 15", "Mar 10"],
-    hasGoodies: true,
-    category: ["domestic", "adventure"],
-  },
-  {
-    id: "ladakh-adventure",
-    name: "Ladakh Adventure Trip",
-    destination: "Ladakh",
-    image: destLadakh,
-    duration: "7 days / 6 nights",
-    price: 28999,
-    originalPrice: 34999,
-    discount: 6000,
-    dates: ["Jun 5", "Jul 10", "Aug 15"],
-    hasGoodies: true,
-    category: ["domestic", "adventure"],
-  },
-  {
-    id: "kashmir-paradise",
-    name: "Kashmir Paradise Tour",
-    destination: "Kashmir",
-    image: destGeorgia,
-    duration: "6 days / 5 nights",
-    price: 24999,
-    originalPrice: 29999,
-    discount: 5000,
-    dates: ["Apr 1", "May 10", "Sep 15"],
-    hasGoodies: false,
-    category: ["domestic", "group"],
-  },
-  {
-    id: "rajasthan-heritage",
-    name: "Rajasthan Heritage Tour",
-    destination: "Rajasthan",
-    image: destDubai,
-    duration: "8 days / 7 nights",
-    price: 35999,
-    originalPrice: 42999,
-    discount: 7000,
-    dates: ["Oct 5", "Nov 15", "Dec 20"],
-    hasGoodies: true,
-    category: ["domestic", "heritage"],
-  },
-];
-
-const internationalTrips: Trip[] = [
-  {
-    id: "georgia-winter",
-    name: "Georgia Winter Trip",
-    destination: "Georgia",
-    image: destGeorgia,
-    duration: "7 days / 6 nights",
-    price: 52999,
-    originalPrice: 62999,
-    discount: 10000,
-    dates: ["Jan 23", "Feb 21", "Mar 4"],
-    hasGoodies: true,
-    category: ["international", "group"],
-  },
-  {
-    id: "thailand-full-moon",
-    name: "Full Moon Party Thailand Package",
-    destination: "Thailand",
-    image: destThailand,
-    duration: "7 days / 6 nights",
-    price: 46999,
-    originalPrice: 51999,
-    discount: 5000,
-    dates: ["Jan 31", "Mar 1", "Mar 31"],
-    hasGoodies: false,
-    category: ["international", "party"],
-  },
-  {
-    id: "vietnam-8days",
-    name: "Vietnam 8 Days Tour Package",
-    destination: "Vietnam",
-    image: destVietnam,
-    duration: "8 days / 7 nights",
-    price: 49999,
-    originalPrice: 54999,
-    discount: 5000,
-    dates: ["Feb 10", "Mar 15", "Apr 5"],
-    hasGoodies: true,
-    category: ["international", "group"],
-  },
-  {
-    id: "bali-adventure",
-    name: "Bali Adventure & Culture Trip",
-    destination: "Bali",
-    image: destBali,
-    duration: "6 days / 5 nights",
-    price: 45999,
-    originalPrice: 52999,
-    discount: 7000,
-    dates: ["Feb 5", "Mar 10", "Apr 1"],
-    hasGoodies: true,
-    category: ["international", "adventure"],
-  },
-  {
-    id: "dubai-luxury",
-    name: "Dubai Luxury Experience",
-    destination: "Dubai",
-    image: destDubai,
-    duration: "5 days / 4 nights",
-    price: 55999,
-    originalPrice: 65999,
-    discount: 10000,
-    dates: ["Jan 28", "Feb 15", "Mar 20"],
-    hasGoodies: false,
-    category: ["international", "luxury"],
-  },
-  {
-    id: "japan-cherry-blossom",
-    name: "Japan Cherry Blossom Tour",
-    destination: "Japan",
-    image: destJapan,
-    duration: "10 days / 9 nights",
-    price: 125999,
-    originalPrice: 145999,
-    discount: 20000,
-    dates: ["Mar 25", "Apr 5", "Apr 15"],
-    hasGoodies: true,
-    category: ["international", "seasonal"],
-  },
-];
-
-const defaultDestinations = [
-  "All", "Philippines", "Japan", "Russia", "Vietnam", "Bali", "Thailand", 
-  "Dubai", "Georgia", "Almaty", "Sri Lanka", "Northern Lights", "Bhutan", "Azerbaijan"
-];
-
-const tripTypes = [
-  "Group Trips",
-  "Solo Trips",
-  "Pilgrimage Trips",
-  "Adventure Trips",
-  "Weekend Trips",
-  "Luxury Trips",
-];
-
-const budgetRanges = [
-  "Under ₹25,000",
-  "₹25,000 - ₹50,000",
-  "₹50,000 - ₹75,000",
-  "₹75,000 - ₹1,00,000",
-  "Above ₹1,00,000",
-];
-
-// Export category-specific trips for page usage
-export { pilgrimageTrips, weekendTrips, retreatTrips, domesticTrips, internationalTrips, comboTrips, allTripsDatabase };
-
-const TripListingPage = ({ 
-  title, 
-  tagline, 
-  subtitle, 
-  description, 
+const TripListingPage = ({
+  title,
+  tagline,
+  subtitle,
+  description,
   heroImage,
-  filterDestinations = defaultDestinations,
-  trips = allTripsDatabase
+  filterDestinations = ["All"],
+  tripCategory,
+  tripType,
 }: TripListingPageProps) => {
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeDestination, setActiveDestination] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
   const [isDateOpen, setIsDateOpen] = useState(false);
-  const [isTripTypeOpen, setIsTripTypeOpen] = useState(true);
-  const [isBudgetOpen, setIsBudgetOpen] = useState(true);
+  const [isTripTypeOpen, setIsTripTypeOpen] = useState(false);
+  const [isBudgetOpen, setIsBudgetOpen] = useState(false);
   const [selectedTripTypes, setSelectedTripTypes] = useState<string[]>([]);
   const [selectedBudgets, setSelectedBudgets] = useState<string[]>([]);
 
-  // Filter logic
-  const filteredTrips = trips.filter(trip => {
-    // Destination filter
-    const matchesDestination = activeDestination === "All" || trip.destination === activeDestination;
-    
-    // Trip type filter
-    const tripTypeMap: Record<string, string> = {
-      "Group Trips": "group",
-      "Solo Trips": "solo",
-      "Pilgrimage Trips": "pilgrimage",
-      "Adventure Trips": "adventure",
-      "Weekend Trips": "weekend",
-      "Luxury Trips": "luxury",
-    };
-    const matchesTripType = selectedTripTypes.length === 0 || 
-      selectedTripTypes.some(type => trip.category.includes(tripTypeMap[type] || type.toLowerCase()));
-    
-    // Budget filter
-    const matchesBudget = selectedBudgets.length === 0 || selectedBudgets.some(budget => {
-      const price = trip.price;
-      switch (budget) {
-        case "Under ₹25,000": return price < 25000;
-        case "₹25,000 - ₹50,000": return price >= 25000 && price <= 50000;
-        case "₹50,000 - ₹75,000": return price >= 50000 && price <= 75000;
-        case "₹75,000 - ₹1,00,000": return price >= 75000 && price <= 100000;
-        case "Above ₹1,00,000": return price > 100000;
-        default: return true;
+  const tripTypes = ["Domestic", "International", "Pilgrimage", "Adventure", "Retreat"];
+  const budgetRanges = [
+    "Under ₹20,000",
+    "₹20,000 - ₹40,000",
+    "₹40,000 - ₹60,000",
+    "₹60,000 - ₹80,000",
+    "Above ₹80,000",
+  ];
+
+  useEffect(() => {
+    fetchTrips();
+  }, [tripCategory, tripType]);
+
+  const fetchTrips = async () => {
+    try {
+      setLoading(true);
+      let url = `${API_URL}/trips?`;
+      
+      if (tripCategory) {
+        url += `tripCategory=${tripCategory}&`;
       }
-    });
-    
-    return matchesDestination && matchesTripType && matchesBudget;
+      if (tripType) {
+        url += `tripType=${tripType}&`;
+      }
+
+      const response = await axios.get(url);
+      
+      if (response.data.status === 'success') {
+        setTrips(response.data.data.trips);
+      }
+    } catch (error) {
+      console.error("Error fetching trips:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterTripsByBudget = (trip: Trip, budgetRange: string): boolean => {
+    const price = trip.price;
+    switch (budgetRange) {
+      case "Under ₹20,000":
+        return price < 20000;
+      case "₹20,000 - ₹40,000":
+        return price >= 20000 && price < 40000;
+      case "₹40,000 - ₹60,000":
+        return price >= 40000 && price < 60000;
+      case "₹60,000 - ₹80,000":
+        return price >= 60000 && price < 80000;
+      case "Above ₹80,000":
+        return price >= 80000;
+      default:
+        return true;
+    }
+  };
+
+  const filteredTrips = trips.filter((trip) => {
+    // Search filter
+    const matchesSearch =
+      trip.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      trip.destination.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // Destination filter
+    const matchesDestination =
+      activeDestination === "All" ||
+      trip.destination.toLowerCase().includes(activeDestination.toLowerCase()) ||
+      trip.name.toLowerCase().includes(activeDestination.toLowerCase());
+
+    // Budget filter
+    const matchesBudget =
+      selectedBudgets.length === 0 ||
+      selectedBudgets.some((budget) => filterTripsByBudget(trip, budget));
+
+    return matchesSearch && matchesDestination && matchesBudget;
   });
 
   const handleTripTypeChange = (type: string, checked: boolean) => {
@@ -724,28 +184,40 @@ const TripListingPage = ({
           </h2>
           <p className="text-muted-foreground leading-relaxed max-w-4xl">
             {description}
-            <button className="text-primary hover:underline ml-2 font-medium">
-              Read More
-            </button>
           </p>
         </div>
 
-        {/* Destination Filter Pills */}
-        <div className="flex flex-wrap gap-2 mb-8">
-          {filterDestinations.map((dest) => (
-            <button
-              key={dest}
-              onClick={() => setActiveDestination(dest)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                activeDestination === dest
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80 border border-border"
-              }`}
-            >
-              {dest}
-            </button>
-          ))}
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative max-w-2xl">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Input
+              placeholder="Search trips by name or destination..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
         </div>
+
+        {/* Destination Filter Pills */}
+        {filterDestinations.length > 1 && (
+          <div className="flex flex-wrap gap-2 mb-8">
+            {filterDestinations.map((dest) => (
+              <button
+                key={dest}
+                onClick={() => setActiveDestination(dest)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  activeDestination === dest
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80 border border-border"
+                }`}
+              >
+                {dest}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Content Grid */}
         <div className="flex flex-col lg:flex-row gap-8">
@@ -769,29 +241,6 @@ const TripListingPage = ({
                 </CollapsibleTrigger>
                 <CollapsibleContent className="py-3">
                   <p className="text-sm text-muted-foreground">Calendar picker coming soon</p>
-                </CollapsibleContent>
-              </Collapsible>
-
-              {/* Trip Type */}
-              <Collapsible open={isTripTypeOpen} onOpenChange={setIsTripTypeOpen}>
-                <CollapsibleTrigger className="flex items-center justify-between w-full py-3 border-b border-border">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">✈️</span>
-                    <span className="text-sm font-medium">Trip Type</span>
-                  </div>
-                  <ChevronDown className={`w-4 h-4 transition-transform ${isTripTypeOpen ? "rotate-180" : ""}`} />
-                </CollapsibleTrigger>
-                <CollapsibleContent className="py-3 space-y-3">
-                  {tripTypes.map((type) => (
-                    <label key={type} className="flex items-center gap-2 cursor-pointer">
-                      <Checkbox 
-                        id={type} 
-                        checked={selectedTripTypes.includes(type)}
-                        onCheckedChange={(checked) => handleTripTypeChange(type, checked as boolean)}
-                      />
-                      <span className="text-sm text-muted-foreground">{type}</span>
-                    </label>
-                  ))}
                 </CollapsibleContent>
               </Collapsible>
 
@@ -822,70 +271,83 @@ const TripListingPage = ({
 
           {/* Trip Cards Grid */}
           <div className="flex-1">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {filteredTrips.map((trip) => (
-                <Link 
-                  key={trip.id} 
-                  to={`/trip/${trip.id}`}
-                  className="group bg-card rounded-xl overflow-hidden border border-border hover:shadow-lg transition-all duration-300"
-                >
-                  <div className="flex flex-col sm:flex-row">
-                    {/* Image */}
-                    <div className="relative w-full sm:w-48 h-48 sm:h-auto shrink-0">
-                      <img 
-                        src={trip.image} 
-                        alt={trip.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      {trip.hasGoodies && (
-                        <div className="absolute top-2 left-2 bg-accent text-accent-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                          <Gift className="w-3 h-3" />
-                          Free Goodies
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 p-4">
-                      {/* Duration */}
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
-                        <Clock className="w-3 h-3" />
-                        {trip.duration}
-                      </div>
-
-                      {/* Title */}
-                      <h3 className="font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
-                        {trip.name}
-                      </h3>
-
-                      {/* Price */}
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-lg font-bold text-foreground">
-                          ₹{trip.price.toLocaleString()}
-                        </span>
-                        <span className="text-sm text-muted-foreground line-through">
-                          ₹{trip.originalPrice.toLocaleString()}
-                        </span>
-                        <span className="text-xs text-destructive font-medium">
-                          ₹{trip.discount.toLocaleString()} Off
-                        </span>
-                      </div>
-
-                      {/* Dates */}
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <CalendarDays className="w-3 h-3 text-primary" />
-                        {trip.dates.join(", ")}
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-
-            {filteredTrips.length === 0 && (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">No trips found for this destination.</p>
+            {loading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
               </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {filteredTrips.map((trip) => (
+                    <Link 
+                      key={trip._id} 
+                      to={`/trip/${trip._id}`}
+                      className="group bg-card rounded-xl overflow-hidden border border-border hover:shadow-lg transition-all duration-300"
+                    >
+                      <div className="flex flex-col sm:flex-row">
+                        {/* Image */}
+                        <div className="relative w-full sm:w-48 h-48 sm:h-auto shrink-0">
+                          <img 
+                            src={trip.image} 
+                            alt={trip.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                          {trip.hasGoodies && (
+                            <div className="absolute top-2 left-2 bg-accent text-accent-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                              <Gift className="w-3 h-3" />
+                              Free Goodies
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 p-4">
+                          {/* Duration */}
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
+                            <Clock className="w-3 h-3" />
+                            {trip.duration}
+                          </div>
+
+                          {/* Title */}
+                          <h3 className="font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
+                            {trip.name}
+                          </h3>
+
+                          {/* Price */}
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-lg font-bold text-foreground">
+                              ₹{trip.price.toLocaleString()}
+                            </span>
+                            <span className="text-sm text-muted-foreground line-through">
+                              ₹{trip.originalPrice.toLocaleString()}
+                            </span>
+                            <span className="text-xs text-destructive font-medium">
+                              ₹{trip.discount.toLocaleString()} Off
+                            </span>
+                          </div>
+
+                          {/* Dates */}
+                          {trip.dates && trip.dates.length > 0 && (
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <CalendarDays className="w-3 h-3 text-primary" />
+                              {trip.dates.slice(0, 2).map((d) => d.date).join(", ")}
+                              {trip.dates.length > 2 && ` +${trip.dates.length - 2} more`}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+
+                {filteredTrips.length === 0 && (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground">
+                      No trips found matching your criteria.
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

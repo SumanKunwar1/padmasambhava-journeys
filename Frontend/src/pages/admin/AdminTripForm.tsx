@@ -2,13 +2,16 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Save, ArrowLeft, Plus, X, Upload, Info } from "lucide-react";
+import { Save, ArrowLeft, Plus, X, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { cn } from "@/lib/utils";
+import axios from "axios";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
 
 interface ItineraryDay {
   day: number;
@@ -22,13 +25,14 @@ interface TripDate {
   available: number;
 }
 
-// Trip Categories and Types based on Navbar structure
+// Trip Categories based on Navbar structure
 const TRIP_CATEGORIES = {
   "Group Trips": {
     value: "group-trips",
     subcategories: [
       { label: "Upcoming Group Trips", value: "upcoming", route: "/trips/upcoming" },
       { label: "Fixed Departure Trips", value: "fixed-departure", route: "/trips/fixed-departure" },
+      { label: "Group Travel", value: "group", route: "/trips/group" },
     ],
   },
   "Travel Styles": {
@@ -36,7 +40,6 @@ const TRIP_CATEGORIES = {
     subcategories: [
       { label: "Pilgrimage Trips", value: "pilgrimage", route: "/trips/pilgrimage" },
       { label: "Solo Trips", value: "solo", route: "/style/solo" },
-      { label: "Group Travel", value: "group", route: "/trips/group" },
       { label: "Weekend Trips", value: "weekend", route: "/trips/weekend" },
       { label: "Adventure Trips", value: "adventure", route: "/style/adventure" },
     ],
@@ -87,9 +90,9 @@ export default function AdminTripForm() {
   const [formData, setFormData] = useState({
     name: "",
     destination: "",
-    tripCategory: "", // Main category
-    tripType: "", // Subcategory
-    tripRoute: "", // Auto-filled based on type
+    tripCategory: "",
+    tripType: "",
+    tripRoute: "",
     duration: "",
     description: "",
     price: "",
@@ -102,50 +105,69 @@ export default function AdminTripForm() {
     notes: [""],
     itinerary: [{ day: 1, title: "", highlights: [""] }] as ItineraryDay[],
     dates: [{ date: "", price: 0, available: 20 }] as TripDate[],
-    tags: "", // Additional tags for search/filtering
+    tags: "",
+    hasGoodies: false,
   });
 
   const [currentTab, setCurrentTab] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [availableTypes, setAvailableTypes] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const tabs = ["Basic Info", "Category & Type", "Pricing", "Itinerary", "Inclusions", "Dates"];
 
+  // Load trip data if editing
   useEffect(() => {
-    if (isEdit) {
-      // Load trip data for editing
-      setFormData({
-        name: "Spiti Valley Winter Expedition",
-        destination: "Spiti Valley",
-        tripCategory: "travel-styles",
-        tripType: "adventure",
-        tripRoute: "/style/adventure",
-        duration: "7 Days / 6 Nights",
-        description: "Experience the winter wonderland of Spiti Valley...",
-        price: "25000",
-        originalPrice: "35000",
-        discount: "10000",
-        status: "Active",
-        image: "",
-        inclusions: ["Accommodation", "Meals", "Transport"],
-        exclusions: ["Flight tickets", "Personal expenses"],
-        notes: ["Carry warm clothes", "Valid ID required"],
-        itinerary: [
-          {
-            day: 1,
-            title: "Arrival in Shimla",
-            highlights: ["Pick up from airport", "Hotel check-in"],
-          },
-        ],
-        dates: [{ date: "2026-03-15", price: 25000, available: 20 }],
-        tags: "adventure, snow, mountain, winter",
-      });
-      setSelectedCategory("travel-styles");
+    if (isEdit && id) {
+      fetchTripData(id);
     }
   }, [id, isEdit]);
 
+  const fetchTripData = async (tripId: string) => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      const response = await axios.get(`${API_URL}/trips/${tripId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (response.data.status === 'success') {
+        const trip = response.data.data.trip;
+        setFormData({
+          name: trip.name,
+          destination: trip.destination,
+          tripCategory: trip.tripCategory,
+          tripType: trip.tripType,
+          tripRoute: trip.tripRoute,
+          duration: trip.duration,
+          description: trip.description,
+          price: trip.price.toString(),
+          originalPrice: trip.originalPrice.toString(),
+          discount: trip.discount.toString(),
+          status: trip.status,
+          image: trip.image,
+          inclusions: trip.inclusions.length > 0 ? trip.inclusions : [""],
+          exclusions: trip.exclusions.length > 0 ? trip.exclusions : [""],
+          notes: trip.notes.length > 0 ? trip.notes : [""],
+          itinerary: trip.itinerary.length > 0 ? trip.itinerary : [{ day: 1, title: "", highlights: [""] }],
+          dates: trip.dates.length > 0 ? trip.dates : [{ date: "", price: 0, available: 20 }],
+          tags: trip.tags || "",
+          hasGoodies: trip.hasGoodies || false,
+        });
+        setSelectedCategory(trip.tripCategory);
+      }
+    } catch (error) {
+      console.error("Error fetching trip:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load trip data",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Update available types when category changes
   useEffect(() => {
-    // Update available types when category changes
     if (selectedCategory) {
       const category = Object.values(TRIP_CATEGORIES).find(
         (cat) => cat.value === selectedCategory
@@ -156,33 +178,50 @@ export default function AdminTripForm() {
     }
   }, [selectedCategory]);
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleCategoryChange = (value: string) => {
-    setSelectedCategory(value);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
     setFormData((prev) => ({
       ...prev,
-      tripCategory: value,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    setFormData((prev) => ({
+      ...prev,
+      tripCategory: category,
       tripType: "",
       tripRoute: "",
     }));
   };
 
-  const handleTypeChange = (value: string) => {
-    const selectedType = availableTypes.find((type) => type.value === value);
+  const handleTypeChange = (type: string) => {
+    const selectedType = availableTypes.find((t) => t.value === type);
     setFormData((prev) => ({
       ...prev,
-      tripType: value,
-      tripRoute: selectedType ? selectedType.route : "",
+      tripType: type,
+      tripRoute: selectedType?.route || "",
     }));
   };
 
-  const handleArrayChange = (
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setImageFile(e.target.files[0]);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setFormData((prev) => ({ ...prev, image: event.target?.result as string }));
+      };
+      reader.readAsDataURL(e.target.files[0]);
+    }
+  };
+
+  const addArrayItem = (field: "inclusions" | "exclusions" | "notes") => {
+    setFormData((prev) => ({ ...prev, [field]: [...prev[field], ""] }));
+  };
+
+  const updateArrayItem = (
     field: "inclusions" | "exclusions" | "notes",
     index: number,
     value: string
@@ -190,13 +229,6 @@ export default function AdminTripForm() {
     const newArray = [...formData[field]];
     newArray[index] = value;
     setFormData((prev) => ({ ...prev, [field]: newArray }));
-  };
-
-  const addArrayItem = (field: "inclusions" | "exclusions" | "notes") => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: [...prev[field], ""],
-    }));
   };
 
   const removeArrayItem = (
@@ -270,6 +302,7 @@ export default function AdminTripForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
 
     try {
       // Validate required fields
@@ -279,6 +312,7 @@ export default function AdminTripForm() {
           description: "Please fill in all required fields",
           variant: "destructive",
         });
+        setIsLoading(false);
         return;
       }
 
@@ -288,24 +322,74 @@ export default function AdminTripForm() {
           description: "Please select trip category and type",
           variant: "destructive",
         });
+        setIsLoading(false);
         return;
       }
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const token = localStorage.getItem("adminToken");
+      
+      // Prepare form data for submission
+      const submitData = new FormData();
+      
+      // Add image file if selected
+      if (imageFile) {
+        submitData.append('image', imageFile);
+      } else if (formData.image) {
+        submitData.append('image', formData.image);
+      }
 
-      toast({
-        title: isEdit ? "Trip updated" : "Trip created",
-        description: `Trip has been ${isEdit ? "updated" : "created"} successfully and will appear on ${formData.tripRoute}`,
-      });
+      // Add all other fields
+      submitData.append('name', formData.name);
+      submitData.append('destination', formData.destination);
+      submitData.append('tripCategory', formData.tripCategory);
+      submitData.append('tripType', formData.tripType);
+      submitData.append('tripRoute', formData.tripRoute);
+      submitData.append('duration', formData.duration);
+      submitData.append('description', formData.description);
+      submitData.append('price', formData.price);
+      submitData.append('originalPrice', formData.originalPrice);
+      submitData.append('status', formData.status);
+      submitData.append('tags', formData.tags);
+      submitData.append('hasGoodies', formData.hasGoodies.toString());
+      submitData.append('inclusions', JSON.stringify(formData.inclusions.filter(i => i.trim())));
+      submitData.append('exclusions', JSON.stringify(formData.exclusions.filter(i => i.trim())));
+      submitData.append('notes', JSON.stringify(formData.notes.filter(i => i.trim())));
+      submitData.append('itinerary', JSON.stringify(formData.itinerary));
+      submitData.append('dates', JSON.stringify(formData.dates));
 
-      navigate("/admin/trips");
-    } catch (error) {
+      let response;
+      if (isEdit) {
+        response = await axios.patch(`${API_URL}/trips/${id}`, submitData, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+      } else {
+        response = await axios.post(`${API_URL}/trips`, submitData, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+      }
+
+      if (response.data.status === 'success') {
+        toast({
+          title: isEdit ? "Trip updated" : "Trip created",
+          description: `Trip has been ${isEdit ? "updated" : "created"} successfully and will appear on ${formData.tripRoute}`,
+        });
+        navigate("/admin/trips");
+      }
+    } catch (error: any) {
+      console.error("Error saving trip:", error);
       toast({
         title: "Error",
-        description: "Failed to save trip",
+        description: error.response?.data?.message || "Failed to save trip",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -405,8 +489,8 @@ export default function AdminTripForm() {
                     <select
                       name="status"
                       value={formData.status}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 rounded-lg border border-border bg-background"
+                      onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-md border border-input bg-background"
                     >
                       <option value="Active">Active</option>
                       <option value="Inactive">Inactive</option>
@@ -423,7 +507,7 @@ export default function AdminTripForm() {
                     name="description"
                     value={formData.description}
                     onChange={handleInputChange}
-                    placeholder="Detailed trip description..."
+                    placeholder="Describe the trip in detail..."
                     rows={5}
                     required
                   />
@@ -431,69 +515,63 @@ export default function AdminTripForm() {
 
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Search Tags (comma-separated)
+                    Trip Image *
                   </label>
-                  <Input
-                    name="tags"
-                    value={formData.tags}
-                    onChange={handleInputChange}
-                    placeholder="e.g., adventure, snow, mountain, winter, trekking"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    These tags help users find your trip in search
-                  </p>
+                  <div className="flex items-center gap-4">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="flex-1"
+                    />
+                    {formData.image && (
+                      <img
+                        src={formData.image}
+                        alt="Preview"
+                        className="w-20 h-20 object-cover rounded-md"
+                      />
+                    )}
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Featured Image
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      name="hasGoodies"
+                      checked={formData.hasGoodies}
+                      onChange={handleInputChange}
+                      className="rounded"
+                    />
+                    <span className="text-sm font-medium">Has Free Goodies</span>
                   </label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-                    <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm font-medium">Click to upload image</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      PNG, JPG up to 5MB (Recommended: 1200x800px)
-                    </p>
-                  </div>
                 </div>
               </div>
             )}
 
             {/* Category & Type Tab */}
             {currentTab === 1 && (
-              <div className="space-y-6">
-                <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-900 rounded-lg p-4 flex gap-3">
-                  <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                      Select where this trip will appear on your website
-                    </p>
-                    <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                      Choose the main category and specific type to determine the trip's location in navigation
-                    </p>
-                  </div>
-                </div>
-
+              <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Main Category *
+                    Trip Category *
                   </label>
                   <select
                     value={selectedCategory}
                     onChange={(e) => handleCategoryChange(e.target.value)}
-                    className="w-full px-4 py-2 rounded-lg border border-border bg-background"
+                    className="w-full px-3 py-2 rounded-md border border-input bg-background"
                     required
                   >
-                    <option value="">Select a category...</option>
-                    {Object.entries(TRIP_CATEGORIES).map(([label, data]) => (
-                      <option key={data.value} value={data.value}>
+                    <option value="">Select Category</option>
+                    {Object.entries(TRIP_CATEGORIES).map(([label, cat]) => (
+                      <option key={cat.value} value={cat.value}>
                         {label}
                       </option>
                     ))}
                   </select>
                 </div>
 
-                {selectedCategory && (
+                {availableTypes.length > 0 && (
                   <div>
                     <label className="block text-sm font-medium mb-2">
                       Trip Type *
@@ -501,10 +579,10 @@ export default function AdminTripForm() {
                     <select
                       value={formData.tripType}
                       onChange={(e) => handleTypeChange(e.target.value)}
-                      className="w-full px-4 py-2 rounded-lg border border-border bg-background"
+                      className="w-full px-3 py-2 rounded-md border border-input bg-background"
                       required
                     >
-                      <option value="">Select a type...</option>
+                      <option value="">Select Type</option>
                       {availableTypes.map((type) => (
                         <option key={type.value} value={type.value}>
                           {type.label}
@@ -515,21 +593,24 @@ export default function AdminTripForm() {
                 )}
 
                 {formData.tripRoute && (
-                  <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-900 rounded-lg p-4">
-                    <p className="text-sm font-medium text-green-900 dark:text-green-100 mb-1">
-                      Trip Location Set Successfully
-                    </p>
-                    <p className="text-sm text-green-700 dark:text-green-300">
-                      This trip will appear on:{" "}
-                      <span className="font-mono font-semibold">
-                        {formData.tripRoute}
-                      </span>
-                    </p>
-                    <p className="text-xs text-green-600 dark:text-green-400 mt-2">
-                      Users will find this trip when they navigate to this page from the website menu
+                  <div className="p-4 bg-muted rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      This trip will appear on: <strong>{formData.tripRoute}</strong>
                     </p>
                   </div>
                 )}
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Tags (comma-separated)
+                  </label>
+                  <Input
+                    name="tags"
+                    value={formData.tags}
+                    onChange={handleInputChange}
+                    placeholder="e.g., adventure, snow, mountain, winter"
+                  />
+                </div>
               </div>
             )}
 
@@ -539,11 +620,11 @@ export default function AdminTripForm() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">
-                      Current Price (₹) *
+                      Price *
                     </label>
                     <Input
-                      name="price"
                       type="number"
+                      name="price"
                       value={formData.price}
                       onChange={handleInputChange}
                       placeholder="25000"
@@ -552,47 +633,31 @@ export default function AdminTripForm() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2">
-                      Original Price (₹)
+                      Original Price *
                     </label>
                     <Input
-                      name="originalPrice"
                       type="number"
+                      name="originalPrice"
                       value={formData.originalPrice}
                       onChange={handleInputChange}
                       placeholder="35000"
+                      required
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2">
-                      Discount (₹)
+                      Discount
                     </label>
                     <Input
-                      name="discount"
                       type="number"
-                      value={formData.discount}
-                      onChange={handleInputChange}
-                      placeholder="10000"
+                      value={formData.originalPrice && formData.price 
+                        ? parseInt(formData.originalPrice) - parseInt(formData.price)
+                        : 0}
+                      disabled
+                      className="bg-muted"
                     />
                   </div>
                 </div>
-
-                {formData.originalPrice && formData.price && (
-                  <div className="bg-muted rounded-lg p-4">
-                    <p className="text-sm">
-                      <span className="font-semibold">Discount Percentage:</span>{" "}
-                      {(
-                        ((Number(formData.originalPrice) - Number(formData.price)) /
-                          Number(formData.originalPrice)) *
-                        100
-                      ).toFixed(1)}
-                      %
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Customers save ₹
-                      {Number(formData.originalPrice) - Number(formData.price)}
-                    </p>
-                  </div>
-                )}
               </div>
             )}
 
@@ -600,64 +665,31 @@ export default function AdminTripForm() {
             {currentTab === 3 && (
               <div className="space-y-4">
                 {formData.itinerary.map((day, dayIndex) => (
-                  <div
-                    key={dayIndex}
-                    className="border border-border rounded-lg p-4 space-y-3"
-                  >
+                  <div key={dayIndex} className="border border-border rounded-lg p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold">Day {day.day}</h3>
-                      {formData.itinerary.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            const newItinerary = formData.itinerary.filter(
-                              (_, i) => i !== dayIndex
-                            );
-                            setFormData((prev) => ({
-                              ...prev,
-                              itinerary: newItinerary.map((d, i) => ({
-                                ...d,
-                                day: i + 1,
-                              })),
-                            }));
-                          }}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      )}
                     </div>
                     <Input
                       value={day.title}
-                      onChange={(e) =>
-                        handleItineraryChange(dayIndex, "title", e.target.value)
-                      }
-                      placeholder="Day title (e.g., Arrival in Shimla)"
+                      onChange={(e) => handleItineraryChange(dayIndex, "title", e.target.value)}
+                      placeholder="Day title..."
                     />
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Highlights</label>
+                      <label className="text-sm font-medium">Highlights:</label>
                       {day.highlights.map((highlight, highlightIndex) => (
                         <div key={highlightIndex} className="flex gap-2">
                           <Input
                             value={highlight}
                             onChange={(e) =>
-                              handleItineraryChange(
-                                dayIndex,
-                                "highlights",
-                                e.target.value,
-                                highlightIndex
-                              )
+                              handleItineraryChange(dayIndex, "highlights", e.target.value, highlightIndex)
                             }
-                            placeholder="Activity or highlight"
+                            placeholder="Highlight..."
                           />
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
-                            onClick={() =>
-                              removeItineraryHighlight(dayIndex, highlightIndex)
-                            }
+                            onClick={() => removeItineraryHighlight(dayIndex, highlightIndex)}
                           >
                             <X className="w-4 h-4" />
                           </Button>
@@ -690,109 +722,93 @@ export default function AdminTripForm() {
             {currentTab === 4 && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium mb-3">
-                    Inclusions
-                  </label>
-                  <div className="space-y-2">
-                    {formData.inclusions.map((item, index) => (
-                      <div key={index} className="flex gap-2">
-                        <Input
-                          value={item}
-                          onChange={(e) =>
-                            handleArrayChange("inclusions", index, e.target.value)
-                          }
-                          placeholder="What's included"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeArrayItem("inclusions", index)}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addArrayItem("inclusions")}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Inclusion
-                    </Button>
-                  </div>
+                  <label className="block text-sm font-medium mb-2">Inclusions</label>
+                  {formData.inclusions.map((item, index) => (
+                    <div key={index} className="flex gap-2 mb-2">
+                      <Input
+                        value={item}
+                        onChange={(e) => updateArrayItem("inclusions", index, e.target.value)}
+                        placeholder="Included item..."
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeArrayItem("inclusions", index)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addArrayItem("inclusions")}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Inclusion
+                  </Button>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-3">
-                    Exclusions
-                  </label>
-                  <div className="space-y-2">
-                    {formData.exclusions.map((item, index) => (
-                      <div key={index} className="flex gap-2">
-                        <Input
-                          value={item}
-                          onChange={(e) =>
-                            handleArrayChange("exclusions", index, e.target.value)
-                          }
-                          placeholder="What's not included"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeArrayItem("exclusions", index)}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addArrayItem("exclusions")}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Exclusion
-                    </Button>
-                  </div>
+                  <label className="block text-sm font-medium mb-2">Exclusions</label>
+                  {formData.exclusions.map((item, index) => (
+                    <div key={index} className="flex gap-2 mb-2">
+                      <Input
+                        value={item}
+                        onChange={(e) => updateArrayItem("exclusions", index, e.target.value)}
+                        placeholder="Excluded item..."
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeArrayItem("exclusions", index)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addArrayItem("exclusions")}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Exclusion
+                  </Button>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-3">Notes</label>
-                  <div className="space-y-2">
-                    {formData.notes.map((item, index) => (
-                      <div key={index} className="flex gap-2">
-                        <Input
-                          value={item}
-                          onChange={(e) =>
-                            handleArrayChange("notes", index, e.target.value)
-                          }
-                          placeholder="Important note"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeArrayItem("notes", index)}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => addArrayItem("notes")}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Note
-                    </Button>
-                  </div>
+                  <label className="block text-sm font-medium mb-2">Important Notes</label>
+                  {formData.notes.map((item, index) => (
+                    <div key={index} className="flex gap-2 mb-2">
+                      <Input
+                        value={item}
+                        onChange={(e) => updateArrayItem("notes", index, e.target.value)}
+                        placeholder="Note..."
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeArrayItem("notes", index)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addArrayItem("notes")}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Note
+                  </Button>
                 </div>
               </div>
             )}
@@ -800,59 +816,33 @@ export default function AdminTripForm() {
             {/* Dates Tab */}
             {currentTab === 5 && (
               <div className="space-y-4">
-                {formData.dates.map((date, index) => (
-                  <div
-                    key={index}
-                    className="border border-border rounded-lg p-4 flex gap-4"
-                  >
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium mb-2">Date</label>
-                      <Input
-                        type="date"
-                        value={date.date}
-                        onChange={(e) =>
-                          handleDateChange(index, "date", e.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium mb-2">
-                        Price
-                      </label>
-                      <Input
-                        type="number"
-                        value={date.price}
-                        onChange={(e) =>
-                          handleDateChange(index, "price", Number(e.target.value))
-                        }
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium mb-2">
-                        Available Seats
-                      </label>
-                      <Input
-                        type="number"
-                        value={date.available}
-                        onChange={(e) =>
-                          handleDateChange(
-                            index,
-                            "available",
-                            Number(e.target.value)
-                          )
-                        }
-                      />
-                    </div>
-                    <div className="flex items-end">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeDate(index)}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
+                {formData.dates.map((dateItem, index) => (
+                  <div key={index} className="flex gap-4 items-center">
+                    <Input
+                      type="date"
+                      value={dateItem.date}
+                      onChange={(e) => handleDateChange(index, "date", e.target.value)}
+                    />
+                    <Input
+                      type="number"
+                      value={dateItem.price}
+                      onChange={(e) => handleDateChange(index, "price", parseInt(e.target.value))}
+                      placeholder="Price"
+                    />
+                    <Input
+                      type="number"
+                      value={dateItem.available}
+                      onChange={(e) => handleDateChange(index, "available", parseInt(e.target.value))}
+                      placeholder="Available"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeDate(index)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
                   </div>
                 ))}
                 <Button type="button" variant="outline" onClick={addDate}>
@@ -863,31 +853,19 @@ export default function AdminTripForm() {
             )}
           </div>
 
-          {/* Navigation */}
-          <div className="flex items-center justify-between mt-6">
+          {/* Submit Buttons */}
+          <div className="flex gap-4 justify-end mt-6">
             <Button
               type="button"
               variant="outline"
-              onClick={() => setCurrentTab(Math.max(0, currentTab - 1))}
-              disabled={currentTab === 0}
+              onClick={() => navigate("/admin/trips")}
             >
-              Previous
+              Cancel
             </Button>
-            <div className="flex gap-2">
-              {currentTab === tabs.length - 1 ? (
-                <Button type="submit">
-                  <Save className="w-4 h-4 mr-2" />
-                  {isEdit ? "Update Trip" : "Create Trip"}
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  onClick={() => setCurrentTab(Math.min(tabs.length - 1, currentTab + 1))}
-                >
-                  Next
-                </Button>
-              )}
-            </div>
+            <Button type="submit" disabled={isLoading}>
+              <Save className="w-4 h-4 mr-2" />
+              {isLoading ? "Saving..." : isEdit ? "Update Trip" : "Create Trip"}
+            </Button>
           </div>
         </form>
       </div>

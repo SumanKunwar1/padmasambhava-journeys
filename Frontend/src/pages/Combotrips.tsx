@@ -1,4 +1,5 @@
-import TripListingPage, { comboTrips } from "@/components/trips/TripListingPage";
+// src/pages/ComboTrips.tsx
+import TripListingPage from "@/components/trips/TripListingPage";
 import destCombo from "@/assets/dest-combo.jpg";
 
 const destinations = [
@@ -16,7 +17,7 @@ const ComboTrips = () => {
       description="Discover the world with our carefully curated combo packages. Travel through multiple countries in a single trip and save on time, visas, and costs. From Southeast Asian circuits to European grand tours, create memories that span continents. Perfect for travelers who want to maximize their vacation and experience diverse cultures in one seamless journey."
       heroImage={destCombo}
       filterDestinations={destinations}
-      trips={comboTrips}
+      tripCategory="combo-trips"
     />
   );
 };

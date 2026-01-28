@@ -1,4 +1,5 @@
-import TripListingPage, { pilgrimageTrips } from "@/components/trips/TripListingPage";
+// src/pages/PilgrimageTrips.tsx
+import TripListingPage from "@/components/trips/TripListingPage";
 import heroPilgrimage from "@/assets/hero-pilgrimage.jpg";
 
 const destinations = [
@@ -15,7 +16,7 @@ const PilgrimageTrips = () => {
       description="Embark on a spiritual journey that transcends the ordinary. Our pilgrimage trips are designed to nurture your soul, connect you with ancient traditions, and provide a transformative experience. From the monasteries of Bhutan to the ghats of Varanasi, walk the path of enlightenment with expert guides and like-minded travelers."
       heroImage={heroPilgrimage}
       filterDestinations={destinations}
-      trips={pilgrimageTrips}
+      tripType="pilgrimage"
     />
   );
 };

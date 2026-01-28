@@ -1,10 +1,10 @@
+// src/pages/TripDetail.tsx
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   Calendar, 
   Users, 
-  Download, 
   ChevronDown, 
   ChevronUp,
   Check,
@@ -19,17 +19,48 @@ import { Footer } from "@/components/layout/Footer";
 import { WhatsAppButton } from "@/components/shared/WhatsAppButton";
 import { BookingFormModal } from "@/components/shared/BookingFormModal";
 import { cn } from "@/lib/utils";
+import axios from "axios";
 
-// Import data from separate file
-import { 
-  getTripDataById, 
-  TRIP_TABS, 
-  PRICING_DETAILS, 
-  WHATSAPP_CONTACT,
-} from "@/data/tripData";
-import type { TripDetail, TripDate } from "@/data/tripData";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
+const WHATSAPP_CONTACT = "9779851045900"; // Update with actual WhatsApp number
 
-const tabs = TRIP_TABS;
+const TRIP_TABS = ["Itinerary", "Inclusions", "Costing", "Notes"];
+
+const PRICING_DETAILS = [
+  { sharing: "Triple Sharing", priceOffset: 0, isSupplementary: false },
+  { sharing: "Double Sharing", priceOffset: 2000, isSupplementary: false },
+  { sharing: "Single Occupancy", priceOffset: 5000, isSupplementary: false },
+  { sharing: "Extra Bed", priceOffset: 1500, isSupplementary: true },
+];
+
+interface TripDate {
+  date: string;
+  price: number;
+  available: number;
+}
+
+interface ItineraryDay {
+  day: number;
+  title: string;
+  highlights: string[];
+}
+
+interface Trip {
+  _id: string;
+  name: string;
+  destination: string;
+  duration: string;
+  description: string;
+  price: number;
+  originalPrice: number;
+  discount: number;
+  image: string;
+  inclusions: string[];
+  exclusions: string[];
+  notes: string[];
+  itinerary: ItineraryDay[];
+  dates: TripDate[];
+}
 
 export default function TripDetail() {
   const { id } = useParams();
@@ -39,20 +70,33 @@ export default function TripDetail() {
   const [selectedDate, setSelectedDate] = useState<TripDate | null>(null);
   const [isSticky, setIsSticky] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
-  const [tripData, setTripData] = useState<TripDetail | null>(null);
+  const [tripData, setTripData] = useState<Trip | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Load trip data
   useEffect(() => {
     if (id) {
-      const data = getTripDataById(id);
-      setTripData(data);
-      if (data) {
-        setSelectedDate(data.dates[0]);
-      }
-      setIsLoading(false);
+      fetchTripData(id);
     }
   }, [id]);
+
+  const fetchTripData = async (tripId: string) => {
+    try {
+      const response = await axios.get(`${API_URL}/trips/${tripId}`);
+      
+      if (response.data.status === 'success') {
+        const trip = response.data.data.trip;
+        setTripData(trip);
+        if (trip.dates && trip.dates.length > 0) {
+          setSelectedDate(trip.dates[0]);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching trip:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -128,7 +172,7 @@ export default function TripDetail() {
         >
           <div className="container mx-auto px-4">
             <div className="flex gap-8 overflow-x-auto">
-              {tabs.map((tab) => (
+              {TRIP_TABS.map((tab) => (
                 <button
                   key={tab}
                   onClick={() => scrollToSection(tab)}
@@ -204,8 +248,8 @@ export default function TripDetail() {
                             key={index}
                             className="flex items-start gap-3 text-muted-foreground"
                           >
-                            <span className="text-primary mt-1">•</span>
-                            <span>{highlight}</span>
+                            <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary mt-2" />
+                            {highlight}
                           </li>
                         ))}
                       </ul>
@@ -216,16 +260,16 @@ export default function TripDetail() {
             </div>
           </section>
 
-          {/* Inclusions Section */}
+          {/* Inclusions & Exclusions */}
           <section id="inclusions" className="mb-12">
             <h2 className="text-2xl font-display font-bold mb-6">
-              What's Included & Excluded
+              What's Included
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid md:grid-cols-2 gap-8">
               <div>
-                <h3 className="font-semibold text-lg mb-4 text-primary flex items-center gap-2">
-                  <Check className="w-5 h-5" />
-                  Included
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <Check className="w-5 h-5 text-primary" />
+                  Inclusions
                 </h3>
                 <ul className="space-y-3">
                   {tripData.inclusions.map((item, index) => (
@@ -237,9 +281,9 @@ export default function TripDetail() {
                 </ul>
               </div>
               <div>
-                <h3 className="font-semibold text-lg mb-4 text-destructive flex items-center gap-2">
-                  <X className="w-5 h-5" />
-                  Not Included
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <X className="w-5 h-5 text-destructive" />
+                  Exclusions
                 </h3>
                 <ul className="space-y-3">
                   {tripData.exclusions.map((item, index) => (
@@ -270,10 +314,7 @@ export default function TripDetail() {
                   {PRICING_DETAILS.map((detail, index) => (
                     <tr
                       key={index}
-                      className={cn(
-                        "border-b border-border",
-                        detail.isSupplementary ? "" : ""
-                      )}
+                      className="border-b border-border"
                     >
                       <td className="p-4">{detail.sharing}</td>
                       <td className="p-4 text-right">
@@ -287,7 +328,7 @@ export default function TripDetail() {
                               ₹{(tripData.price + detail.priceOffset).toLocaleString()}
                             </span>
                             {index === 0 && (
-                              <span className="ml-2 price-original">
+                              <span className="ml-2 text-sm text-muted-foreground line-through">
                                 ₹{tripData.originalPrice.toLocaleString()}
                               </span>
                             )}
@@ -328,52 +369,54 @@ export default function TripDetail() {
                 <p className="text-sm text-muted-foreground mb-1">Trip Starts From</p>
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-bold">
-                    ₹{selectedDate?.price.toLocaleString()}
+                    ₹{selectedDate?.price.toLocaleString() || tripData.price.toLocaleString()}
                   </span>
-                  <span className="price-original">
+                  <span className="text-sm text-muted-foreground line-through">
                     ₹{tripData.originalPrice.toLocaleString()}
                   </span>
                 </div>
-                <span className="price-discount">
+                <span className="text-sm text-primary font-medium">
                   ₹{tripData.discount.toLocaleString()} Off
                 </span>
                 <p className="text-sm text-muted-foreground mt-1">Per Person</p>
               </div>
 
               {/* Date Selection */}
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <Calendar className="w-4 h-4 text-primary" />
-                  <span className="font-medium">Trip Dates</span>
+              {tripData.dates && tripData.dates.length > 0 && (
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Calendar className="w-4 h-4 text-primary" />
+                    <span className="font-medium">Trip Dates</span>
+                  </div>
+                  <div className="space-y-2">
+                    {tripData.dates.map((date, index) => (
+                      <label
+                        key={index}
+                        className={cn(
+                          "flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all",
+                          selectedDate?.date === date.date
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-primary/50"
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            name="tripDate"
+                            checked={selectedDate?.date === date.date}
+                            onChange={() => setSelectedDate(date)}
+                            className="w-4 h-4 text-primary"
+                          />
+                          <span>{date.date}</span>
+                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          ₹{date.price.toLocaleString()}/Person
+                        </span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  {tripData.dates.map((date, index) => (
-                    <label
-                      key={index}
-                      className={cn(
-                        "flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all",
-                        selectedDate?.date === date.date
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/50"
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="radio"
-                          name="tripDate"
-                          checked={selectedDate?.date === date.date}
-                          onChange={() => setSelectedDate(date)}
-                          className="w-4 h-4 text-primary"
-                        />
-                        <span>{date.date}</span>
-                      </div>
-                      <span className="text-sm text-muted-foreground">
-                        ₹{date.price.toLocaleString()}/Person
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+              )}
 
               {/* Traveler Count */}
               <div className="mb-6">
@@ -403,7 +446,7 @@ export default function TripDetail() {
                 <div className="flex items-center justify-between">
                   <span className="font-medium">Total Amount</span>
                   <span className="text-2xl font-bold">
-                    ₹{selectedDate ? (selectedDate.price * travelers).toLocaleString() : "0"}
+                    ₹{selectedDate ? (selectedDate.price * travelers).toLocaleString() : (tripData.price * travelers).toLocaleString()}
                   </span>
                 </div>
               </div>
