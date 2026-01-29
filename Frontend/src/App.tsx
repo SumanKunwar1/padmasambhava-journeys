@@ -47,6 +47,11 @@ import AdminVisaApplications from "./pages/admin/AdminVisaApplications";
 import AdminCustomTrips from "./pages/admin/AdminCustomTrips";
 import AdminDocumentation from "./pages/admin/AdminDocumentation";
 
+// Admin Homepage Management Pages
+import AdminHeroSection from "./pages/admin/AdminHeroSection";
+import AdminTrendingDestinations from "./pages/admin/AdminTrendingDestinations";
+import AdminExploreDestinations from "./pages/admin/AdminExploreDestinations";
+
 // Admin Components
 import ProtectedAdminRoute from "./components/admin/ProtectedAdminRoute";
 import ComboTrips from "./pages/Combotrips";
@@ -85,6 +90,34 @@ const App = () => (
                 </ProtectedAdminRoute>
               }
             />
+
+            {/* Admin Homepage Management Routes */}
+            <Route
+              path="/admin/homepage/hero"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminHeroSection />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/homepage/trending"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminTrendingDestinations />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/homepage/explore"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminExploreDestinations />
+                </ProtectedAdminRoute>
+              }
+            />
+
+            {/* Admin Trips Routes */}
             <Route
               path="/admin/trips"
               element={
@@ -109,6 +142,8 @@ const App = () => (
                 </ProtectedAdminRoute>
               }
             />
+
+            {/* Admin Blogs Routes */}
             <Route
               path="/admin/blogs"
               element={
@@ -133,6 +168,8 @@ const App = () => (
                 </ProtectedAdminRoute>
               }
             />
+
+            {/* Admin Other Routes */}
             <Route
               path="/admin/bookings"
               element={
