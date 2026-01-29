@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { cn } from "@/lib/utils";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 interface HeroImage {
   _id: string;
   imageUrl: string;
@@ -18,6 +20,19 @@ interface HeroImage {
   createdAt: string;
 }
 
+// Helper function to get cookie
+const getCookie = (name: string): string | null => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+  return null;
+};
+
+// Helper function to get auth token
+const getAuthToken = (): string | null => {
+  return localStorage.getItem("token") || getCookie("jwt");
+};
+
 export default function AdminHeroSection() {
   const { toast } = useToast();
   const [heroImages, setHeroImages] = useState<HeroImage[]>([]);
@@ -25,6 +40,7 @@ export default function AdminHeroSection() {
   const [showModal, setShowModal] = useState(false);
   const [editingImage, setEditingImage] = useState<HeroImage | null>(null);
   const [previewImage, setPreviewImage] = useState<string>("");
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     imageUrl: "",
     title: "",
@@ -33,7 +49,6 @@ export default function AdminHeroSection() {
     isActive: true,
   });
 
-  // Mock data - Replace with actual API call
   useEffect(() => {
     loadHeroImages();
   }, []);
@@ -41,37 +56,42 @@ export default function AdminHeroSection() {
   const loadHeroImages = async () => {
     try {
       setIsLoading(true);
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/v1/hero-images');
-      // const data = await response.json();
-      
-      // Mock data
-      const mockData: HeroImage[] = [
-        {
-          _id: "1",
-          imageUrl: "/assets/hero-pilgrimage.jpg",
-          title: "Sacred Pilgrimages",
-          subtitle: "Journey to Divine Destinations",
-          order: 1,
-          isActive: true,
-          createdAt: new Date().toISOString(),
+      const token = getAuthToken();
+
+      const response = await fetch(`${API_URL}/api/v1/hero-images`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
         },
-        {
-          _id: "2",
-          imageUrl: "/assets/dest-bhutan.jpg",
-          title: "Bhutan Tours",
-          subtitle: "Land of Happiness",
-          order: 2,
-          isActive: true,
-          createdAt: new Date().toISOString(),
-        },
-      ];
+        credentials: 'include', // Important for cookies
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          toast({
+            title: "Authentication Required",
+            description: "Please login to access this page",
+            variant: "destructive",
+          });
+          setTimeout(() => {
+            window.location.href = '/admin/login';
+          }, 2000);
+          return;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
       
-      setHeroImages(mockData.sort((a, b) => a.order - b.order));
+      if (data.status === "success") {
+        setHeroImages(data.data.heroImages);
+      }
     } catch (error: any) {
+      console.error("Error loading hero images:", error);
       toast({
         title: "Error",
-        description: "Failed to load hero images",
+        description: error.message || "Failed to load hero images",
         variant: "destructive",
       });
     } finally {
@@ -108,8 +128,26 @@ export default function AdminHeroSection() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // TODO: Upload to your server/cloud storage
-      // For now, create a preview URL
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Error",
+          description: "Image size should be less than 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        toast({
+          title: "Error",
+          description: "Please upload an image file",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
         const result = reader.result as string;
@@ -117,6 +155,11 @@ export default function AdminHeroSection() {
         setFormData({ ...formData, imageUrl: result });
       };
       reader.readAsDataURL(file);
+
+      toast({
+        title: "Note",
+        description: "Image preview created. Implement cloud upload for production.",
+      });
     }
   };
 
@@ -126,58 +169,96 @@ export default function AdminHeroSection() {
     if (!formData.imageUrl) {
       toast({
         title: "Error",
-        description: "Please upload an image",
+        description: "Please provide an image URL or upload an image",
         variant: "destructive",
       });
       return;
     }
 
+    setIsSaving(true);
+
     try {
-      if (editingImage) {
-        // TODO: Update API call
-        // await fetch(`/api/v1/hero-images/${editingImage._id}`, {
-        //   method: 'PUT',
-        //   body: JSON.stringify(formData),
-        // });
-        
-        setHeroImages(heroImages.map(img => 
-          img._id === editingImage._id 
-            ? { ...img, ...formData }
-            : img
-        ));
+      const token = getAuthToken();
 
+      if (!token) {
         toast({
-          title: "Success",
-          description: "Hero image updated successfully",
+          title: "Authentication Required",
+          description: "Please login to continue",
+          variant: "destructive",
         });
-      } else {
-        // TODO: Create API call
-        // const response = await fetch('/api/v1/hero-images', {
-        //   method: 'POST',
-        //   body: JSON.stringify(formData),
-        // });
-        
-        const newImage: HeroImage = {
-          _id: Date.now().toString(),
-          ...formData,
-          createdAt: new Date().toISOString(),
-        };
-        
-        setHeroImages([...heroImages, newImage].sort((a, b) => a.order - b.order));
-
-        toast({
-          title: "Success",
-          description: "Hero image created successfully",
-        });
+        setTimeout(() => {
+          window.location.href = '/admin/login';
+        }, 2000);
+        return;
       }
 
-      setShowModal(false);
+      const url = editingImage 
+        ? `${API_URL}/api/v1/hero-images/${editingImage._id}`
+        : `${API_URL}/api/v1/hero-images`;
+
+      const method = editingImage ? 'PATCH' : 'POST';
+
+      const response = await fetch(url, {
+        method: method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          toast({
+            title: "Session Expired",
+            description: "Your session has expired. Please login again.",
+            variant: "destructive",
+          });
+          setTimeout(() => {
+            window.location.href = '/admin/login';
+          }, 2000);
+          return;
+        }
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.status === "success") {
+        if (editingImage) {
+          setHeroImages(
+            heroImages.map((img) =>
+              img._id === editingImage._id ? data.data.heroImage : img
+            ).sort((a, b) => a.order - b.order)
+          );
+          toast({
+            title: "Success",
+            description: "Hero image updated successfully",
+          });
+        } else {
+          setHeroImages(
+            [...heroImages, data.data.heroImage].sort(
+              (a, b) => a.order - b.order
+            )
+          );
+          toast({
+            title: "Success",
+            description: "Hero image created successfully",
+          });
+        }
+        setShowModal(false);
+      }
     } catch (error: any) {
+      console.error("Error saving hero image:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to save hero image",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -185,19 +266,55 @@ export default function AdminHeroSection() {
     if (!confirm("Are you sure you want to delete this hero image?")) return;
 
     try {
-      // TODO: Delete API call
-      // await fetch(`/api/v1/hero-images/${id}`, { method: 'DELETE' });
-      
-      setHeroImages(heroImages.filter(img => img._id !== id));
-      
-      toast({
-        title: "Success",
-        description: "Hero image deleted successfully",
+      const token = getAuthToken();
+
+      if (!token) {
+        toast({
+          title: "Authentication Required",
+          description: "Please login to continue",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/api/v1/hero-images/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
       });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          toast({
+            title: "Session Expired",
+            description: "Please login again.",
+            variant: "destructive",
+          });
+          setTimeout(() => {
+            window.location.href = '/admin/login';
+          }, 2000);
+          return;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.status === "success") {
+        setHeroImages(heroImages.filter((img) => img._id !== id));
+        toast({
+          title: "Success",
+          description: "Hero image deleted successfully",
+        });
+      }
     } catch (error: any) {
+      console.error("Error deleting hero image:", error);
       toast({
         title: "Error",
-        description: "Failed to delete hero image",
+        description: error.message || "Failed to delete hero image",
         variant: "destructive",
       });
     }
@@ -205,21 +322,62 @@ export default function AdminHeroSection() {
 
   const toggleActive = async (id: string) => {
     try {
-      // TODO: Update API call
-      // await fetch(`/api/v1/hero-images/${id}/toggle-active`, { method: 'PATCH' });
-      
-      setHeroImages(heroImages.map(img => 
-        img._id === id ? { ...img, isActive: !img.isActive } : img
-      ));
+      const token = getAuthToken();
 
-      toast({
-        title: "Success",
-        description: "Hero image status updated",
-      });
+      if (!token) {
+        toast({
+          title: "Authentication Required",
+          description: "Please login to continue",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await fetch(
+        `${API_URL}/api/v1/hero-images/${id}/toggle-active`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          credentials: 'include',
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          toast({
+            title: "Session Expired",
+            description: "Please login again.",
+            variant: "destructive",
+          });
+          setTimeout(() => {
+            window.location.href = '/admin/login';
+          }, 2000);
+          return;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.status === "success") {
+        setHeroImages(
+          heroImages.map((img) =>
+            img._id === id ? data.data.heroImage : img
+          )
+        );
+        toast({
+          title: "Success",
+          description: data.message,
+        });
+      }
     } catch (error: any) {
+      console.error("Error toggling active status:", error);
       toast({
         title: "Error",
-        description: "Failed to update status",
+        description: error.message || "Failed to update status",
         variant: "destructive",
       });
     }
@@ -242,12 +400,19 @@ export default function AdminHeroSection() {
         </div>
 
         {isLoading ? (
-          <div className="text-center py-12">Loading...</div>
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-muted-foreground">Loading hero images...</p>
+          </div>
         ) : heroImages.length === 0 ? (
           <div className="text-center py-12 bg-muted rounded-lg">
             <ImageIcon className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-muted-foreground">No hero images yet</p>
-            <Button onClick={handleCreate} className="mt-4">
+            <p className="text-muted-foreground mb-2">No hero images yet</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Create your first hero banner image to display on the homepage
+            </p>
+            <Button onClick={handleCreate}>
+              <Plus className="w-4 h-4 mr-2" />
               Add First Image
             </Button>
           </div>
@@ -260,7 +425,7 @@ export default function AdminHeroSection() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 className={cn(
-                  "bg-card rounded-xl border overflow-hidden",
+                  "bg-card rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-shadow",
                   !image.isActive && "opacity-60"
                 )}
               >
@@ -274,6 +439,7 @@ export default function AdminHeroSection() {
                     <button
                       onClick={() => toggleActive(image._id)}
                       className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-lg transition-colors"
+                      title={image.isActive ? "Hide from homepage" : "Show on homepage"}
                     >
                       {image.isActive ? (
                         <Eye className="w-4 h-4" />
@@ -284,9 +450,14 @@ export default function AdminHeroSection() {
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
                     <div className="text-white">
-                      <p className="text-sm font-semibold">Order: {image.order}</p>
+                      <p className="text-sm font-semibold">
+                        Order: {image.order} | {image.isActive ? "Active" : "Inactive"}
+                      </p>
                       {image.title && (
-                        <p className="text-sm mt-1">{image.title}</p>
+                        <p className="text-sm mt-1 font-medium">{image.title}</p>
+                      )}
+                      {image.subtitle && (
+                        <p className="text-xs mt-0.5 text-white/80">{image.subtitle}</p>
                       )}
                     </div>
                   </div>
@@ -327,11 +498,16 @@ export default function AdminHeroSection() {
               animate={{ opacity: 1, scale: 1 }}
               className="bg-card rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
             >
-              <div className="sticky top-0 bg-card border-b border-border p-6 flex items-center justify-between">
+              <div className="sticky top-0 bg-card border-b border-border p-6 flex items-center justify-between z-10">
                 <h2 className="text-2xl font-bold">
                   {editingImage ? "Edit Hero Image" : "Add Hero Image"}
                 </h2>
-                <Button variant="ghost" size="sm" onClick={() => setShowModal(false)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowModal(false)}
+                  disabled={isSaving}
+                >
                   ✕
                 </Button>
               </div>
@@ -343,12 +519,17 @@ export default function AdminHeroSection() {
                     Hero Image *
                   </label>
                   <div className="space-y-4">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="cursor-pointer"
-                    />
+                    <div className="flex items-center gap-4">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="cursor-pointer"
+                        disabled={isSaving}
+                      />
+                      <Upload className="w-5 h-5 text-muted-foreground" />
+                    </div>
+                    
                     {previewImage && (
                       <div className="relative aspect-video rounded-lg overflow-hidden border">
                         <img
@@ -358,6 +539,7 @@ export default function AdminHeroSection() {
                         />
                       </div>
                     )}
+                    
                     <p className="text-sm text-muted-foreground">
                       Or enter image URL:
                     </p>
@@ -368,6 +550,7 @@ export default function AdminHeroSection() {
                         setFormData({ ...formData, imageUrl: e.target.value });
                         setPreviewImage(e.target.value);
                       }}
+                      disabled={isSaving}
                     />
                   </div>
                 </div>
@@ -380,8 +563,15 @@ export default function AdminHeroSection() {
                   <Input
                     placeholder="e.g., Sacred Pilgrimages"
                     value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, title: e.target.value })
+                    }
+                    maxLength={100}
+                    disabled={isSaving}
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Main heading displayed on the hero banner
+                  </p>
                 </div>
 
                 {/* Subtitle */}
@@ -392,8 +582,15 @@ export default function AdminHeroSection() {
                   <Input
                     placeholder="e.g., Journey to Divine Destinations"
                     value={formData.subtitle}
-                    onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, subtitle: e.target.value })
+                    }
+                    maxLength={200}
+                    disabled={isSaving}
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Subheading displayed below the title
+                  </p>
                 </div>
 
                 {/* Order */}
@@ -405,8 +602,11 @@ export default function AdminHeroSection() {
                     type="number"
                     min="1"
                     value={formData.order}
-                    onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, order: parseInt(e.target.value) || 1 })
+                    }
                     required
+                    disabled={isSaving}
                   />
                   <p className="text-sm text-muted-foreground mt-1">
                     Lower numbers appear first in the slideshow
@@ -419,10 +619,16 @@ export default function AdminHeroSection() {
                     type="checkbox"
                     id="isActive"
                     checked={formData.isActive}
-                    onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, isActive: e.target.checked })
+                    }
                     className="w-4 h-4"
+                    disabled={isSaving}
                   />
-                  <label htmlFor="isActive" className="text-sm font-medium cursor-pointer">
+                  <label
+                    htmlFor="isActive"
+                    className="text-sm font-medium cursor-pointer"
+                  >
                     Active (Show on homepage)
                   </label>
                 </div>
@@ -434,11 +640,21 @@ export default function AdminHeroSection() {
                     variant="outline"
                     onClick={() => setShowModal(false)}
                     className="flex-1"
+                    disabled={isSaving}
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" className="flex-1">
-                    {editingImage ? "Update" : "Create"}
+                  <Button type="submit" className="flex-1" disabled={isSaving}>
+                    {isSaving ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                        Saving...
+                      </>
+                    ) : editingImage ? (
+                      "Update"
+                    ) : (
+                      "Create"
+                    )}
                   </Button>
                 </div>
               </form>
