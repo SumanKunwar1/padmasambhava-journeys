@@ -1,8 +1,9 @@
 // src/pages/Documentation.tsx
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { FileText, Upload, CheckCircle, AlertCircle, Clock } from "lucide-react";
+import { FileText, Upload, CheckCircle, AlertCircle, Clock, User, Mail, Phone, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useAuth } from "@/context/AuthContext";
@@ -20,6 +21,12 @@ interface Document {
   uploadDate?: string;
   file?: File;
   fileUrl?: string;
+}
+
+interface UserInfo {
+  fullName: string;
+  email: string;
+  phoneNumber: string;
 }
 
 const REQUIRED_DOCUMENTS = [
@@ -95,86 +102,108 @@ const REQUIRED_DOCUMENTS = [
   },
 ];
 
-const DESTINATION_SPECIFIC = {
-  georgia: {
-    name: "Georgia",
-    documents: [
-      "Passport valid for 6 months",
-      "Return airline tickets",
-      "Proof of accommodation",
-      "Travel insurance (optional)",
-      "Letter of invitation (if applicable)",
-    ],
-  },
-  thailand: {
-    name: "Thailand",
-    documents: [
-      "Passport valid for 6 months",
-      "Return airline tickets",
-      "Hotel booking",
-      "Travel insurance",
-      "Bank statement",
-      "Employment letter",
-    ],
-  },
-  bhutan: {
-    name: "Bhutan",
-    documents: [
-      "Passport valid for 6 months",
-      "Pre-booked tour with licensed operator",
-      "Travel insurance",
-      "Hotel booking confirmation",
-      "Vaccination certificate (if required)",
-    ],
-  },
-};
-
 export default function Documentation() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [uploadedDocs, setUploadedDocs] = useState<Record<string, Document>>({});
-  const [selectedDestination, setSelectedDestination] = useState<keyof typeof DESTINATION_SPECIFIC>("georgia");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, boolean>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userInfo, setUserInfo] = useState<UserInfo>({
+    fullName: "",
+    email: "",
+    phoneNumber: "",
+  });
+  const [isUserInfoSaved, setIsUserInfoSaved] = useState(false);
 
   useEffect(() => {
     if (user) {
+      // Pre-fill user info from auth context
+      setUserInfo({
+        fullName: user.fullName || "",
+        email: user.email || "",
+        phoneNumber: user.phone || "",
+      });
       loadMyDocuments();
     }
-  }, [user, selectedDestination]);
+  }, [user]);
 
   const loadMyDocuments = async () => {
     try {
       setIsLoading(true);
-      const response = await documentationService.getMyDocuments(selectedDestination);
+      const response = await documentationService.getMyDocuments();
       
       // Convert API response to uploadedDocs format
       const docsMap: Record<string, Document> = {};
-      response.data.forEach((doc: any) => {
-        docsMap[doc.documentId] = {
-          id: doc._id,
-          documentId: doc.documentId,
-          name: doc.name,
-          category: doc.category,
-          description: doc.description,
-          status: doc.status,
-          uploadDate: doc.createdAt,
-          fileUrl: doc.fileUrl,
-        };
-      });
+      if (response.data?.documents && Array.isArray(response.data.documents)) {
+        response.data.documents.forEach((doc: any) => {
+          docsMap[doc.documentId] = {
+            id: doc._id,
+            documentId: doc.documentId,
+            name: doc.name,
+            category: doc.category,
+            description: doc.description,
+            status: doc.status,
+            uploadDate: doc.createdAt,
+            fileUrl: doc.fileUrl,
+          };
+        });
+      }
       
       setUploadedDocs(docsMap);
     } catch (error: any) {
       console.error("Failed to load documents:", error);
-      // Don't show error toast on initial load
+      // Set empty object on error
+      setUploadedDocs({});
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleUserInfoChange = (field: keyof UserInfo, value: string) => {
+    setUserInfo((prev) => ({ ...prev, [field]: value }));
+    setIsUserInfoSaved(false);
+  };
+
+  const saveUserInfo = () => {
+    if (!userInfo.fullName || !userInfo.email || !userInfo.phoneNumber) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUserInfoSaved(true);
+    toast({
+      title: "Information Saved",
+      description: "Your contact information has been saved successfully",
+    });
+  };
+
   const handleFileUpload = async (docId: string, file: File) => {
     const doc = REQUIRED_DOCUMENTS.find((d) => d.documentId === docId);
     if (!doc) return;
+
+    // Validate user info is filled
+    if (!userInfo.fullName || !userInfo.email || !userInfo.phoneNumber) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in your contact information and click 'Save Information' before uploading documents",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!isUserInfoSaved) {
+      toast({
+        title: "Save Information First",
+        description: "Please click 'Save Information' before uploading documents",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       setUploadProgress((prev) => ({ ...prev, [docId]: true }));
@@ -186,7 +215,6 @@ export default function Documentation() {
           category: doc.category,
           description: doc.description,
           status: doc.status,
-          destination: selectedDestination,
         },
         file
       );
@@ -209,6 +237,48 @@ export default function Documentation() {
     }
   };
 
+  const handleCompleteSubmission = () => {
+    // Check if user info is saved
+    if (!isUserInfoSaved) {
+      toast({
+        title: "Save Information First",
+        description: "Please fill in and save your contact information",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check required documents
+    const requiredDocs = REQUIRED_DOCUMENTS.filter(d => d.status === "required");
+    const uploadedRequiredDocs = requiredDocs.filter(d => uploadedDocs[d.documentId]);
+    
+    if (uploadedRequiredDocs.length < requiredDocs.length) {
+      const missingDocs = requiredDocs
+        .filter(d => !uploadedDocs[d.documentId])
+        .map(d => d.name)
+        .join(", ");
+      
+      toast({
+        title: "Missing Required Documents",
+        description: `Please upload the following required documents: ${missingDocs}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // All validations passed
+    setIsSubmitting(true);
+    
+    // Simulate submission (replace with actual API call if needed)
+    setTimeout(() => {
+      setIsSubmitting(false);
+      toast({
+        title: "Submission Successful!",
+        description: `All ${Object.keys(uploadedDocs).length} documents have been submitted successfully. We will review your application shortly.`,
+      });
+    }, 1500);
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "required":
@@ -225,143 +295,152 @@ export default function Documentation() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "required":
-        return <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />;
+        return <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0" />;
       case "optional":
-        return <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />;
+        return <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />;
       case "recommended":
-        return <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />;
+        return <FileText className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />;
       default:
-        return <FileText className="w-5 h-5 text-muted-foreground" />;
+        return null;
     }
   };
 
   const calculateProgress = () => {
-    const total = REQUIRED_DOCUMENTS.length;
     const uploaded = Object.keys(uploadedDocs).length;
-    return (uploaded / total) * 100;
+    const total = REQUIRED_DOCUMENTS.length;
+    return Math.round((uploaded / total) * 100);
   };
 
-  const progress = calculateProgress();
+  const getRequiredDocsProgress = () => {
+    const requiredDocs = REQUIRED_DOCUMENTS.filter(d => d.status === "required");
+    const uploadedRequired = requiredDocs.filter(d => uploadedDocs[d.documentId]).length;
+    return { uploaded: uploadedRequired, total: requiredDocs.length };
+  };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background">
       <Navbar />
 
-      <div className="flex-1 py-12 px-4">
-        <div className="container-custom max-w-6xl">
+      <div className="container mx-auto px-4 py-12 mt-16">
+        <div className="max-w-6xl mx-auto">
           {/* Header */}
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-center mb-12"
           >
-            <h1 className="text-4xl font-display font-bold mb-3">Documentation Portal</h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Manage and upload all your travel documentation in one place
+            <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">
+              Travel Documentation
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Upload all required documents for your visa application and travel preparation
             </p>
           </motion.div>
 
-          {/* User Status */}
-          {user && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="mb-8 p-4 bg-primary/5 border border-primary/20 rounded-lg"
-            >
-              <p className="text-sm">
-                <span className="font-semibold">Logged in as:</span> {user.fullName} ({user.email})
-              </p>
-            </motion.div>
-          )}
-
-          {/* Upload Progress */}
+          {/* User Information Section */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
+            className="mb-12 bg-card border border-border rounded-lg p-6"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold mb-2">Your Contact Information</h2>
+                <p className="text-sm text-muted-foreground">
+                  Please provide your details before uploading documents
+                </p>
+              </div>
+              {isUserInfoSaved && (
+                <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                  <CheckCircle className="w-5 h-5" />
+                  <span className="text-sm font-medium">Saved</span>
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  <User className="w-4 h-4 inline mr-2" />
+                  Full Name *
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Enter your full name"
+                  value={userInfo.fullName}
+                  onChange={(e) => handleUserInfoChange("fullName", e.target.value)}
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  <Mail className="w-4 h-4 inline mr-2" />
+                  Email Address *
+                </label>
+                <Input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={userInfo.email}
+                  onChange={(e) => handleUserInfoChange("email", e.target.value)}
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  <Phone className="w-4 h-4 inline mr-2" />
+                  Phone Number *
+                </label>
+                <Input
+                  type="tel"
+                  placeholder="Enter your phone number"
+                  value={userInfo.phoneNumber}
+                  onChange={(e) => handleUserInfoChange("phoneNumber", e.target.value)}
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            <Button
+              onClick={saveUserInfo}
+              disabled={!userInfo.fullName || !userInfo.email || !userInfo.phoneNumber || isUserInfoSaved}
+              className="w-full md:w-auto"
+            >
+              <CheckCircle className="w-4 h-4 mr-2" />
+              {isUserInfoSaved ? "Information Saved" : "Save Information"}
+            </Button>
+          </motion.div>
+
+          {/* Progress Bar */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-12 bg-card border border-border rounded-lg p-6"
           >
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold">Documentation Progress</h3>
-              <span className="text-sm font-medium">{Math.round(progress)}% Complete</span>
+              <div>
+                <h3 className="font-semibold">Upload Progress</h3>
+                <p className="text-sm text-muted-foreground">
+                  {Object.keys(uploadedDocs).length} of {REQUIRED_DOCUMENTS.length} documents uploaded
+                  {" • "}
+                  Required: {getRequiredDocsProgress().uploaded}/{getRequiredDocsProgress().total}
+                </p>
+              </div>
+              <span className="text-2xl font-bold text-primary">{calculateProgress()}%</span>
             </div>
-            <div className="h-3 bg-muted rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.5 }}
-                className="h-full bg-primary"
+            <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all duration-500"
+                style={{ width: `${calculateProgress()}%` }}
               />
-            </div>
-            <p className="text-sm text-muted-foreground mt-2">
-              {Object.keys(uploadedDocs).length} of {REQUIRED_DOCUMENTS.length} documents uploaded
-            </p>
-          </motion.div>
-
-          {/* Tabs */}
-          <div className="mb-8 flex gap-3 border-b border-border">
-            <button
-              onClick={() => setSelectedDestination("georgia")}
-              className={cn(
-                "px-4 py-3 font-medium text-sm transition-colors border-b-2 -mb-px",
-                selectedDestination === "georgia"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Georgia
-            </button>
-            <button
-              onClick={() => setSelectedDestination("thailand")}
-              className={cn(
-                "px-4 py-3 font-medium text-sm transition-colors border-b-2 -mb-px",
-                selectedDestination === "thailand"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Thailand
-            </button>
-            <button
-              onClick={() => setSelectedDestination("bhutan")}
-              className={cn(
-                "px-4 py-3 font-medium text-sm transition-colors border-b-2 -mb-px",
-                selectedDestination === "bhutan"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Bhutan
-            </button>
-          </div>
-
-          {/* Destination-Specific Documents */}
-          <motion.div
-            key={selectedDestination}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-12"
-          >
-            <h2 className="text-2xl font-bold mb-6">
-              Documents Required for {DESTINATION_SPECIFIC[selectedDestination].name}
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {DESTINATION_SPECIFIC[selectedDestination].documents.map((doc, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-start gap-3 p-4 bg-card rounded-lg border border-border hover:border-primary transition-colors"
-                >
-                  <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-medium text-sm">{doc}</p>
-                  </div>
-                </div>
-              ))}
             </div>
           </motion.div>
 
           {/* General Documents */}
           {isLoading ? (
             <div className="text-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
               <p className="text-muted-foreground">Loading documents...</p>
             </div>
           ) : (
@@ -371,6 +450,9 @@ export default function Documentation() {
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-1 h-6 bg-red-600 dark:bg-red-400 rounded-full"></div>
                   <h3 className="text-xl font-bold">Required Documents</h3>
+                  <span className="text-sm text-muted-foreground">
+                    ({getRequiredDocsProgress().uploaded}/{getRequiredDocsProgress().total} uploaded)
+                  </span>
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {REQUIRED_DOCUMENTS.filter((d) => d.status === "required").map((doc) => (
@@ -382,6 +464,7 @@ export default function Documentation() {
                       statusColor={getStatusColor(doc.status)}
                       statusIcon={getStatusIcon(doc.status)}
                       isUploading={uploadProgress[doc.documentId]}
+                      disabled={!isUserInfoSaved}
                     />
                   ))}
                 </div>
@@ -403,6 +486,7 @@ export default function Documentation() {
                       statusColor={getStatusColor(doc.status)}
                       statusIcon={getStatusIcon(doc.status)}
                       isUploading={uploadProgress[doc.documentId]}
+                      disabled={!isUserInfoSaved}
                     />
                   ))}
                 </div>
@@ -424,6 +508,7 @@ export default function Documentation() {
                       statusColor={getStatusColor(doc.status)}
                       statusIcon={getStatusIcon(doc.status)}
                       isUploading={uploadProgress[doc.documentId]}
+                      disabled={!isUserInfoSaved}
                     />
                   ))}
                 </div>
@@ -433,11 +518,42 @@ export default function Documentation() {
 
           {/* Submit Button */}
           <div className="mt-12 flex justify-center">
-            <Button size="lg" className="px-8">
-              <Upload className="w-5 h-5 mr-2" />
-              Proceed with Application
+            <Button 
+              size="lg" 
+              className="px-8"
+              onClick={handleCompleteSubmission}
+              disabled={isSubmitting || !isUserInfoSaved || getRequiredDocsProgress().uploaded < getRequiredDocsProgress().total}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <Upload className="w-5 h-5 mr-2" />
+                  Complete Submission
+                </>
+              )}
             </Button>
           </div>
+
+          {/* Button Status Message */}
+          {!isUserInfoSaved && (
+            <p className="text-center text-sm text-muted-foreground mt-4">
+              Please save your contact information to enable document uploads
+            </p>
+          )}
+          {isUserInfoSaved && getRequiredDocsProgress().uploaded < getRequiredDocsProgress().total && (
+            <p className="text-center text-sm text-amber-600 dark:text-amber-400 mt-4">
+              Please upload all {getRequiredDocsProgress().total} required documents to complete submission
+            </p>
+          )}
+          {isUserInfoSaved && getRequiredDocsProgress().uploaded === getRequiredDocsProgress().total && (
+            <p className="text-center text-sm text-green-600 dark:text-green-400 mt-4">
+              All required documents uploaded! Click "Complete Submission" to proceed.
+            </p>
+          )}
 
           {/* Important Info */}
           <motion.div
@@ -447,11 +563,12 @@ export default function Documentation() {
           >
             <h3 className="font-semibold text-amber-900 dark:text-amber-200 mb-3">Important Information</h3>
             <ul className="space-y-2 text-sm text-amber-800 dark:text-amber-300">
-              <li>• All documents must be clear, readable, and in English</li>
+              <li>• All documents must be clear, readable, and in English (or with certified translation)</li>
               <li>• Accepted formats: PDF, JPG, PNG (Maximum 5MB per file)</li>
               <li>• Original documents must be presented during visa interview</li>
               <li>• Keep copies of all submitted documents for your records</li>
               <li>• Document requirements may vary based on your nationality and destination</li>
+              <li>• Ensure all information is accurate and up-to-date</li>
             </ul>
           </motion.div>
         </div>
@@ -469,6 +586,7 @@ function DocumentCard({
   statusColor,
   statusIcon,
   isUploading,
+  disabled,
 }: {
   doc: any;
   uploaded?: Document;
@@ -476,12 +594,18 @@ function DocumentCard({
   statusColor: string;
   statusIcon: React.ReactNode;
   isUploading?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className={cn("p-5 rounded-lg border-2", statusColor, uploaded && "ring-2 ring-primary ring-offset-2 dark:ring-offset-background")}
+      className={cn(
+        "p-5 rounded-lg border-2", 
+        statusColor, 
+        uploaded && "ring-2 ring-primary ring-offset-2 dark:ring-offset-background",
+        disabled && !uploaded && "opacity-60"
+      )}
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-start gap-3 flex-1">
@@ -499,6 +623,11 @@ function DocumentCard({
             <CheckCircle className="w-4 h-4" />
             <span>✓ Document uploaded</span>
           </div>
+          {uploaded.uploadDate && (
+            <p className="text-xs mt-1 text-green-600 dark:text-green-400">
+              Uploaded: {new Date(uploaded.uploadDate).toLocaleDateString()}
+            </p>
+          )}
         </div>
       ) : (
         <label className="block">
@@ -507,16 +636,25 @@ function DocumentCard({
             onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])}
             accept=".pdf,.jpg,.jpeg,.png"
             className="hidden"
-            disabled={isUploading}
+            disabled={isUploading || disabled}
           />
           <div className={cn(
             "p-3 text-center cursor-pointer bg-primary/5 hover:bg-primary/10 border-2 border-dashed border-primary rounded transition-colors",
-            isUploading && "opacity-50 cursor-not-allowed"
+            (isUploading || disabled) && "opacity-50 cursor-not-allowed"
           )}>
-            <Upload className="w-4 h-4 mx-auto mb-1 text-primary" />
-            <p className="text-xs font-medium text-primary">
-              {isUploading ? "Uploading..." : "Click to upload"}
-            </p>
+            {isUploading ? (
+              <>
+                <Loader2 className="w-4 h-4 mx-auto mb-1 text-primary animate-spin" />
+                <p className="text-xs font-medium text-primary">Uploading...</p>
+              </>
+            ) : (
+              <>
+                <Upload className="w-4 h-4 mx-auto mb-1 text-primary" />
+                <p className="text-xs font-medium text-primary">
+                  {disabled ? "Save info first" : "Click to upload"}
+                </p>
+              </>
+            )}
           </div>
         </label>
       )}

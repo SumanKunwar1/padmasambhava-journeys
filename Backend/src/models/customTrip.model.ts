@@ -11,11 +11,13 @@ export interface ICustomTrip extends Document {
   dates?: string;
   budget?: string;
   message?: string;
-  status: 'New' | 'In Progress' | 'Quoted' | 'Confirmed' | 'Completed' | 'Cancelled';
+  status: string;
   adminNotes?: string;
   quotedPrice?: number;
   submittedDate: Date;
   updatedDate?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const customTripSchema = new Schema<ICustomTrip>(
@@ -23,26 +25,27 @@ const customTripSchema = new Schema<ICustomTrip>(
     userId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
+      required: false, // Not required as public users can submit
     },
     name: {
       type: String,
-      required: true,
+      required: [true, 'Name is required'],
       trim: true,
     },
     email: {
       type: String,
-      required: true,
-      lowercase: true,
+      required: [true, 'Email is required'],
       trim: true,
+      lowercase: true,
     },
     phone: {
       type: String,
-      required: true,
+      required: [true, 'Phone number is required'],
       trim: true,
     },
     destination: {
       type: String,
-      required: true,
+      required: [true, 'Destination is required'],
       trim: true,
     },
     travelers: {
@@ -63,14 +66,16 @@ const customTripSchema = new Schema<ICustomTrip>(
     },
     status: {
       type: String,
-      enum: ['New', 'In Progress', 'Quoted', 'Confirmed', 'Completed', 'Cancelled'],
-      default: 'New',
+      enum: ['pending', 'in-progress', 'quoted', 'confirmed', 'cancelled'],
+      default: 'pending',
     },
     adminNotes: {
       type: String,
+      trim: true,
     },
     quotedPrice: {
       type: Number,
+      min: 0,
     },
     submittedDate: {
       type: Date,
@@ -81,14 +86,13 @@ const customTripSchema = new Schema<ICustomTrip>(
     },
   },
   {
-    timestamps: true,
+    timestamps: true, // Automatically adds createdAt and updatedAt
   }
 );
 
 // Index for faster queries
+customTripSchema.index({ status: 1, submittedDate: -1 });
 customTripSchema.index({ email: 1 });
-customTripSchema.index({ status: 1 });
-customTripSchema.index({ userId: 1 });
-customTripSchema.index({ submittedDate: -1 });
+customTripSchema.index({ destination: 1 });
 
 export const CustomTrip = mongoose.model<ICustomTrip>('CustomTrip', customTripSchema);

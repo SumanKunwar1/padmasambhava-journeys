@@ -10,7 +10,7 @@ import { catchAsync } from '../utils/catchAsync';
 // @access  Private
 export const uploadDocument = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { documentId, name, category, description, status, destination } = req.body;
+    const { documentId, name, category, description, status } = req.body;
     const file = req.file;
 
     if (!file) {
@@ -18,13 +18,12 @@ export const uploadDocument = catchAsync(
     }
 
     // Upload to Cloudinary
-    const fileUrl = await uploadToCloudinary(file.buffer, `documentation/${destination || 'general'}`);
+    const fileUrl = await uploadToCloudinary(file.buffer, `documentation/general`);
 
     // Check if document already exists for this user
     let document = await Documentation.findOne({
       userId: (req as any).user?._id,
       documentId,
-      destination: destination || 'general',
     });
 
     if (document) {
@@ -53,7 +52,6 @@ export const uploadDocument = catchAsync(
         fileName: file.originalname,
         fileSize: file.size,
         uploadDate: new Date(),
-        destination: destination || 'general',
         isUploaded: true,
       });
     }
@@ -73,15 +71,9 @@ export const uploadDocument = catchAsync(
 // @access  Private
 export const getMyDocuments = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { destination } = req.query;
-
-    const query: any = { userId: (req as any).user?._id };
-
-    if (destination) {
-      query.destination = destination;
-    }
-
-    const documents = await Documentation.find(query).sort({ uploadDate: -1 });
+    const documents = await Documentation.find({ 
+      userId: (req as any).user?._id 
+    }).sort({ uploadDate: -1 });
 
     res.status(200).json({
       status: 'success',
@@ -98,7 +90,7 @@ export const getMyDocuments = catchAsync(
 // @access  Private/Admin
 export const getAllDocuments = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { userId, destination, page = 1, limit = 20 } = req.query;
+    const { userId, page = 1, limit = 100 } = req.query;
 
     const query: any = {};
 
@@ -106,14 +98,10 @@ export const getAllDocuments = catchAsync(
       query.userId = userId;
     }
 
-    if (destination) {
-      query.destination = destination;
-    }
-
     const skip = (Number(page) - 1) * Number(limit);
 
     const documents = await Documentation.find(query)
-      .populate('userId', 'fullName email')
+      .populate('userId', 'fullName email phoneNumber')
       .sort({ uploadDate: -1 })
       .skip(skip)
       .limit(Number(limit));
@@ -140,7 +128,7 @@ export const getAllDocuments = catchAsync(
 // @access  Private
 export const getDocument = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const document = await Documentation.findById(req.params.id).populate('userId', 'fullName email');
+    const document = await Documentation.findById(req.params.id).populate('userId', 'fullName email phoneNumber');
 
     if (!document) {
       return next(new AppError('Document not found', 404));
@@ -190,16 +178,13 @@ export const deleteDocument = catchAsync(
 // @access  Private
 export const getDocumentProgress = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { destination } = req.query;
-
-    const query: any = { userId: (req as any).user?._id };
-
-    if (destination) {
-      query.destination = destination;
-    }
-
-    const totalDocuments = await Documentation.countDocuments(query);
-    const uploadedDocuments = await Documentation.countDocuments({ ...query, isUploaded: true });
+    const totalDocuments = await Documentation.countDocuments({ 
+      userId: (req as any).user?._id 
+    });
+    const uploadedDocuments = await Documentation.countDocuments({ 
+      userId: (req as any).user?._id,
+      isUploaded: true 
+    });
 
     const progress = totalDocuments > 0 ? (uploadedDocuments / totalDocuments) * 100 : 0;
 

@@ -59,9 +59,9 @@ export const customTripService = {
     return response.data;
   },
 
-  // Get statistics (admin)
+  // Get statistics (admin) - FIXED: Changed from /stats/overview to /admin/stats
   getStats: async () => {
-    const response = await api.get('/custom-trips/stats/overview');
+    const response = await api.get('/custom-trips/admin/stats');
     return response.data;
   },
 };

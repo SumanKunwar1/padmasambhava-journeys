@@ -14,7 +14,6 @@ export interface DocumentData {
   category: string;
   description: string;
   status: 'required' | 'optional' | 'recommended';
-  destination?: string;
 }
 
 export const documentationService = {
@@ -27,9 +26,6 @@ export const documentationService = {
     formData.append('category', data.category);
     formData.append('description', data.description);
     formData.append('status', data.status);
-    if (data.destination) {
-      formData.append('destination', data.destination);
-    }
 
     const response = await api.post('/documentation/upload', formData, {
       headers: {
@@ -40,15 +36,13 @@ export const documentationService = {
   },
 
   // Get my documents
-  getMyDocuments: async (destination?: string) => {
-    const response = await api.get('/documentation/my-documents', {
-      params: { destination },
-    });
+  getMyDocuments: async () => {
+    const response = await api.get('/documentation/my-documents');
     return response.data;
   },
 
   // Get all documents (admin)
-  getAllDocuments: async (params?: { userId?: string; destination?: string; page?: number; limit?: number }) => {
+  getAllDocuments: async (params?: { userId?: string; page?: number; limit?: number }) => {
     const response = await api.get('/documentation', { params });
     return response.data;
   },
@@ -66,10 +60,8 @@ export const documentationService = {
   },
 
   // Get upload progress
-  getProgress: async (destination?: string) => {
-    const response = await api.get('/documentation/progress', {
-      params: { destination },
-    });
+  getProgress: async () => {
+    const response = await api.get('/documentation/progress');
     return response.data;
   },
 };

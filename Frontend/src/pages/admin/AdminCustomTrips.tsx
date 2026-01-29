@@ -42,6 +42,7 @@ interface CustomTripRequest {
   adminNotes?: string;
   quotedPrice?: number;
   createdAt: string;
+  submittedDate?: string;
 }
 
 export default function AdminCustomTrips() {
@@ -73,8 +74,21 @@ export default function AdminCustomTrips() {
     try {
       setIsLoading(true);
       const response = await customTripService.getAllRequests();
-      // FIX: Handle nested data structure properly
-      const requestsData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+      
+      // Extract customTrips array from nested response structure
+      let requestsData: CustomTripRequest[] = [];
+      
+      if (response.data?.customTrips) {
+        requestsData = response.data.customTrips;
+      } else if (response.data?.data?.customTrips) {
+        requestsData = response.data.data.customTrips;
+      } else if (Array.isArray(response.data)) {
+        requestsData = response.data;
+      } else if (Array.isArray(response.customTrips)) {
+        requestsData = response.customTrips;
+      }
+      
+      console.log("Loaded requests:", requestsData);
       setRequests(requestsData);
       setFilteredRequests(requestsData);
     } catch (error: any) {
@@ -84,7 +98,6 @@ export default function AdminCustomTrips() {
         description: error.response?.data?.message || "Failed to load requests",
         variant: "destructive",
       });
-      // Set empty arrays on error to prevent .map errors
       setRequests([]);
       setFilteredRequests([]);
     } finally {
@@ -95,15 +108,24 @@ export default function AdminCustomTrips() {
   const loadStats = async () => {
     try {
       const response = await customTripService.getStats();
-      const statsData = response.data?.data || response.data;
+      
+      // Extract stats from response
+      let statsData = null;
+      if (response.data?.data) {
+        statsData = response.data.data;
+      } else if (response.data) {
+        statsData = response.data;
+      }
+      
+      console.log("Loaded stats:", statsData);
       setStats(statsData);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to load stats:", error);
+      // Don't show error toast for stats - it's not critical
     }
   };
 
   const filterRequests = () => {
-    // Ensure requests is always an array
     if (!Array.isArray(requests)) {
       setFilteredRequests([]);
       return;
@@ -114,14 +136,14 @@ export default function AdminCustomTrips() {
     if (searchTerm) {
       filtered = filtered.filter(
         (req) =>
-          req.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          req.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          req.destination.toLowerCase().includes(searchTerm.toLowerCase())
+          req.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          req.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          req.destination?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     if (filterStatus !== "all") {
-      filtered = filtered.filter((req) => req.status === filterStatus);
+      filtered = filtered.filter((req) => req.status?.toLowerCase() === filterStatus.toLowerCase());
     }
 
     setFilteredRequests(filtered);
@@ -212,119 +234,154 @@ export default function AdminCustomTrips() {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
+    switch (status?.toLowerCase()) {
       case "pending":
-        return "bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300";
+        return "bg-yellow-500/10 text-yellow-500";
       case "in-progress":
-        return "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300";
+        return "bg-blue-500/10 text-blue-500";
       case "quoted":
-        return "bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300";
+        return "bg-purple-500/10 text-purple-500";
       case "confirmed":
-        return "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300";
+        return "bg-green-500/10 text-green-500";
       case "cancelled":
-        return "bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300";
+        return "bg-red-500/10 text-red-500";
       default:
-        return "bg-gray-100 dark:bg-gray-950 text-gray-700 dark:text-gray-300";
+        return "bg-gray-500/10 text-gray-500";
     }
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
+    switch (status?.toLowerCase()) {
       case "pending":
-        return <Clock className="w-3 h-3" />;
+        return <Clock className="w-3.5 h-3.5" />;
       case "in-progress":
-        return <MessageSquare className="w-3 h-3" />;
+        return <Clock className="w-3.5 h-3.5" />;
       case "quoted":
-        return <DollarSign className="w-3 h-3" />;
+        return <DollarSign className="w-3.5 h-3.5" />;
       case "confirmed":
-        return <CheckCircle className="w-3 h-3" />;
+        return <CheckCircle className="w-3.5 h-3.5" />;
       case "cancelled":
-        return <XCircle className="w-3 h-3" />;
+        return <XCircle className="w-3.5 h-3.5" />;
       default:
-        return null;
+        return <Clock className="w-3.5 h-3.5" />;
     }
+  };
+
+  // Calculate stats from requests if API stats fail
+  const getStatusCount = (status: string) => {
+    if (stats?.stats) {
+      const stat = stats.stats.find((s: any) => s._id?.toLowerCase() === status.toLowerCase());
+      return stat?.count || 0;
+    }
+    return requests.filter((r) => r.status?.toLowerCase() === status.toLowerCase()).length;
   };
 
   return (
     <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-display font-bold mb-2">Custom Trip Requests</h1>
-          <p className="text-muted-foreground">
-            Manage and respond to custom trip inquiries
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Custom Trip Requests</h1>
+            <p className="text-muted-foreground mt-1">
+              Manage and respond to custom trip inquiries
+            </p>
+          </div>
+          <Button variant="outline" size="sm">
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </Button>
         </div>
 
         {/* Stats Cards */}
-        {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <StatCard
-              title="Total Requests"
-              value={stats.total || 0}
-              icon={<MessageSquare className="w-5 h-5" />}
-              color="bg-blue-500"
-            />
-            <StatCard
-              title="Pending"
-              value={stats.pending || 0}
-              icon={<Clock className="w-5 h-5" />}
-              color="bg-amber-500"
-            />
-            <StatCard
-              title="Confirmed"
-              value={stats.confirmed || 0}
-              icon={<CheckCircle className="w-5 h-5" />}
-              color="bg-green-500"
-            />
-            <StatCard
-              title="This Month"
-              value={stats.thisMonth || 0}
-              icon={<Calendar className="w-5 h-5" />}
-              color="bg-purple-500"
-            />
-          </div>
-        )}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <StatCard
+            title="Total Requests"
+            value={stats?.total || requests.length}
+            icon={<MessageSquare className="w-5 h-5" />}
+            color="bg-blue-500"
+          />
+          <StatCard
+            title="Pending"
+            value={getStatusCount("pending")}
+            icon={<Clock className="w-5 h-5" />}
+            color="bg-yellow-500"
+          />
+          <StatCard
+            title="Confirmed"
+            value={getStatusCount("confirmed")}
+            icon={<CheckCircle className="w-5 h-5" />}
+            color="bg-green-500"
+          />
+          <StatCard
+            title="In Progress"
+            value={getStatusCount("in-progress")}
+            icon={<Clock className="w-5 h-5" />}
+            color="bg-purple-500"
+          />
+        </div>
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name, email, or destination..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <div className="flex gap-2">
-            {["all", "pending", "in-progress", "quoted", "confirmed", "cancelled"].map((status) => (
+        {/* Filters and Search */}
+        <div className="bg-card rounded-lg border border-border p-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name, email, or destination..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
               <Button
-                key={status}
-                variant={filterStatus === status ? "default" : "outline"}
+                variant={filterStatus === "all" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setFilterStatus(status)}
+                onClick={() => setFilterStatus("all")}
               >
-                {status === "all" ? "All" : status.charAt(0).toUpperCase() + status.slice(1)}
+                All
               </Button>
-            ))}
+              <Button
+                variant={filterStatus === "pending" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterStatus("pending")}
+              >
+                Pending
+              </Button>
+              <Button
+                variant={filterStatus === "in-progress" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterStatus("in-progress")}
+              >
+                In Progress
+              </Button>
+              <Button
+                variant={filterStatus === "confirmed" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterStatus("confirmed")}
+              >
+                Confirmed
+              </Button>
+            </div>
           </div>
         </div>
 
         {/* Requests Table */}
         <div className="bg-card rounded-lg border border-border overflow-hidden">
           {isLoading ? (
-            <div className="p-8 text-center">
-              <p className="text-muted-foreground">Loading requests...</p>
+            <div className="p-12 text-center text-muted-foreground">
+              Loading requests...
             </div>
           ) : filteredRequests.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-muted-foreground">No requests found</p>
+            <div className="p-12 text-center text-muted-foreground">
+              No requests found
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-muted/50 border-b border-border">
+                <thead className="bg-muted/50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Customer
@@ -379,7 +436,7 @@ export default function AdminCustomTrips() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-muted-foreground">
-                        {new Date(request.createdAt).toLocaleDateString()}
+                        {new Date(request.createdAt || request.submittedDate || Date.now()).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <Button
@@ -413,7 +470,7 @@ export default function AdminCustomTrips() {
               <div>
                 <h2 className="text-2xl font-bold">Request Details</h2>
                 <p className="text-sm text-muted-foreground">
-                  Submitted on {new Date(selectedRequest.createdAt).toLocaleDateString()}
+                  Submitted on {new Date(selectedRequest.createdAt || selectedRequest.submittedDate || Date.now()).toLocaleDateString()}
                 </p>
               </div>
               <Button
@@ -468,10 +525,10 @@ export default function AdminCustomTrips() {
                       <Button
                         key={status}
                         size="sm"
-                        variant={selectedRequest.status.toLowerCase() === status ? "default" : "outline"}
+                        variant={selectedRequest.status?.toLowerCase() === status ? "default" : "outline"}
                         onClick={() => updateRequestStatus(selectedRequest._id, status)}
                       >
-                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                        {status.charAt(0).toUpperCase() + status.slice(1).replace('-', ' ')}
                       </Button>
                     ))}
                   </div>

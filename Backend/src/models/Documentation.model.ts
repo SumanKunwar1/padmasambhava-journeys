@@ -1,4 +1,4 @@
-// models/documentation.model.ts
+// models/Documentation.model.ts
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IDocument extends Document {
@@ -12,7 +12,6 @@ export interface IDocument extends Document {
   fileName?: string;
   fileSize?: number;
   uploadDate?: Date;
-  destination?: string; // georgia, thailand, bhutan, etc.
   isUploaded: boolean;
 }
 
@@ -57,11 +56,6 @@ const documentSchema = new Schema<IDocument>(
     uploadDate: {
       type: Date,
     },
-    destination: {
-      type: String,
-      enum: ['georgia', 'thailand', 'bhutan', 'general'],
-      default: 'general',
-    },
     isUploaded: {
       type: Boolean,
       default: false,
@@ -74,6 +68,5 @@ const documentSchema = new Schema<IDocument>(
 
 // Index for faster queries
 documentSchema.index({ userId: 1, documentId: 1 });
-documentSchema.index({ destination: 1 });
 
 export const Documentation = mongoose.model<IDocument>('Documentation', documentSchema);

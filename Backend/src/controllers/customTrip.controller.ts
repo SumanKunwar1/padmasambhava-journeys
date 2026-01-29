@@ -9,35 +9,58 @@ import { catchAsync } from '../utils/catchAsync';
 // @access  Public
 export const submitCustomTrip = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { name, email, phone, destination, travelers, dates, budget, message } = req.body;
+    try {
+      const { name, email, phone, destination, travelers, dates, budget, message } = req.body;
 
-    // Validate required fields
-    if (!name || !email || !phone || !destination) {
-      return next(new AppError('Please provide all required fields', 400));
+      // Log incoming data for debugging
+      console.log('Received custom trip request:', { name, email, phone, destination });
+
+      // Validate required fields
+      if (!name || !email || !phone || !destination) {
+        return next(new AppError('Please provide all required fields', 400));
+      }
+
+      // Create custom trip request
+      const customTrip = await CustomTrip.create({
+        userId: (req as any).user?._id || undefined, // Optional - for logged in users
+        name,
+        email,
+        phone,
+        destination,
+        travelers: travelers || undefined,
+        dates: dates || undefined,
+        budget: budget || undefined,
+        message: message || undefined,
+        status: 'pending',
+        submittedDate: new Date(),
+      });
+
+      console.log('Custom trip created successfully:', customTrip._id);
+
+      res.status(201).json({
+        status: 'success',
+        message: 'Custom trip request submitted successfully. Our travel expert will contact you within 24 hours.',
+        data: {
+          customTrip,
+        },
+      });
+    } catch (error: any) {
+      console.error('Error creating custom trip:', error);
+      
+      // Handle validation errors
+      if (error.name === 'ValidationError') {
+        const errors = Object.values(error.errors).map((err: any) => err.message);
+        return next(new AppError(`Validation Error: ${errors.join(', ')}`, 400));
+      }
+      
+      // Handle duplicate key errors
+      if (error.code === 11000) {
+        return next(new AppError('A request with this information already exists', 400));
+      }
+      
+      // Pass other errors to error handler
+      return next(new AppError('Failed to submit custom trip request', 500));
     }
-
-    // Create custom trip request
-    const customTrip = await CustomTrip.create({
-      userId: (req as any).user?._id,
-      name,
-      email,
-      phone,
-      destination,
-      travelers,
-      dates,
-      budget,
-      message,
-      status: 'New',
-      submittedDate: new Date(),
-    });
-
-    res.status(201).json({
-      status: 'success',
-      message: 'Custom trip request submitted successfully. Our travel expert will contact you within 24 hours.',
-      data: {
-        customTrip,
-      },
-    });
   }
 );
 
@@ -132,14 +155,17 @@ export const updateCustomTrip = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { status, adminNotes, quotedPrice } = req.body;
 
+    const updateData: any = {
+      updatedDate: new Date(),
+    };
+
+    if (status) updateData.status = status;
+    if (adminNotes !== undefined) updateData.adminNotes = adminNotes;
+    if (quotedPrice !== undefined) updateData.quotedPrice = quotedPrice;
+
     const customTrip = await CustomTrip.findByIdAndUpdate(
       req.params.id,
-      {
-        status,
-        adminNotes,
-        quotedPrice,
-        updatedDate: new Date(),
-      },
+      updateData,
       { new: true, runValidators: true }
     );
 
@@ -178,7 +204,7 @@ export const deleteCustomTrip = catchAsync(
 );
 
 // @desc    Get custom trip statistics (Admin)
-// @route   GET /api/v1/custom-trips/stats
+// @route   GET /api/v1/custom-trips/admin/stats
 // @access  Private/Admin
 export const getCustomTripStats = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {

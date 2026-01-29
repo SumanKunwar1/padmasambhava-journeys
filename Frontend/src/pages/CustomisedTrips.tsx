@@ -8,6 +8,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { WhatsAppButton } from "@/components/shared/WhatsAppButton";
 import destBali from "@/assets/dest-bali.jpg";
+import { customTripService } from "@/services/customTrips";
 
 const features = [
   "Personalized itinerary based on your preferences",
@@ -20,6 +21,7 @@ const features = [
 
 const CustomisedTrips = () => {
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -31,7 +33,7 @@ const CustomisedTrips = () => {
     message: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate form
@@ -44,33 +46,38 @@ const CustomisedTrips = () => {
       return;
     }
 
-    // Save to localStorage
-    const customTripRequests = JSON.parse(localStorage.getItem("customTripRequests") || "[]");
-    const newRequest = {
-      id: Date.now().toString(),
-      ...formData,
-      status: "New",
-      submittedDate: new Date().toISOString(),
-    };
-    customTripRequests.push(newRequest);
-    localStorage.setItem("customTripRequests", JSON.stringify(customTripRequests));
+    try {
+      setIsSubmitting(true);
 
-    toast({
-      title: "Enquiry Submitted!",
-      description: "Our travel expert will get back to you within 24 hours",
-    });
+      // Submit to backend API
+      await customTripService.submitRequest(formData);
 
-    // Reset form
-    setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      destination: "",
-      travelers: "",
-      dates: "",
-      budget: "",
-      message: "",
-    });
+      toast({
+        title: "Enquiry Submitted!",
+        description: "Our travel expert will get back to you within 24 hours",
+      });
+
+      // Reset form
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        destination: "",
+        travelers: "",
+        dates: "",
+        budget: "",
+        message: "",
+      });
+    } catch (error: any) {
+      console.error("Error submitting custom trip:", error);
+      toast({
+        title: "Submission Failed",
+        description: error.response?.data?.message || "Failed to submit your request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -153,6 +160,7 @@ const CustomisedTrips = () => {
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                     required
+                    disabled={isSubmitting}
                   />
                 </div>
                 <div>
@@ -165,6 +173,7 @@ const CustomisedTrips = () => {
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
                     required
+                    disabled={isSubmitting}
                   />
                 </div>
               </div>
@@ -179,6 +188,7 @@ const CustomisedTrips = () => {
                     value={formData.phone}
                     onChange={(e) => setFormData({...formData, phone: e.target.value})}
                     required
+                    disabled={isSubmitting}
                   />
                 </div>
                 <div>
@@ -191,6 +201,7 @@ const CustomisedTrips = () => {
                     value={formData.destination}
                     onChange={(e) => setFormData({...formData, destination: e.target.value})}
                     required
+                    disabled={isSubmitting}
                   />
                 </div>
               </div>
@@ -205,6 +216,7 @@ const CustomisedTrips = () => {
                     placeholder="2 Adults, 1 Child"
                     value={formData.travelers}
                     onChange={(e) => setFormData({...formData, travelers: e.target.value})}
+                    disabled={isSubmitting}
                   />
                 </div>
                 <div>
@@ -216,6 +228,7 @@ const CustomisedTrips = () => {
                     placeholder="March 2024"
                     value={formData.dates}
                     onChange={(e) => setFormData({...formData, dates: e.target.value})}
+                    disabled={isSubmitting}
                   />
                 </div>
               </div>
@@ -228,6 +241,7 @@ const CustomisedTrips = () => {
                   placeholder="₹50,000 - ₹75,000"
                   value={formData.budget}
                   onChange={(e) => setFormData({...formData, budget: e.target.value})}
+                  disabled={isSubmitting}
                 />
               </div>
 
@@ -240,12 +254,13 @@ const CustomisedTrips = () => {
                   rows={4}
                   value={formData.message}
                   onChange={(e) => setFormData({...formData, message: e.target.value})}
+                  disabled={isSubmitting}
                 />
               </div>
 
-              <Button type="submit" className="w-full" size="lg">
+              <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
                 <Send className="w-4 h-4 mr-2" />
-                Submit Enquiry
+                {isSubmitting ? "Submitting..." : "Submit Enquiry"}
               </Button>
 
               <p className="text-xs text-muted-foreground text-center">
