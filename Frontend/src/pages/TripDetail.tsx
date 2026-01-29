@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
-const WHATSAPP_CONTACT = "9779851045900"; // Update with actual WhatsApp number
+const WHATSAPP_CONTACT = "9779851045900";
 
 const TRIP_TABS = ["Itinerary", "Inclusions", "Costing", "Notes"];
 
@@ -73,7 +73,6 @@ export default function TripDetail() {
   const [tripData, setTripData] = useState<Trip | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load trip data
   useEffect(() => {
     if (id) {
       fetchTripData(id);
@@ -119,6 +118,11 @@ export default function TripDetail() {
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
     }
+  };
+
+  const calculateTotalAmount = () => {
+    const basePrice = selectedDate?.price || tripData?.price || 0;
+    return basePrice * travelers;
   };
 
   if (isLoading) {
@@ -210,52 +214,40 @@ export default function TripDetail() {
               Itinerary (Day by Day)
             </h2>
             <div className="space-y-3">
-              {tripData.itinerary.map((item) => (
-                <motion.div
-                  key={item.day}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+              {tripData.itinerary?.map((day) => (
+                <div
+                  key={day.day}
                   className="border border-border rounded-lg overflow-hidden"
                 >
                   <button
-                    onClick={() => toggleDay(item.day)}
-                    className="w-full px-6 py-4 flex items-center justify-between bg-card hover:bg-muted transition-colors"
+                    onClick={() => toggleDay(day.day)}
+                    className="w-full flex items-center justify-between p-4 bg-muted/50 hover:bg-muted transition-colors"
                   >
-                    <div className="flex items-center gap-4">
-                      <span className="font-semibold text-primary text-lg">
-                        Day {item.day}
+                    <div className="flex items-center gap-3">
+                      <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-semibold">
+                        {day.day}
                       </span>
-                      <span className="text-foreground font-medium">
-                        {item.title}
-                      </span>
+                      <span className="font-semibold text-left">{day.title}</span>
                     </div>
-                    {expandedDays.includes(item.day) ? (
+                    {expandedDays.includes(day.day) ? (
                       <ChevronUp className="w-5 h-5 text-muted-foreground" />
                     ) : (
                       <ChevronDown className="w-5 h-5 text-muted-foreground" />
                     )}
                   </button>
-                  {expandedDays.includes(item.day) && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="bg-muted/50 px-6 py-4"
-                    >
+                  {expandedDays.includes(day.day) && (
+                    <div className="p-4 bg-background">
                       <ul className="space-y-2">
-                        {item.highlights.map((highlight, index) => (
-                          <li
-                            key={index}
-                            className="flex items-start gap-3 text-muted-foreground"
-                          >
-                            <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-                            {highlight}
+                        {day.highlights?.map((highlight, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <Check className="w-4 h-4 text-primary shrink-0 mt-1" />
+                            <span className="text-muted-foreground">{highlight}</span>
                           </li>
                         ))}
                       </ul>
-                    </motion.div>
+                    </div>
                   )}
-                </motion.div>
+                </div>
               ))}
             </div>
           </section>
@@ -263,16 +255,16 @@ export default function TripDetail() {
           {/* Inclusions & Exclusions */}
           <section id="inclusions" className="mb-12">
             <h2 className="text-2xl font-display font-bold mb-6">
-              What's Included
+              What's Included & Excluded
             </h2>
-            <div className="grid md:grid-cols-2 gap-8">
+            <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                   <Check className="w-5 h-5 text-primary" />
                   Inclusions
                 </h3>
                 <ul className="space-y-3">
-                  {tripData.inclusions.map((item, index) => (
+                  {tripData.inclusions?.map((item, index) => (
                     <li key={index} className="flex items-start gap-3">
                       <Check className="w-4 h-4 text-primary shrink-0 mt-1" />
                       <span className="text-muted-foreground">{item}</span>
@@ -286,7 +278,7 @@ export default function TripDetail() {
                   Exclusions
                 </h3>
                 <ul className="space-y-3">
-                  {tripData.exclusions.map((item, index) => (
+                  {tripData.exclusions?.map((item, index) => (
                     <li key={index} className="flex items-start gap-3">
                       <X className="w-4 h-4 text-destructive shrink-0 mt-1" />
                       <span className="text-muted-foreground">{item}</span>
@@ -312,10 +304,7 @@ export default function TripDetail() {
                 </thead>
                 <tbody>
                   {PRICING_DETAILS.map((detail, index) => (
-                    <tr
-                      key={index}
-                      className="border-b border-border"
-                    >
+                    <tr key={index} className="border-b border-border">
                       <td className="p-4">{detail.sharing}</td>
                       <td className="p-4 text-right">
                         {detail.isSupplementary ? (
@@ -348,7 +337,7 @@ export default function TripDetail() {
               Important Notes
             </h2>
             <ul className="space-y-3">
-              {tripData.notes.map((note, index) => (
+              {tripData.notes?.map((note, index) => (
                 <li key={index} className="flex items-start gap-3">
                   <span className="shrink-0 w-6 h-6 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
                     {index + 1}
@@ -446,7 +435,7 @@ export default function TripDetail() {
                 <div className="flex items-center justify-between">
                   <span className="font-medium">Total Amount</span>
                   <span className="text-2xl font-bold">
-                    ₹{selectedDate ? (selectedDate.price * travelers).toLocaleString() : (tripData.price * travelers).toLocaleString()}
+                    ₹{calculateTotalAmount().toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -483,6 +472,11 @@ export default function TripDetail() {
         isOpen={isBookingModalOpen}
         onClose={() => setIsBookingModalOpen(false)}
         tripName={tripData.name}
+        tripId={tripData._id}
+        travelers={travelers}
+        selectedDate={selectedDate?.date}
+        selectedPrice={selectedDate?.price || tripData.price}
+        totalAmount={calculateTotalAmount()}
       />
     </div>
   );
