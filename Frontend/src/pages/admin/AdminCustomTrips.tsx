@@ -17,25 +17,31 @@ import {
   DollarSign,
   MessageSquare,
   X,
+  Trash2,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { customTripService } from "@/services/customTrips";
 import { cn } from "@/lib/utils";
 
 interface CustomTripRequest {
-  id: string;
+  _id: string;
   name: string;
   email: string;
   phone: string;
   destination: string;
-  travelers: string;
-  dates: string;
-  budget: string;
-  message: string;
-  status: "New" | "In Progress" | "Quoted" | "Confirmed" | "Cancelled";
-  submittedDate: string;
+  travelers?: string;
+  dates?: string;
+  budget?: string;
+  message?: string;
+  status: string;
+  adminNotes?: string;
+  quotedPrice?: number;
+  createdAt: string;
 }
 
 export default function AdminCustomTrips() {
@@ -46,52 +52,63 @@ export default function AdminCustomTrips() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [selectedRequest, setSelectedRequest] = useState<CustomTripRequest | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState<any>(null);
+  
+  // Form states for editing
+  const [adminNotes, setAdminNotes] = useState("");
+  const [quotedPrice, setQuotedPrice] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    // Load requests from localStorage
-    const stored = localStorage.getItem("customTripRequests");
-    if (stored) {
-      const reqs = JSON.parse(stored);
-      setRequests(reqs);
-      setFilteredRequests(reqs);
-    } else {
-      // Add some sample data for demonstration
-      const sampleData: CustomTripRequest[] = [
-        {
-          id: "1",
-          name: "Amit Sharma",
-          email: "amit.sharma@example.com",
-          phone: "+91 98765 43210",
-          destination: "Spiti Valley",
-          travelers: "2 Adults, 1 Child",
-          dates: "March 2026",
-          budget: "₹50,000 - ₹75,000",
-          message: "Looking for a family-friendly adventure trip with cultural experiences",
-          status: "New",
-          submittedDate: new Date().toISOString(),
-        },
-        {
-          id: "2",
-          name: "Priya Patel",
-          email: "priya.patel@example.com",
-          phone: "+91 87654 32109",
-          destination: "Bhutan",
-          travelers: "4 Adults",
-          dates: "April 2026",
-          budget: "₹1,00,000 - ₹1,50,000",
-          message: "Interested in spiritual and meditation retreat",
-          status: "In Progress",
-          submittedDate: new Date(Date.now() - 86400000).toISOString(),
-        },
-      ];
-      setRequests(sampleData);
-      setFilteredRequests(sampleData);
-      localStorage.setItem("customTripRequests", JSON.stringify(sampleData));
-    }
+    loadRequests();
+    loadStats();
   }, []);
 
   useEffect(() => {
-    // Filter requests
+    filterRequests();
+  }, [searchTerm, filterStatus, requests]);
+
+  const loadRequests = async () => {
+    try {
+      setIsLoading(true);
+      const response = await customTripService.getAllRequests();
+      // FIX: Handle nested data structure properly
+      const requestsData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+      setRequests(requestsData);
+      setFilteredRequests(requestsData);
+    } catch (error: any) {
+      console.error("Error loading requests:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to load requests",
+        variant: "destructive",
+      });
+      // Set empty arrays on error to prevent .map errors
+      setRequests([]);
+      setFilteredRequests([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadStats = async () => {
+    try {
+      const response = await customTripService.getStats();
+      const statsData = response.data?.data || response.data;
+      setStats(statsData);
+    } catch (error) {
+      console.error("Failed to load stats:", error);
+    }
+  };
+
+  const filterRequests = () => {
+    // Ensure requests is always an array
+    if (!Array.isArray(requests)) {
+      setFilteredRequests([]);
+      return;
+    }
+
     let filtered = requests;
 
     if (searchTerm) {
@@ -108,36 +125,103 @@ export default function AdminCustomTrips() {
     }
 
     setFilteredRequests(filtered);
-  }, [searchTerm, filterStatus, requests]);
+  };
 
-  const updateRequestStatus = (id: string, newStatus: CustomTripRequest["status"]) => {
-    const updated = requests.map((req) =>
-      req.id === id ? { ...req, status: newStatus } : req
-    );
-    setRequests(updated);
-    localStorage.setItem("customTripRequests", JSON.stringify(updated));
+  const updateRequestStatus = async (id: string, newStatus: string) => {
+    try {
+      await customTripService.updateRequest(id, { status: newStatus });
 
-    toast({
-      title: "Status Updated",
-      description: `Request status changed to ${newStatus}`,
-    });
+      toast({
+        title: "Status Updated",
+        description: `Request status changed to ${newStatus}`,
+      });
 
-    if (selectedRequest?.id === id) {
-      setSelectedRequest({ ...selectedRequest, status: newStatus });
+      await loadRequests();
+      if (selectedRequest?._id === id) {
+        const updatedRequest = requests.find(r => r._id === id);
+        if (updatedRequest) {
+          setSelectedRequest({ ...updatedRequest, status: newStatus });
+        }
+      }
+    } catch (error: any) {
+      toast({
+        title: "Update Failed",
+        description: error.response?.data?.message || "Failed to update status",
+        variant: "destructive",
+      });
     }
   };
 
+  const saveRequestDetails = async () => {
+    if (!selectedRequest) return;
+
+    try {
+      setIsSaving(true);
+      await customTripService.updateRequest(selectedRequest._id, {
+        adminNotes,
+        quotedPrice: quotedPrice ? Number(quotedPrice) : undefined,
+      });
+
+      toast({
+        title: "Saved",
+        description: "Request details updated successfully",
+      });
+
+      await loadRequests();
+    } catch (error: any) {
+      toast({
+        title: "Save Failed",
+        description: error.response?.data?.message || "Failed to save details",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const deleteRequest = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this request?")) return;
+
+    try {
+      await customTripService.deleteRequest(id);
+
+      toast({
+        title: "Deleted",
+        description: "Request deleted successfully",
+      });
+
+      await loadRequests();
+      if (selectedRequest?._id === id) {
+        setShowDetailsModal(false);
+        setSelectedRequest(null);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Delete Failed",
+        description: error.response?.data?.message || "Failed to delete request",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openDetailsModal = (request: CustomTripRequest) => {
+    setSelectedRequest(request);
+    setAdminNotes(request.adminNotes || "");
+    setQuotedPrice(request.quotedPrice?.toString() || "");
+    setShowDetailsModal(true);
+  };
+
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "New":
+    switch (status.toLowerCase()) {
+      case "pending":
         return "bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300";
-      case "In Progress":
+      case "in-progress":
         return "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300";
-      case "Quoted":
+      case "quoted":
         return "bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300";
-      case "Confirmed":
+      case "confirmed":
         return "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300";
-      case "Cancelled":
+      case "cancelled":
         return "bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300";
       default:
         return "bg-gray-100 dark:bg-gray-950 text-gray-700 dark:text-gray-300";
@@ -145,235 +229,174 @@ export default function AdminCustomTrips() {
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "New":
-        return <Clock className="w-4 h-4" />;
-      case "In Progress":
-        return <Clock className="w-4 h-4" />;
-      case "Quoted":
-        return <DollarSign className="w-4 h-4" />;
-      case "Confirmed":
-        return <CheckCircle className="w-4 h-4" />;
-      case "Cancelled":
-        return <XCircle className="w-4 h-4" />;
+    switch (status.toLowerCase()) {
+      case "pending":
+        return <Clock className="w-3 h-3" />;
+      case "in-progress":
+        return <MessageSquare className="w-3 h-3" />;
+      case "quoted":
+        return <DollarSign className="w-3 h-3" />;
+      case "confirmed":
+        return <CheckCircle className="w-3 h-3" />;
+      case "cancelled":
+        return <XCircle className="w-3 h-3" />;
       default:
-        return <Clock className="w-4 h-4" />;
+        return null;
     }
-  };
-
-  const exportToCSV = () => {
-    const headers = ["Name", "Email", "Phone", "Destination", "Travelers", "Dates", "Budget", "Status", "Submitted"];
-    const rows = filteredRequests.map((req) => [
-      req.name,
-      req.email,
-      req.phone,
-      req.destination,
-      req.travelers,
-      req.dates,
-      req.budget,
-      req.status,
-      new Date(req.submittedDate).toLocaleDateString(),
-    ]);
-
-    const csv = [headers, ...rows].map((row) => row.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "custom-trip-requests.csv";
-    a.click();
-
-    toast({
-      title: "Export Successful",
-      description: "Requests exported to CSV",
-    });
   };
 
   return (
     <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-display font-bold">Custom Trip Requests</h1>
-            <p className="text-muted-foreground mt-1">
-              Manage customised trip enquiries
-            </p>
-          </div>
-          <Button onClick={exportToCSV} variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Export CSV
-          </Button>
+        <div>
+          <h1 className="text-3xl font-display font-bold mb-2">Custom Trip Requests</h1>
+          <p className="text-muted-foreground">
+            Manage and respond to custom trip inquiries
+          </p>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="bg-card rounded-lg border border-border p-4">
-            <div className="text-sm text-muted-foreground">Total Requests</div>
-            <div className="text-2xl font-bold mt-1">{requests.length}</div>
+        {/* Stats Cards */}
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <StatCard
+              title="Total Requests"
+              value={stats.total || 0}
+              icon={<MessageSquare className="w-5 h-5" />}
+              color="bg-blue-500"
+            />
+            <StatCard
+              title="Pending"
+              value={stats.pending || 0}
+              icon={<Clock className="w-5 h-5" />}
+              color="bg-amber-500"
+            />
+            <StatCard
+              title="Confirmed"
+              value={stats.confirmed || 0}
+              icon={<CheckCircle className="w-5 h-5" />}
+              color="bg-green-500"
+            />
+            <StatCard
+              title="This Month"
+              value={stats.thisMonth || 0}
+              icon={<Calendar className="w-5 h-5" />}
+              color="bg-purple-500"
+            />
           </div>
-          <div className="bg-card rounded-lg border border-border p-4">
-            <div className="text-sm text-muted-foreground">New</div>
-            <div className="text-2xl font-bold mt-1 text-blue-600">
-              {requests.filter((r) => r.status === "New").length}
-            </div>
-          </div>
-          <div className="bg-card rounded-lg border border-border p-4">
-            <div className="text-sm text-muted-foreground">In Progress</div>
-            <div className="text-2xl font-bold mt-1 text-amber-600">
-              {requests.filter((r) => r.status === "In Progress").length}
-            </div>
-          </div>
-          <div className="bg-card rounded-lg border border-border p-4">
-            <div className="text-sm text-muted-foreground">Quoted</div>
-            <div className="text-2xl font-bold mt-1 text-purple-600">
-              {requests.filter((r) => r.status === "Quoted").length}
-            </div>
-          </div>
-          <div className="bg-card rounded-lg border border-border p-4">
-            <div className="text-sm text-muted-foreground">Confirmed</div>
-            <div className="text-2xl font-bold mt-1 text-green-600">
-              {requests.filter((r) => r.status === "Confirmed").length}
-            </div>
-          </div>
-        </div>
+        )}
 
         {/* Filters */}
-        <div className="bg-card rounded-lg border border-border p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name, email, or destination..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <div className="relative">
-              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full h-10 pl-9 pr-4 rounded-md border border-border bg-background"
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name, email, or destination..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="flex gap-2">
+            {["all", "pending", "in-progress", "quoted", "confirmed", "cancelled"].map((status) => (
+              <Button
+                key={status}
+                variant={filterStatus === status ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterStatus(status)}
               >
-                <option value="all">All Statuses</option>
-                <option value="New">New</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Quoted">Quoted</option>
-                <option value="Confirmed">Confirmed</option>
-                <option value="Cancelled">Cancelled</option>
-              </select>
-            </div>
-            <div className="text-sm text-muted-foreground flex items-center">
-              Showing {filteredRequests.length} of {requests.length} requests
-            </div>
+                {status === "all" ? "All" : status.charAt(0).toUpperCase() + status.slice(1)}
+              </Button>
+            ))}
           </div>
         </div>
 
-        {/* Requests List */}
+        {/* Requests Table */}
         <div className="bg-card rounded-lg border border-border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th className="text-left p-4 font-semibold text-sm">Customer</th>
-                  <th className="text-left p-4 font-semibold text-sm">Contact</th>
-                  <th className="text-left p-4 font-semibold text-sm">Trip Details</th>
-                  <th className="text-left p-4 font-semibold text-sm">Budget</th>
-                  <th className="text-left p-4 font-semibold text-sm">Status</th>
-                  <th className="text-left p-4 font-semibold text-sm">Submitted</th>
-                  <th className="text-left p-4 font-semibold text-sm">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRequests.length === 0 ? (
+          {isLoading ? (
+            <div className="p-8 text-center">
+              <p className="text-muted-foreground">Loading requests...</p>
+            </div>
+          ) : filteredRequests.length === 0 ? (
+            <div className="p-8 text-center">
+              <p className="text-muted-foreground">No requests found</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-muted/50 border-b border-border">
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-muted-foreground">
-                      No requests found
-                    </td>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Customer
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Destination
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Dates
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Submitted
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
-                ) : (
-                  filteredRequests.map((req, index) => (
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredRequests.map((request) => (
                     <motion.tr
-                      key={req.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="border-t border-border hover:bg-muted/30 transition-colors"
+                      key={request._id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="hover:bg-muted/50 transition-colors"
                     >
-                      <td className="p-4">
-                        <div className="font-semibold text-sm">{req.name}</div>
-                        <div className="text-xs text-muted-foreground">ID: {req.id}</div>
-                      </td>
-                      <td className="p-4">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 text-xs">
-                            <Mail className="w-3 h-3 text-muted-foreground" />
-                            <span className="text-muted-foreground">{req.email}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs">
-                            <Phone className="w-3 h-3 text-muted-foreground" />
-                            <span className="text-muted-foreground">{req.phone}</span>
-                          </div>
+                      <td className="px-6 py-4">
+                        <div>
+                          <div className="font-medium">{request.name}</div>
+                          <div className="text-sm text-muted-foreground">{request.email}</div>
                         </div>
                       </td>
-                      <td className="p-4">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 text-sm">
-                            <MapPin className="w-3 h-3 text-muted-foreground" />
-                            <span className="font-medium">{req.destination}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Users className="w-3 h-3" />
-                            <span>{req.travelers}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Calendar className="w-3 h-3" />
-                            <span>{req.dates}</span>
-                          </div>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-muted-foreground" />
+                          <span>{request.destination}</span>
                         </div>
                       </td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-2 text-sm font-medium">
-                          <DollarSign className="w-4 h-4 text-muted-foreground" />
-                          {req.budget}
-                        </div>
-                      </td>
-                      <td className="p-4">
+                      <td className="px-6 py-4 text-sm">{request.dates || "Not specified"}</td>
+                      <td className="px-6 py-4">
                         <span
                           className={cn(
-                            "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium",
-                            getStatusColor(req.status)
+                            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
+                            getStatusColor(request.status)
                           )}
                         >
-                          {getStatusIcon(req.status)}
-                          {req.status}
+                          {getStatusIcon(request.status)}
+                          {request.status}
                         </span>
                       </td>
-                      <td className="p-4">
-                        <div className="text-sm text-muted-foreground">
-                          {new Date(req.submittedDate).toLocaleDateString()}
-                        </div>
+                      <td className="px-6 py-4 text-sm text-muted-foreground">
+                        {new Date(request.createdAt).toLocaleDateString()}
                       </td>
-                      <td className="p-4">
+                      <td className="px-6 py-4 text-right">
                         <Button
-                          size="sm"
                           variant="ghost"
-                          onClick={() => {
-                            setSelectedRequest(req);
-                            setShowDetailsModal(true);
-                          }}
+                          size="sm"
+                          onClick={() => openDetailsModal(request)}
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-4 h-4 mr-2" />
+                          View
                         </Button>
                       </td>
                     </motion.tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 
@@ -383,13 +406,14 @@ export default function AdminCustomTrips() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-card rounded-lg border border-border max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-card rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto"
           >
+            {/* Modal Header */}
             <div className="sticky top-0 bg-card border-b border-border p-6 flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold">Request Details</h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  ID: {selectedRequest.id}
+                <p className="text-sm text-muted-foreground">
+                  Submitted on {new Date(selectedRequest.createdAt).toLocaleDateString()}
                 </p>
               </div>
               <Button
@@ -401,119 +425,123 @@ export default function AdminCustomTrips() {
               </Button>
             </div>
 
+            {/* Modal Content */}
             <div className="p-6 space-y-6">
-              {/* Status Update */}
-              <div className="bg-muted/50 rounded-lg p-4">
-                <label className="block text-sm font-semibold mb-2">Update Status</label>
-                <div className="flex flex-wrap gap-2">
-                  {["New", "In Progress", "Quoted", "Confirmed", "Cancelled"].map(
-                    (status) => (
-                      <Button
-                        key={status}
-                        size="sm"
-                        variant={
-                          selectedRequest.status === status ? "default" : "outline"
-                        }
-                        onClick={() =>
-                          updateRequestStatus(
-                            selectedRequest.id,
-                            status as CustomTripRequest["status"]
-                          )
-                        }
-                      >
-                        {status}
-                      </Button>
-                    )
-                  )}
-                </div>
-              </div>
-
               {/* Customer Information */}
               <div>
-                <h3 className="text-lg font-semibold mb-3">Customer Information</h3>
-                <div className="space-y-3">
-                  <div className="bg-muted/30 rounded-lg p-3">
-                    <div className="text-xs text-muted-foreground mb-1">Full Name</div>
-                    <div className="text-sm font-medium">{selectedRequest.name}</div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="bg-muted/30 rounded-lg p-3">
-                      <div className="text-xs text-muted-foreground mb-1">Email</div>
-                      <div className="text-sm font-medium">{selectedRequest.email}</div>
-                    </div>
-                    <div className="bg-muted/30 rounded-lg p-3">
-                      <div className="text-xs text-muted-foreground mb-1">Phone</div>
-                      <div className="text-sm font-medium">{selectedRequest.phone}</div>
-                    </div>
-                  </div>
+                <h3 className="text-lg font-semibold mb-4">Customer Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <InfoItem icon={<User className="w-4 h-4" />} label="Name" value={selectedRequest.name} />
+                  <InfoItem icon={<Mail className="w-4 h-4" />} label="Email" value={selectedRequest.email} />
+                  <InfoItem icon={<Phone className="w-4 h-4" />} label="Phone" value={selectedRequest.phone} />
+                  <InfoItem icon={<MapPin className="w-4 h-4" />} label="Destination" value={selectedRequest.destination} />
                 </div>
               </div>
 
               {/* Trip Details */}
               <div>
-                <h3 className="text-lg font-semibold mb-3">Trip Details</h3>
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="bg-muted/30 rounded-lg p-3">
-                      <div className="text-xs text-muted-foreground mb-1">Destination</div>
-                      <div className="text-sm font-medium">{selectedRequest.destination}</div>
-                    </div>
-                    <div className="bg-muted/30 rounded-lg p-3">
-                      <div className="text-xs text-muted-foreground mb-1">Travel Dates</div>
-                      <div className="text-sm font-medium">{selectedRequest.dates}</div>
-                    </div>
-                    <div className="bg-muted/30 rounded-lg p-3">
-                      <div className="text-xs text-muted-foreground mb-1">Number of Travelers</div>
-                      <div className="text-sm font-medium">{selectedRequest.travelers}</div>
-                    </div>
-                    <div className="bg-muted/30 rounded-lg p-3">
-                      <div className="text-xs text-muted-foreground mb-1">Budget (per person)</div>
-                      <div className="text-sm font-medium">{selectedRequest.budget}</div>
-                    </div>
+                <h3 className="text-lg font-semibold mb-4">Trip Details</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <InfoItem icon={<Users className="w-4 h-4" />} label="Travelers" value={selectedRequest.travelers || "Not specified"} />
+                  <InfoItem icon={<Calendar className="w-4 h-4" />} label="Travel Dates" value={selectedRequest.dates || "Not specified"} />
+                  <InfoItem icon={<DollarSign className="w-4 h-4" />} label="Budget" value={selectedRequest.budget || "Not specified"} />
+                </div>
+              </div>
+
+              {/* Message */}
+              {selectedRequest.message && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Customer Message</h3>
+                  <p className="text-sm bg-muted p-4 rounded-lg">{selectedRequest.message}</p>
+                </div>
+              )}
+
+              {/* Admin Section */}
+              <div className="border-t border-border pt-6">
+                <h3 className="text-lg font-semibold mb-4">Admin Actions</h3>
+                
+                {/* Status Update */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-2">Update Status</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {["pending", "in-progress", "quoted", "confirmed", "cancelled"].map((status) => (
+                      <Button
+                        key={status}
+                        size="sm"
+                        variant={selectedRequest.status.toLowerCase() === status ? "default" : "outline"}
+                        onClick={() => updateRequestStatus(selectedRequest._id, status)}
+                      >
+                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                      </Button>
+                    ))}
                   </div>
                 </div>
-              </div>
 
-              {/* Customer Message */}
-              <div>
-                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5" />
-                  Customer Message
-                </h3>
-                <div className="bg-muted/30 rounded-lg p-4">
-                  <p className="text-sm leading-relaxed">{selectedRequest.message}</p>
+                {/* Quoted Price */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-2">Quoted Price (₹)</label>
+                  <Input
+                    type="number"
+                    placeholder="Enter quoted price"
+                    value={quotedPrice}
+                    onChange={(e) => setQuotedPrice(e.target.value)}
+                  />
+                </div>
+
+                {/* Admin Notes */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-2">Admin Notes</label>
+                  <Textarea
+                    placeholder="Add internal notes about this request..."
+                    value={adminNotes}
+                    onChange={(e) => setAdminNotes(e.target.value)}
+                    rows={4}
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <Button onClick={saveRequestDetails} disabled={isSaving} className="flex-1">
+                    {isSaving ? "Saving..." : "Save Details"}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => deleteRequest(selectedRequest._id)}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </Button>
                 </div>
               </div>
-
-              {/* Contact Actions */}
-              <div className="flex gap-3">
-                <Button className="flex-1" asChild>
-                  <a href={`mailto:${selectedRequest.email}`}>
-                    <Mail className="w-4 h-4 mr-2" />
-                    Send Email
-                  </a>
-                </Button>
-                <Button className="flex-1" variant="outline" asChild>
-                  <a href={`tel:${selectedRequest.phone}`}>
-                    <Phone className="w-4 h-4 mr-2" />
-                    Call Customer
-                  </a>
-                </Button>
-              </div>
-            </div>
-
-            <div className="sticky bottom-0 bg-card border-t border-border p-6">
-              <Button
-                onClick={() => setShowDetailsModal(false)}
-                variant="outline"
-                className="w-full"
-              >
-                Close
-              </Button>
             </div>
           </motion.div>
         </div>
       )}
     </AdminLayout>
+  );
+}
+
+function StatCard({ title, value, icon, color }: any) {
+  return (
+    <div className="bg-card rounded-lg border border-border p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-muted-foreground mb-1">{title}</p>
+          <p className="text-3xl font-bold">{value}</p>
+        </div>
+        <div className={cn("p-3 rounded-lg text-white", color)}>{icon}</div>
+      </div>
+    </div>
+  );
+}
+
+function InfoItem({ icon, label, value }: any) {
+  return (
+    <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+      <div className="text-muted-foreground mt-0.5">{icon}</div>
+      <div>
+        <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
+        <p className="text-sm font-medium">{value}</p>
+      </div>
+    </div>
   );
 }

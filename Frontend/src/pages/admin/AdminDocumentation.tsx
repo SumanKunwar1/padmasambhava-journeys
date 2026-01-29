@@ -3,795 +3,462 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Search,
-  Filter,
-  Download,
   Eye,
   CheckCircle,
   XCircle,
-  Clock,
   FileText,
   Mail,
-  Phone,
   User,
   Calendar,
-  Upload,
-  AlertCircle,
   X,
   FileDown,
+  Trash2,
+  MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { documentationService } from "@/services/documentation";
 import { cn } from "@/lib/utils";
-import JSZip from "jszip";
-import { saveAs } from "file-saver";
 
-interface DocumentSubmission {
-  id: string;
+interface Document {
+  _id: string;
+  userId: {
+    _id: string;
+    fullName: string;
+    email: string;
+  };
+  documentId: string;
+  name: string;
+  category: string;
+  description: string;
+  status: "required" | "optional" | "recommended";
+  destination?: string;
+  fileUrl: string;
+  createdAt: string;
+}
+
+interface GroupedDocument {
   userId: string;
   userName: string;
   userEmail: string;
   destination: string;
-  uploadedDocs: {
-    [key: string]: {
-      name: string;
-      category: string;
-      uploadDate: string;
-      fileName: string;
-      file?: File;
-    };
-  };
-  completionPercentage: number;
-  status: "Incomplete" | "Under Review" | "Approved" | "Requires Revision";
-  submittedDate: string;
+  documents: Document[];
+  totalDocs: number;
+  uploadedDate: string;
 }
-
-const DOCUMENT_CATEGORIES = {
-  Identity: ["Passport Bio Page", "Passport Size Photo", "Aadhaar Card Copy"],
-  Travel: ["Visa/Visa Support Letter", "Travel Itinerary"],
-  Accommodation: ["Hotel Booking / Invitation Letter"],
-  Financial: ["Bank Statement (Last 3-6 months)"],
-  Insurance: ["Travel Insurance"],
-  Employment: ["Employment Letter"],
-  Tax: ["PAN Card Copy"],
-};
 
 export default function AdminDocumentation() {
   const { toast } = useToast();
-  const [submissions, setSubmissions] = useState<DocumentSubmission[]>([]);
-  const [filteredSubmissions, setFilteredSubmissions] = useState<DocumentSubmission[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [groupedDocs, setGroupedDocs] = useState<GroupedDocument[]>([]);
+  const [filteredDocs, setFilteredDocs] = useState<GroupedDocument[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [selectedSubmission, setSelectedSubmission] = useState<DocumentSubmission | null>(null);
+  const [filterDestination, setFilterDestination] = useState<string>("all");
+  const [selectedGroup, setSelectedGroup] = useState<GroupedDocument | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Load submissions from localStorage
-    const stored = localStorage.getItem("documentSubmissions");
-    if (stored) {
-      const subs = JSON.parse(stored);
-      setSubmissions(subs);
-      setFilteredSubmissions(subs);
-    } else {
-      // Add sample data for demonstration
-      const sampleData: DocumentSubmission[] = [
-        {
-          id: "1",
-          userId: "user1",
-          userName: "Rajesh Kumar",
-          userEmail: "rajesh.kumar@example.com",
-          destination: "Georgia",
-          uploadedDocs: {
-            passport: {
-              name: "Passport Bio Page",
-              category: "Identity",
-              uploadDate: new Date().toISOString(),
-              fileName: "passport_rajesh.pdf",
-            },
-            photo: {
-              name: "Passport Size Photo",
-              category: "Identity",
-              uploadDate: new Date().toISOString(),
-              fileName: "photo_rajesh.jpg",
-            },
-            bank: {
-              name: "Bank Statement",
-              category: "Financial",
-              uploadDate: new Date().toISOString(),
-              fileName: "bank_statement.pdf",
-            },
-          },
-          completionPercentage: 60,
-          status: "Under Review",
-          submittedDate: new Date().toISOString(),
-        },
-        {
-          id: "2",
-          userId: "user2",
-          userName: "Sneha Patel",
-          userEmail: "sneha.patel@example.com",
-          destination: "Thailand",
-          uploadedDocs: {
-            passport: {
-              name: "Passport Bio Page",
-              category: "Identity",
-              uploadDate: new Date(Date.now() - 86400000).toISOString(),
-              fileName: "passport_sneha.pdf",
-            },
-            photo: {
-              name: "Passport Size Photo",
-              category: "Identity",
-              uploadDate: new Date(Date.now() - 86400000).toISOString(),
-              fileName: "photo_sneha.jpg",
-            },
-          },
-          completionPercentage: 40,
-          status: "Incomplete",
-          submittedDate: new Date(Date.now() - 86400000).toISOString(),
-        },
-      ];
-      setSubmissions(sampleData);
-      setFilteredSubmissions(sampleData);
-      localStorage.setItem("documentSubmissions", JSON.stringify(sampleData));
-    }
+    loadDocuments();
   }, []);
 
   useEffect(() => {
-    // Filter submissions
-    let filtered = submissions;
+    groupAndFilterDocuments();
+  }, [documents, searchTerm, filterDestination]);
 
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (sub) =>
-          sub.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          sub.userEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          sub.destination.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    if (filterStatus !== "all") {
-      filtered = filtered.filter((sub) => sub.status === filterStatus);
-    }
-
-    setFilteredSubmissions(filtered);
-  }, [searchTerm, filterStatus, submissions]);
-
-  const updateSubmissionStatus = (
-    id: string,
-    newStatus: DocumentSubmission["status"]
-  ) => {
-    const updated = submissions.map((sub) =>
-      sub.id === id ? { ...sub, status: newStatus } : sub
-    );
-    setSubmissions(updated);
-    localStorage.setItem("documentSubmissions", JSON.stringify(updated));
-
-    toast({
-      title: "Status Updated",
-      description: `Submission status changed to ${newStatus}`,
-    });
-
-    if (selectedSubmission?.id === id) {
-      setSelectedSubmission({ ...selectedSubmission, status: newStatus });
-    }
-  };
-
-  const downloadSubmissionInfo = (submission: DocumentSubmission) => {
-    const textContent = `
-DOCUMENTATION SUBMISSION DETAILS
-================================
-
-Submission ID: ${submission.id}
-User: ${submission.userName}
-Email: ${submission.userEmail}
-Destination: ${submission.destination}
-Status: ${submission.status}
-Completion: ${submission.completionPercentage}%
-Submitted: ${new Date(submission.submittedDate).toLocaleString()}
-
-UPLOADED DOCUMENTS
------------------
-${Object.entries(submission.uploadedDocs)
-  .map(([key, doc]) => `
-Document: ${doc.name}
-Category: ${doc.category}
-File Name: ${doc.fileName}
-Upload Date: ${new Date(doc.uploadDate).toLocaleDateString()}
-`)
-  .join('\n')}
-
-MISSING DOCUMENTS
-----------------
-${Object.entries(DOCUMENT_CATEGORIES)
-  .flatMap(([category, docs]) =>
-    docs
-      .filter(
-        (docName) =>
-          !Object.values(submission.uploadedDocs).some((d) => d.name === docName)
-      )
-      .map((docName) => `- ${docName} (${category})`)
-  )
-  .join('\n')}
-
-================================
-Generated on: ${new Date().toLocaleString()}
-`;
-
-    const blob = new Blob([textContent], { type: "text/plain" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `documentation_${submission.id}_info.txt`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-
-    toast({
-      title: "Download Started",
-      description: "Documentation info downloaded as text file",
-    });
-  };
-
-  const downloadSubmissionZip = async (submission: DocumentSubmission) => {
+  const loadDocuments = async () => {
     try {
-      const zip = new JSZip();
+      setIsLoading(true);
+      const response = await documentationService.getAllDocuments();
+      // FIX: Handle nested data structure properly
+      const documentsData = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+      setDocuments(documentsData);
+    } catch (error: any) {
+      console.error("Error loading documents:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to load documents",
+        variant: "destructive",
+      });
+      // Set empty array on error to prevent .map errors
+      setDocuments([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      // Add submission info
-      const infoContent = `
-DOCUMENTATION SUBMISSION DETAILS
-================================
+  const groupAndFilterDocuments = () => {
+    // Ensure documents is always an array
+    if (!Array.isArray(documents)) {
+      setGroupedDocs([]);
+      setFilteredDocs([]);
+      return;
+    }
 
-Submission ID: ${submission.id}
-User: ${submission.userName}
-Email: ${submission.userEmail}
-Destination: ${submission.destination}
-Status: ${submission.status}
-Completion: ${submission.completionPercentage}%
-Submitted: ${new Date(submission.submittedDate).toLocaleString()}
+    // Group documents by user
+    const grouped: { [key: string]: GroupedDocument } = {};
 
-UPLOADED DOCUMENTS
------------------
-${Object.entries(submission.uploadedDocs)
-  .map(([key, doc]) => `
-Document: ${doc.name}
-Category: ${doc.category}
-File Name: ${doc.fileName}
-Upload Date: ${new Date(doc.uploadDate).toLocaleDateString()}
-`)
-  .join('\n')}
-
-MISSING DOCUMENTS
-----------------
-${Object.entries(DOCUMENT_CATEGORIES)
-  .flatMap(([category, docs]) =>
-    docs
-      .filter(
-        (docName) =>
-          !Object.values(submission.uploadedDocs).some((d) => d.name === docName)
-      )
-      .map((docName) => `- ${docName} (${category})`)
-  )
-  .join('\n')}
-
-================================
-Generated on: ${new Date().toLocaleString()}
-`;
-
-      zip.file("submission_info.txt", infoContent);
-
-      // Add documents folder
-      const docsFolder = zip.folder("documents");
+    documents.forEach((doc) => {
+      const userId = doc.userId._id;
       
-      Object.entries(submission.uploadedDocs).forEach(([key, doc]) => {
-        // In production, you would read the actual file data
-        // For now, we'll add placeholder text
-        if (docsFolder) {
-          docsFolder.file(
-            doc.fileName,
-            `File content for ${doc.name}\n\nIn production, this would be the actual file data.`
-          );
-        }
-      });
+      if (!grouped[userId]) {
+        grouped[userId] = {
+          userId,
+          userName: doc.userId.fullName,
+          userEmail: doc.userId.email,
+          destination: doc.destination || "Not specified",
+          documents: [],
+          totalDocs: 0,
+          uploadedDate: doc.createdAt,
+        };
+      }
 
-      // Add README
-      zip.file(
-        "README.txt",
-        `
-Documentation Submission Package
-===============================
+      grouped[userId].documents.push(doc);
+      grouped[userId].totalDocs++;
+    });
 
-User: ${submission.userName}
-Email: ${submission.userEmail}
-Destination: ${submission.destination}
+    let result = Object.values(grouped);
 
-This ZIP file contains:
-- submission_info.txt: Complete submission details
-- documents/: Uploaded documents folder
-
-Submission ID: ${submission.id}
-Status: ${submission.status}
-Completion: ${submission.completionPercentage}%
-Submitted: ${new Date(submission.submittedDate).toLocaleString()}
-
-Total Documents Uploaded: ${Object.keys(submission.uploadedDocs).length}
-`
+    // Apply filters
+    if (searchTerm) {
+      result = result.filter(
+        (group) =>
+          group.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          group.userEmail.toLowerCase().includes(searchTerm.toLowerCase())
       );
+    }
 
-      // Generate and download
-      const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, `documentation_${submission.id}.zip`);
+    if (filterDestination !== "all") {
+      result = result.filter((group) => group.destination === filterDestination);
+    }
+
+    setGroupedDocs(result);
+    setFilteredDocs(result);
+  };
+
+  const deleteDocument = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this document?")) return;
+
+    try {
+      await documentationService.deleteDocument(id);
 
       toast({
-        title: "Download Started",
-        description: "Documentation package downloaded as ZIP",
+        title: "Deleted",
+        description: "Document deleted successfully",
       });
-    } catch (error) {
+
+      await loadDocuments();
+    } catch (error: any) {
       toast({
-        title: "Download Failed",
-        description: "Failed to create ZIP file",
+        title: "Delete Failed",
+        description: error.response?.data?.message || "Failed to delete document",
         variant: "destructive",
       });
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Incomplete":
-        return "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300";
-      case "Under Review":
-        return "bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300";
-      case "Approved":
-        return "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300";
-      case "Requires Revision":
-        return "bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300";
-      default:
-        return "bg-gray-100 dark:bg-gray-950 text-gray-700 dark:text-gray-300";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "Incomplete":
-        return <AlertCircle className="w-4 h-4" />;
-      case "Under Review":
-        return <Clock className="w-4 h-4" />;
-      case "Approved":
-        return <CheckCircle className="w-4 h-4" />;
-      case "Requires Revision":
-        return <XCircle className="w-4 h-4" />;
-      default:
-        return <FileText className="w-4 h-4" />;
-    }
-  };
-
-  const exportToCSV = () => {
-    const headers = ["User Name", "Email", "Destination", "Completion", "Status", "Submitted"];
-    const rows = filteredSubmissions.map((sub) => [
-      sub.userName,
-      sub.userEmail,
-      sub.destination,
-      `${sub.completionPercentage}%`,
-      sub.status,
-      new Date(sub.submittedDate).toLocaleDateString(),
-    ]);
-
-    const csv = [headers, ...rows].map((row) => row.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
+  const downloadDocument = (fileUrl: string, fileName: string) => {
     const a = document.createElement("a");
-    a.href = url;
-    a.download = "documentation-submissions.csv";
+    a.href = fileUrl;
+    a.download = fileName;
+    a.target = "_blank";
     a.click();
+  };
 
-    toast({
-      title: "Export Successful",
-      description: "Submissions exported to CSV",
-    });
+  const openDetailsModal = (group: GroupedDocument) => {
+    setSelectedGroup(group);
+    setShowDetailsModal(true);
+  };
+
+  const getDestinations = () => {
+    const destinations = new Set(documents.map(d => d.destination).filter(Boolean));
+    return Array.from(destinations);
   };
 
   return (
     <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-display font-bold">Documentation Submissions</h1>
-            <p className="text-muted-foreground mt-1">
-              Review and manage travel document uploads
-            </p>
-          </div>
-          <Button onClick={exportToCSV} variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Export CSV
-          </Button>
+        <div>
+          <h1 className="text-3xl font-display font-bold mb-2">Document Management</h1>
+          <p className="text-muted-foreground">
+            Review and manage user document submissions
+          </p>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-card rounded-lg border border-border p-4">
-            <div className="text-sm text-muted-foreground">Total Submissions</div>
-            <div className="text-2xl font-bold mt-1">{submissions.length}</div>
-          </div>
-          <div className="bg-card rounded-lg border border-border p-4">
-            <div className="text-sm text-muted-foreground">Under Review</div>
-            <div className="text-2xl font-bold mt-1 text-blue-600">
-              {submissions.filter((s) => s.status === "Under Review").length}
-            </div>
-          </div>
-          <div className="bg-card rounded-lg border border-border p-4">
-            <div className="text-sm text-muted-foreground">Approved</div>
-            <div className="text-2xl font-bold mt-1 text-green-600">
-              {submissions.filter((s) => s.status === "Approved").length}
-            </div>
-          </div>
-          <div className="bg-card rounded-lg border border-border p-4">
-            <div className="text-sm text-muted-foreground">Incomplete</div>
-            <div className="text-2xl font-bold mt-1 text-amber-600">
-              {submissions.filter((s) => s.status === "Incomplete").length}
-            </div>
-          </div>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <StatCard
+            title="Total Users"
+            value={groupedDocs.length}
+            icon={<User className="w-5 h-5" />}
+            color="bg-blue-500"
+          />
+          <StatCard
+            title="Total Documents"
+            value={documents.length}
+            icon={<FileText className="w-5 h-5" />}
+            color="bg-green-500"
+          />
+          <StatCard
+            title="Destinations"
+            value={getDestinations().length}
+            icon={<MapPin className="w-5 h-5" />}
+            color="bg-purple-500"
+          />
+          <StatCard
+            title="Completed"
+            value={groupedDocs.filter(g => g.totalDocs >= 6).length}
+            icon={<CheckCircle className="w-5 h-5" />}
+            color="bg-amber-500"
+          />
         </div>
 
         {/* Filters */}
-        <div className="bg-card rounded-lg border border-border p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name, email, or destination..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <div className="relative">
-              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full h-10 pl-9 pr-4 rounded-md border border-border bg-background"
-              >
-                <option value="all">All Statuses</option>
-                <option value="Incomplete">Incomplete</option>
-                <option value="Under Review">Under Review</option>
-                <option value="Approved">Approved</option>
-                <option value="Requires Revision">Requires Revision</option>
-              </select>
-            </div>
-            <div className="text-sm text-muted-foreground flex items-center">
-              Showing {filteredSubmissions.length} of {submissions.length} submissions
-            </div>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name or email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
           </div>
+          <select
+            value={filterDestination}
+            onChange={(e) => setFilterDestination(e.target.value)}
+            className="px-4 py-2 border border-input rounded-md bg-background"
+          >
+            <option value="all">All Destinations</option>
+            {getDestinations().map((dest) => (
+              <option key={dest} value={dest}>
+                {dest}
+              </option>
+            ))}
+          </select>
         </div>
 
-        {/* Submissions List */}
+        {/* Documents Table */}
         <div className="bg-card rounded-lg border border-border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th className="text-left p-4 font-semibold text-sm">User</th>
-                  <th className="text-left p-4 font-semibold text-sm">Contact</th>
-                  <th className="text-left p-4 font-semibold text-sm">Destination</th>
-                  <th className="text-left p-4 font-semibold text-sm">Documents</th>
-                  <th className="text-left p-4 font-semibold text-sm">Progress</th>
-                  <th className="text-left p-4 font-semibold text-sm">Status</th>
-                  <th className="text-left p-4 font-semibold text-sm">Submitted</th>
-                  <th className="text-left p-4 font-semibold text-sm">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredSubmissions.length === 0 ? (
+          {isLoading ? (
+            <div className="p-8 text-center">
+              <p className="text-muted-foreground">Loading documents...</p>
+            </div>
+          ) : filteredDocs.length === 0 ? (
+            <div className="p-8 text-center">
+              <p className="text-muted-foreground">No documents found</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-muted/50 border-b border-border">
                   <tr>
-                    <td colSpan={8} className="p-8 text-center text-muted-foreground">
-                      No submissions found
-                    </td>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      User
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Destination
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Documents
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Completion
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Uploaded
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
-                ) : (
-                  filteredSubmissions.map((sub, index) => (
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {filteredDocs.map((group) => (
                     <motion.tr
-                      key={sub.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="border-t border-border hover:bg-muted/30 transition-colors"
+                      key={group.userId}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="hover:bg-muted/50 transition-colors"
                     >
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                            <User className="w-5 h-5 text-primary" />
-                          </div>
-                          <div>
-                            <div className="font-semibold text-sm">{sub.userName}</div>
-                            <div className="text-xs text-muted-foreground">ID: {sub.id}</div>
-                          </div>
+                      <td className="px-6 py-4">
+                        <div>
+                          <div className="font-medium">{group.userName}</div>
+                          <div className="text-sm text-muted-foreground">{group.userEmail}</div>
                         </div>
                       </td>
-                      <td className="p-4">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 text-xs">
-                            <Mail className="w-3 h-3 text-muted-foreground" />
-                            <span className="text-muted-foreground">{sub.userEmail}</span>
-                          </div>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-muted-foreground" />
+                          <span>{group.destination}</span>
                         </div>
                       </td>
-                      <td className="p-4">
-                        <div className="text-sm font-medium">{sub.destination}</div>
+                      <td className="px-6 py-4">
+                        <span className="text-sm">{group.totalDocs} uploaded</span>
                       </td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-2 text-sm">
-                          <FileText className="w-4 h-4 text-muted-foreground" />
-                          {Object.keys(sub.uploadedDocs).length} uploaded
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">
-                              {sub.completionPercentage}%
-                            </span>
-                          </div>
-                          <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden max-w-[100px]">
                             <div
-                              className={cn(
-                                "h-full transition-all",
-                                sub.completionPercentage >= 80
-                                  ? "bg-green-600"
-                                  : sub.completionPercentage >= 50
-                                  ? "bg-blue-600"
-                                  : "bg-amber-600"
-                              )}
-                              style={{ width: `${sub.completionPercentage}%` }}
+                              className="h-full bg-primary transition-all"
+                              style={{ width: `${Math.min(100, (group.totalDocs / 10) * 100)}%` }}
                             />
                           </div>
+                          <span className="text-sm text-muted-foreground">
+                            {Math.round((group.totalDocs / 10) * 100)}%
+                          </span>
                         </div>
                       </td>
-                      <td className="p-4">
-                        <span
-                          className={cn(
-                            "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium",
-                            getStatusColor(sub.status)
-                          )}
+                      <td className="px-6 py-4 text-sm text-muted-foreground">
+                        {new Date(group.uploadedDate).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openDetailsModal(group)}
                         >
-                          {getStatusIcon(sub.status)}
-                          {sub.status}
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Calendar className="w-4 h-4" />
-                          {new Date(sub.submittedDate).toLocaleDateString()}
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              setSelectedSubmission(sub);
-                              setShowDetailsModal(true);
-                            }}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => downloadSubmissionZip(sub)}
-                            title="Download as ZIP"
-                          >
-                            <FileDown className="w-4 h-4" />
-                          </Button>
-                        </div>
+                          <Eye className="w-4 h-4 mr-2" />
+                          View
+                        </Button>
                       </td>
                     </motion.tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Details Modal */}
-      {showDetailsModal && selectedSubmission && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      {showDetailsModal && selectedGroup && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-card rounded-lg border border-border max-w-3xl w-full my-8"
+            className="bg-card rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto"
           >
-            <div className="sticky top-0 bg-card border-b border-border p-6 flex items-center justify-between rounded-t-lg">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-card border-b border-border p-6 flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold">Documentation Details</h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Submission ID: {selectedSubmission.id}
+                <h2 className="text-2xl font-bold">{selectedGroup.userName}'s Documents</h2>
+                <p className="text-sm text-muted-foreground">
+                  {selectedGroup.userEmail} • {selectedGroup.destination}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => downloadSubmissionInfo(selectedSubmission)}
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Download TXT
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => downloadSubmissionZip(selectedSubmission)}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download ZIP
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowDetailsModal(false)}
-                >
-                  <X className="w-5 h-5" />
-                </Button>
-              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowDetailsModal(false)}
+              >
+                <X className="w-5 h-5" />
+              </Button>
             </div>
 
-            <div className="p-6 space-y-6 max-h-[calc(90vh-200px)] overflow-y-auto">
-              {/* Status Update */}
-              <div className="bg-muted/50 rounded-lg p-4">
-                <label className="block text-sm font-semibold mb-2">Update Status</label>
-                <div className="flex flex-wrap gap-2">
-                  {["Incomplete", "Under Review", "Approved", "Requires Revision"].map(
-                    (status) => (
-                      <Button
-                        key={status}
-                        size="sm"
-                        variant={
-                          selectedSubmission.status === status ? "default" : "outline"
-                        }
-                        onClick={() =>
-                          updateSubmissionStatus(
-                            selectedSubmission.id,
-                            status as DocumentSubmission["status"]
-                          )
-                        }
-                      >
-                        {status}
-                      </Button>
-                    )
-                  )}
-                </div>
+            {/* Modal Content */}
+            <div className="p-6 space-y-6">
+              {/* User Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <InfoItem icon={<User className="w-4 h-4" />} label="Name" value={selectedGroup.userName} />
+                <InfoItem icon={<Mail className="w-4 h-4" />} label="Email" value={selectedGroup.userEmail} />
+                <InfoItem icon={<MapPin className="w-4 h-4" />} label="Destination" value={selectedGroup.destination} />
+                <InfoItem icon={<Calendar className="w-4 h-4" />} label="Uploaded" value={new Date(selectedGroup.uploadedDate).toLocaleDateString()} />
               </div>
 
-              {/* User Information */}
+              {/* Documents List */}
               <div>
-                <h3 className="text-lg font-semibold mb-3">User Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="bg-muted/30 rounded-lg p-3">
-                    <div className="text-xs text-muted-foreground mb-1">Name</div>
-                    <div className="text-sm font-medium">{selectedSubmission.userName}</div>
-                  </div>
-                  <div className="bg-muted/30 rounded-lg p-3">
-                    <div className="text-xs text-muted-foreground mb-1">Email</div>
-                    <div className="text-sm font-medium">{selectedSubmission.userEmail}</div>
-                  </div>
-                  <div className="bg-muted/30 rounded-lg p-3">
-                    <div className="text-xs text-muted-foreground mb-1">Destination</div>
-                    <div className="text-sm font-medium">{selectedSubmission.destination}</div>
-                  </div>
-                  <div className="bg-muted/30 rounded-lg p-3">
-                    <div className="text-xs text-muted-foreground mb-1">Completion</div>
-                    <div className="text-sm font-medium">
-                      {selectedSubmission.completionPercentage}%
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Uploaded Documents */}
-              <div>
-                <h3 className="text-lg font-semibold mb-3">Uploaded Documents</h3>
+                <h3 className="text-lg font-semibold mb-4">Uploaded Documents ({selectedGroup.totalDocs})</h3>
                 <div className="space-y-3">
-                  {Object.entries(selectedSubmission.uploadedDocs).map(([key, doc]) => (
+                  {selectedGroup.documents.map((doc) => (
                     <div
-                      key={key}
-                      className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border-2 border-dashed border-border"
+                      key={doc._id}
+                      className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
                     >
-                      <div className="flex items-center gap-3 flex-1">
-                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <FileText className="w-5 h-5 text-primary" />
-                        </div>
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-5 h-5 text-primary" />
                         <div>
-                          <div className="font-semibold text-sm">{doc.name}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {doc.category} • {doc.fileName}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            Uploaded: {new Date(doc.uploadDate).toLocaleDateString()}
-                          </div>
+                          <p className="font-medium text-sm">{doc.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {doc.category} • {doc.status}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Uploaded: {new Date(doc.createdAt).toLocaleString()}
+                          </p>
                         </div>
                       </div>
-                      <Button size="sm" variant="outline">
-                        <Download className="w-4 h-4 mr-2" />
-                        Download
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => downloadDocument(doc.fileUrl, doc.name)}
+                        >
+                          <FileDown className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => deleteDocument(doc._id)}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
-
-                  {Object.keys(selectedSubmission.uploadedDocs).length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No documents uploaded yet
-                    </div>
-                  )}
                 </div>
               </div>
 
-              {/* Missing Documents */}
-              {Object.entries(DOCUMENT_CATEGORIES)
-                .flatMap(([category, docs]) =>
-                  docs.filter(
-                    (docName) =>
-                      !Object.values(selectedSubmission.uploadedDocs).some(
-                        (d) => d.name === docName
-                      )
-                  )
-                )
-                .length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-3 text-amber-600 dark:text-amber-400">
-                    Missing Documents
-                  </h3>
-                  <div className="space-y-2">
-                    {Object.entries(DOCUMENT_CATEGORIES).map(([category, docs]) =>
-                      docs
-                        .filter(
-                          (docName) =>
-                            !Object.values(selectedSubmission.uploadedDocs).some(
-                              (d) => d.name === docName
-                            )
-                        )
-                        .map((docName) => (
-                          <div
-                            key={docName}
-                            className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg"
-                          >
-                            <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                            <span className="text-sm font-medium text-amber-900 dark:text-amber-200">
-                              {docName}
-                            </span>
-                            <span className="text-xs text-amber-700 dark:text-amber-300 ml-auto">
-                              {category}
-                            </span>
-                          </div>
-                        ))
-                    )}
-                  </div>
+              {/* Progress Summary */}
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium">Documentation Progress</span>
+                  <span className="text-sm font-medium">
+                    {Math.round((selectedGroup.totalDocs / 10) * 100)}%
+                  </span>
                 </div>
-              )}
-
-              {/* Contact Actions */}
-              <div className="flex gap-3">
-                <Button className="flex-1" asChild>
-                  <a href={`mailto:${selectedSubmission.userEmail}`}>
-                    <Mail className="w-4 h-4 mr-2" />
-                    Send Email
-                  </a>
-                </Button>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary transition-all"
+                    style={{ width: `${Math.min(100, (selectedGroup.totalDocs / 10) * 100)}%` }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {selectedGroup.totalDocs} of 10 documents uploaded
+                </p>
               </div>
-            </div>
-
-            <div className="sticky bottom-0 bg-card border-t border-border p-6 rounded-b-lg">
-              <Button
-                onClick={() => setShowDetailsModal(false)}
-                variant="outline"
-                className="w-full"
-              >
-                Close
-              </Button>
             </div>
           </motion.div>
         </div>
       )}
     </AdminLayout>
+  );
+}
+
+function StatCard({ title, value, icon, color }: any) {
+  return (
+    <div className="bg-card rounded-lg border border-border p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-muted-foreground mb-1">{title}</p>
+          <p className="text-3xl font-bold">{value}</p>
+        </div>
+        <div className={cn("p-3 rounded-lg text-white", color)}>{icon}</div>
+      </div>
+    </div>
+  );
+}
+
+function InfoItem({ icon, label, value }: any) {
+  return (
+    <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+      <div className="text-muted-foreground mt-0.5">{icon}</div>
+      <div>
+        <p className="text-xs text-muted-foreground mb-0.5">{label}</p>
+        <p className="text-sm font-medium">{value || "N/A"}</p>
+      </div>
+    </div>
   );
 }

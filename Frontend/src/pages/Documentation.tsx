@@ -1,93 +1,97 @@
 // src/pages/Documentation.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { FileText, Download, Upload, CheckCircle, AlertCircle, Clock } from "lucide-react";
+import { FileText, Upload, CheckCircle, AlertCircle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { documentationService } from "@/services/documentation";
+import { cn } from "@/lib/utils";
 
 interface Document {
   id: string;
+  documentId: string;
   name: string;
   category: string;
   description: string;
   status: "required" | "optional" | "recommended";
   uploadDate?: string;
   file?: File;
+  fileUrl?: string;
 }
 
-const REQUIRED_DOCUMENTS: Document[] = [
+const REQUIRED_DOCUMENTS = [
   {
-    id: "passport",
+    documentId: "passport",
     name: "Passport Bio Page",
     category: "Identity",
     description: "Clear scanned copy of your passport first page (bio page)",
-    status: "required",
+    status: "required" as const,
   },
   {
-    id: "photo",
+    documentId: "photo",
     name: "Passport Size Photo",
     category: "Identity",
     description: "Recent passport size color photo (4x6 cm) on white background",
-    status: "required",
+    status: "required" as const,
   },
   {
-    id: "visa",
+    documentId: "visa",
     name: "Visa/Visa Support Letter",
     category: "Travel",
     description: "Original visa or visa support letter from destination country",
-    status: "required",
+    status: "required" as const,
   },
   {
-    id: "itinerary",
+    documentId: "itinerary",
     name: "Travel Itinerary",
     category: "Travel",
     description: "Detailed itinerary of your trip with dates and places",
-    status: "required",
+    status: "required" as const,
   },
   {
-    id: "hotel",
+    documentId: "hotel",
     name: "Hotel Booking / Invitation Letter",
     category: "Accommodation",
     description: "Confirmed hotel booking or invitation letter from host",
-    status: "required",
+    status: "required" as const,
   },
   {
-    id: "bank",
+    documentId: "bank",
     name: "Bank Statement (Last 3-6 months)",
     category: "Financial",
     description: "Bank statement showing sufficient funds for the trip",
-    status: "required",
+    status: "required" as const,
   },
   {
-    id: "insurance",
+    documentId: "insurance",
     name: "Travel Insurance",
     category: "Insurance",
     description: "Travel insurance policy document",
-    status: "optional",
+    status: "optional" as const,
   },
   {
-    id: "employment",
+    documentId: "employment",
     name: "Employment Letter",
     category: "Employment",
     description: "Letter from employer stating your leave approval",
-    status: "optional",
+    status: "optional" as const,
   },
   {
-    id: "pan",
+    documentId: "pan",
     name: "PAN Card Copy",
     category: "Tax",
     description: "Copy of PAN card (if Indian citizen)",
-    status: "recommended",
+    status: "recommended" as const,
   },
   {
-    id: "aadhar",
+    documentId: "aadhar",
     name: "Aadhaar Card Copy",
     category: "Identity",
     description: "Copy of Aadhaar card (if Indian citizen)",
-    status: "recommended",
+    status: "recommended" as const,
   },
 ];
 
@@ -130,21 +134,79 @@ export default function Documentation() {
   const { toast } = useToast();
   const [uploadedDocs, setUploadedDocs] = useState<Record<string, Document>>({});
   const [selectedDestination, setSelectedDestination] = useState<keyof typeof DESTINATION_SPECIFIC>("georgia");
+  const [isLoading, setIsLoading] = useState(true);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, boolean>>({});
 
-  const handleFileUpload = (docId: string, file: File) => {
-    setUploadedDocs((prev) => ({
-      ...prev,
-      [docId]: {
-        ...REQUIRED_DOCUMENTS.find((d) => d.id === docId)!,
-        file,
-        uploadDate: new Date().toISOString(),
-      },
-    }));
+  useEffect(() => {
+    if (user) {
+      loadMyDocuments();
+    }
+  }, [user, selectedDestination]);
 
-    toast({
-      title: "Document uploaded",
-      description: `${file.name} has been uploaded successfully`,
-    });
+  const loadMyDocuments = async () => {
+    try {
+      setIsLoading(true);
+      const response = await documentationService.getMyDocuments(selectedDestination);
+      
+      // Convert API response to uploadedDocs format
+      const docsMap: Record<string, Document> = {};
+      response.data.forEach((doc: any) => {
+        docsMap[doc.documentId] = {
+          id: doc._id,
+          documentId: doc.documentId,
+          name: doc.name,
+          category: doc.category,
+          description: doc.description,
+          status: doc.status,
+          uploadDate: doc.createdAt,
+          fileUrl: doc.fileUrl,
+        };
+      });
+      
+      setUploadedDocs(docsMap);
+    } catch (error: any) {
+      console.error("Failed to load documents:", error);
+      // Don't show error toast on initial load
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFileUpload = async (docId: string, file: File) => {
+    const doc = REQUIRED_DOCUMENTS.find((d) => d.documentId === docId);
+    if (!doc) return;
+
+    try {
+      setUploadProgress((prev) => ({ ...prev, [docId]: true }));
+
+      await documentationService.uploadDocument(
+        {
+          documentId: doc.documentId,
+          name: doc.name,
+          category: doc.category,
+          description: doc.description,
+          status: doc.status,
+          destination: selectedDestination,
+        },
+        file
+      );
+
+      toast({
+        title: "Document uploaded",
+        description: `${file.name} has been uploaded successfully`,
+      });
+
+      // Reload documents
+      await loadMyDocuments();
+    } catch (error: any) {
+      toast({
+        title: "Upload Failed",
+        description: error.response?.data?.message || "Failed to upload document. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadProgress((prev) => ({ ...prev, [docId]: false }));
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -173,7 +235,13 @@ export default function Documentation() {
     }
   };
 
-  const uploadProgress = (Object.keys(uploadedDocs).length / REQUIRED_DOCUMENTS.length) * 100;
+  const calculateProgress = () => {
+    const total = REQUIRED_DOCUMENTS.length;
+    const uploaded = Object.keys(uploadedDocs).length;
+    return (uploaded / total) * 100;
+  };
+
+  const progress = calculateProgress();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -214,17 +282,17 @@ export default function Documentation() {
           >
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-semibold">Documentation Progress</h3>
-              <span className="text-sm font-medium">{Math.round(uploadProgress)}% Complete</span>
+              <span className="text-sm font-medium">{Math.round(progress)}% Complete</span>
             </div>
             <div className="h-3 bg-muted rounded-full overflow-hidden">
               <motion.div
-                className="h-full bg-primary"
                 initial={{ width: 0 }}
-                animate={{ width: `${uploadProgress}%` }}
+                animate={{ width: `${progress}%` }}
                 transition={{ duration: 0.5 }}
+                className="h-full bg-primary"
               />
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
+            <p className="text-sm text-muted-foreground mt-2">
               {Object.keys(uploadedDocs).length} of {REQUIRED_DOCUMENTS.length} documents uploaded
             </p>
           </motion.div>
@@ -292,67 +360,76 @@ export default function Documentation() {
           </motion.div>
 
           {/* General Documents */}
-          <div className="space-y-8">
-            {/* Required Documents */}
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 10 }}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-1 h-6 bg-red-600 dark:bg-red-400 rounded-full"></div>
-                <h3 className="text-xl font-bold">Required Documents</h3>
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {REQUIRED_DOCUMENTS.filter((d) => d.status === "required").map((doc) => (
-                  <DocumentCard
-                    key={doc.id}
-                    doc={doc}
-                    uploaded={uploadedDocs[doc.id]}
-                    onUpload={(file) => handleFileUpload(doc.id, file)}
-                    statusColor={getStatusColor(doc.status)}
-                    statusIcon={getStatusIcon(doc.status)}
-                  />
-                ))}
-              </div>
-            </motion.div>
+          {isLoading ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Loading documents...</p>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {/* Required Documents */}
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-1 h-6 bg-red-600 dark:bg-red-400 rounded-full"></div>
+                  <h3 className="text-xl font-bold">Required Documents</h3>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {REQUIRED_DOCUMENTS.filter((d) => d.status === "required").map((doc) => (
+                    <DocumentCard
+                      key={doc.documentId}
+                      doc={doc}
+                      uploaded={uploadedDocs[doc.documentId]}
+                      onUpload={(file) => handleFileUpload(doc.documentId, file)}
+                      statusColor={getStatusColor(doc.status)}
+                      statusIcon={getStatusIcon(doc.status)}
+                      isUploading={uploadProgress[doc.documentId]}
+                    />
+                  ))}
+                </div>
+              </motion.div>
 
-            {/* Optional Documents */}
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 10 }}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-1 h-6 bg-blue-600 dark:bg-blue-400 rounded-full"></div>
-                <h3 className="text-xl font-bold">Optional Documents</h3>
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {REQUIRED_DOCUMENTS.filter((d) => d.status === "optional").map((doc) => (
-                  <DocumentCard
-                    key={doc.id}
-                    doc={doc}
-                    uploaded={uploadedDocs[doc.id]}
-                    onUpload={(file) => handleFileUpload(doc.id, file)}
-                    statusColor={getStatusColor(doc.status)}
-                    statusIcon={getStatusIcon(doc.status)}
-                  />
-                ))}
-              </div>
-            </motion.div>
+              {/* Optional Documents */}
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-1 h-6 bg-blue-600 dark:bg-blue-400 rounded-full"></div>
+                  <h3 className="text-xl font-bold">Optional Documents</h3>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {REQUIRED_DOCUMENTS.filter((d) => d.status === "optional").map((doc) => (
+                    <DocumentCard
+                      key={doc.documentId}
+                      doc={doc}
+                      uploaded={uploadedDocs[doc.documentId]}
+                      onUpload={(file) => handleFileUpload(doc.documentId, file)}
+                      statusColor={getStatusColor(doc.status)}
+                      statusIcon={getStatusIcon(doc.status)}
+                      isUploading={uploadProgress[doc.documentId]}
+                    />
+                  ))}
+                </div>
+              </motion.div>
 
-            {/* Recommended Documents */}
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 10 }}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-1 h-6 bg-amber-600 dark:bg-amber-400 rounded-full"></div>
-                <h3 className="text-xl font-bold">Recommended Documents</h3>
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {REQUIRED_DOCUMENTS.filter((d) => d.status === "recommended").map((doc) => (
-                  <DocumentCard
-                    key={doc.id}
-                    doc={doc}
-                    uploaded={uploadedDocs[doc.id]}
-                    onUpload={(file) => handleFileUpload(doc.id, file)}
-                    statusColor={getStatusColor(doc.status)}
-                    statusIcon={getStatusIcon(doc.status)}
-                  />
-                ))}
-              </div>
-            </motion.div>
-          </div>
+              {/* Recommended Documents */}
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-1 h-6 bg-amber-600 dark:bg-amber-400 rounded-full"></div>
+                  <h3 className="text-xl font-bold">Recommended Documents</h3>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {REQUIRED_DOCUMENTS.filter((d) => d.status === "recommended").map((doc) => (
+                    <DocumentCard
+                      key={doc.documentId}
+                      doc={doc}
+                      uploaded={uploadedDocs[doc.documentId]}
+                      onUpload={(file) => handleFileUpload(doc.documentId, file)}
+                      statusColor={getStatusColor(doc.status)}
+                      statusIcon={getStatusIcon(doc.status)}
+                      isUploading={uploadProgress[doc.documentId]}
+                    />
+                  ))}
+                </div>
+              </motion.div>
+            </div>
+          )}
 
           {/* Submit Button */}
           <div className="mt-12 flex justify-center">
@@ -365,7 +442,7 @@ export default function Documentation() {
           {/* Important Info */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
             className="mt-12 p-6 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg"
           >
             <h3 className="font-semibold text-amber-900 dark:text-amber-200 mb-3">Important Information</h3>
@@ -391,12 +468,14 @@ function DocumentCard({
   onUpload,
   statusColor,
   statusIcon,
+  isUploading,
 }: {
-  doc: Document;
+  doc: any;
   uploaded?: Document;
   onUpload: (file: File) => void;
   statusColor: string;
   statusIcon: React.ReactNode;
+  isUploading?: boolean;
 }) {
   return (
     <motion.div
@@ -418,7 +497,7 @@ function DocumentCard({
         <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded text-sm text-green-800 dark:text-green-300">
           <div className="flex items-center gap-2">
             <CheckCircle className="w-4 h-4" />
-            <span>✓ Uploaded: {uploaded.file?.name}</span>
+            <span>✓ Document uploaded</span>
           </div>
         </div>
       ) : (
@@ -428,10 +507,16 @@ function DocumentCard({
             onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])}
             accept=".pdf,.jpg,.jpeg,.png"
             className="hidden"
+            disabled={isUploading}
           />
-          <div className="p-3 text-center cursor-pointer bg-primary/5 hover:bg-primary/10 border-2 border-dashed border-primary rounded transition-colors">
+          <div className={cn(
+            "p-3 text-center cursor-pointer bg-primary/5 hover:bg-primary/10 border-2 border-dashed border-primary rounded transition-colors",
+            isUploading && "opacity-50 cursor-not-allowed"
+          )}>
             <Upload className="w-4 h-4 mx-auto mb-1 text-primary" />
-            <p className="text-xs font-medium text-primary">Click to upload</p>
+            <p className="text-xs font-medium text-primary">
+              {isUploading ? "Uploading..." : "Click to upload"}
+            </p>
           </div>
         </label>
       )}
@@ -441,8 +526,4 @@ function DocumentCard({
       </p>
     </motion.div>
   );
-}
-
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(" ");
 }

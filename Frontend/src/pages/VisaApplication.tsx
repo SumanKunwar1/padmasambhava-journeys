@@ -1,7 +1,7 @@
 // src/pages/VisaApplication.tsx
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, Check, X, FileText } from "lucide-react";
+import { Upload, Check, X, FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,77 +9,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { cn } from "@/lib/utils";
+import { visaApplicationService, VisaApplicationData } from "@/services/visaApplications";
 
-interface FormData {
-  // Section 1: Personal Information
-  fullName: string;
-  gender: string;
-  dateOfBirth: string;
-  placeOfBirth: string;
-  nationality: string;
-  maritalStatus: string;
-  occupation: string;
-  religion: string;
-
-  // Section 2: Passport Information
-  passportType: string;
-  passportNumber: string;
-  placeOfIssue: string;
-  dateOfIssue: string;
-  dateOfExpiry: string;
-  issuingCountry: string;
-
-  // Section 3: Contact Details
-  residentialAddress: string;
-  city: string;
-  country: string;
-  postalCode: string;
-  phone: string;
-  email: string;
-
-  // Section 4: Travel Information
-  destinationCountry: string;
-  purposeOfVisit: string;
-  arrivalDate: string;
-  departureDate: string;
-  durationOfStay: string;
-  numberOfEntries: string;
-
-  // Section 5: Accommodation
-  accommodationType: string;
-  accommodationAddress: string;
-  travelPackageName: string;
-  placesToVisit: string;
-
-  // Section 6: Financial
-  expensesBearer: string;
-  estimatedBudget: string;
-  sufficientFunds: string;
-
-  // Section 7: Sponsor
-  sponsorName: string;
-  sponsorRelationship: string;
-  sponsorAddress: string;
-  sponsorPhone: string;
-
-  // Section 8: Travel History
-  travelledBefore: string;
-  countriesVisited: string;
-  overstayedVisa: string;
-  refusedVisa: string;
-  refusalDetails: string;
-
-  // Section 9: Health
-  hasInsurance: string;
-  medicalCondition: string;
-
-  // Section 10: Documents
+interface FormData extends VisaApplicationData {
   passportBioFile?: File;
   passportPhotoFile?: File;
   supportingDocumentsFile?: File;
-
-  // Section 11: Declaration
-  agreeToTerms: boolean;
 }
 
 const SECTION_TITLES = [
@@ -99,6 +34,7 @@ const SECTION_TITLES = [
 export default function VisaApplication() {
   const { toast } = useToast();
   const [currentSection, setCurrentSection] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     fullName: "",
     gender: "",
@@ -164,6 +100,28 @@ export default function VisaApplication() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Validate file size (5MB)
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        toast({
+          title: "File Too Large",
+          description: "File size must be less than 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate file type
+      const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "application/pdf"];
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: "Invalid File Type",
+          description: "Only PDF, JPG, and PNG files are allowed",
+          variant: "destructive",
+        });
+        return;
+      }
+
       setFormData((prev) => ({
         ...prev,
         [fieldName]: file,
@@ -171,19 +129,49 @@ export default function VisaApplication() {
     }
   };
 
+  const validateCurrentSection = (): boolean => {
+    const requiredFieldsBySection: Record<number, string[]> = {
+      0: ["fullName", "gender", "dateOfBirth", "placeOfBirth", "nationality", "maritalStatus", "occupation"],
+      1: ["passportType", "passportNumber", "placeOfIssue", "dateOfIssue", "dateOfExpiry", "issuingCountry"],
+      2: ["residentialAddress", "city", "country", "postalCode", "phone", "email"],
+      3: ["destinationCountry", "purposeOfVisit", "arrivalDate", "departureDate", "durationOfStay", "numberOfEntries"],
+      4: ["accommodationType", "accommodationAddress"],
+      5: ["expensesBearer", "estimatedBudget", "sufficientFunds"],
+      7: ["travelledBefore", "overstayedVisa", "refusedVisa"],
+      8: ["hasInsurance"],
+      9: ["passportBioFile", "passportPhotoFile"],
+      10: ["agreeToTerms"],
+    };
+
+    const fieldsToValidate = requiredFieldsBySection[currentSection];
+    
+    if (!fieldsToValidate) return true;
+
+    for (const field of fieldsToValidate) {
+      const value = formData[field as keyof FormData];
+      if (value === "" || value === undefined || value === false) {
+        toast({
+          title: "Missing Required Field",
+          description: `Please fill in all required fields in this section`,
+          variant: "destructive",
+        });
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const handleNext = () => {
+    if (validateCurrentSection()) {
+      setCurrentSection(Math.min(SECTION_TITLES.length - 1, currentSection + 1));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate required fields
-    if (!formData.fullName || !formData.email || !formData.phone || !formData.passportNumber) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
-      return;
-    }
-
+    // Final validation
     if (!formData.agreeToTerms) {
       toast({
         title: "Agreement Required",
@@ -193,38 +181,39 @@ export default function VisaApplication() {
       return;
     }
 
+    // Validate required files
+    if (!formData.passportBioFile || !formData.passportPhotoFile) {
+      toast({
+        title: "Missing Documents",
+        description: "Please upload passport bio page and passport photo",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      // Create FormData for file upload
-      const submitData = new FormData();
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value instanceof File) {
-          submitData.append(key, value);
-        } else if (typeof value === "boolean") {
-          submitData.append(key, value ? "true" : "false");
-        } else {
-          submitData.append(key, value as string);
-        }
+      setIsSubmitting(true);
+
+      // Extract files from formData
+      const { passportBioFile, passportPhotoFile, supportingDocumentsFile, ...applicationData } = formData;
+
+      console.log("Submitting application with data:", applicationData);
+      console.log("Files:", { passportBioFile, passportPhotoFile, supportingDocumentsFile });
+
+      // Submit application
+      const response = await visaApplicationService.submitApplication(applicationData, {
+        passportBioFile,
+        passportPhotoFile,
+        supportingDocumentsFile,
       });
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      console.log("Application submitted successfully:", response);
 
       toast({
         title: "Application Submitted!",
         description: "Your visa application has been submitted successfully. We'll review it and contact you soon.",
+        duration: 5000,
       });
-
-      // Store in localStorage for dashboard
-      const applications = JSON.parse(localStorage.getItem("visaApplications") || "[]");
-      applications.push({
-        id: Date.now().toString(),
-        name: formData.fullName,
-        destination: formData.destinationCountry,
-        status: "Under Review",
-        submittedDate: new Date().toISOString(),
-        data: formData,
-      });
-      localStorage.setItem("visaApplications", JSON.stringify(applications));
 
       // Reset form
       setFormData({
@@ -275,172 +264,143 @@ export default function VisaApplication() {
         agreeToTerms: false,
       });
       setCurrentSection(0);
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Application submission error:", error);
+      
+      const errorMessage = error.response?.data?.message 
+        || error.response?.data?.error 
+        || error.message 
+        || "Failed to submit application. Please try again.";
+
       toast({
-        title: "Submission failed",
-        description: "Please try again later",
+        title: "Submission Failed",
+        description: errorMessage,
         variant: "destructive",
+        duration: 5000,
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background">
       <Navbar />
 
-      <div className="flex-1 py-12 px-4">
-        <div className="container-custom">
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-4xl mx-auto">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-12"
+            className="text-center mb-8"
           >
-            <h1 className="text-4xl font-display font-bold mb-3">Tourist Visa Application</h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Complete this form to apply for visa assistance. All information provided will be kept confidential.
+            <h1 className="text-4xl font-display font-bold mb-3">Visa Application Form</h1>
+            <p className="text-muted-foreground">
+              Complete all sections to submit your visa application
             </p>
-            <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg">
-              <p className="text-sm text-amber-800 dark:text-amber-200">
-                <span className="font-semibold">Important:</span> Padma Sambhava Trip provides visa support documents only. We do not guarantee visa approval.
-              </p>
-            </div>
           </motion.div>
 
-          {/* Progress Bar */}
+          {/* Progress Indicator */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium">
-                Section {currentSection + 1} of {SECTION_TITLES.length}
-              </span>
-              <span className="text-sm text-muted-foreground">
-                {Math.round(((currentSection + 1) / SECTION_TITLES.length) * 100)}%
-              </span>
+              {SECTION_TITLES.map((title, index) => (
+                <div
+                  key={index}
+                  className={cn(
+                    "flex-1 h-2 rounded-full mx-1 transition-colors",
+                    index <= currentSection ? "bg-primary" : "bg-muted"
+                  )}
+                />
+              ))}
             </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <motion.div
-                className="h-full bg-primary"
-                initial={{ width: 0 }}
-                animate={{ width: `${((currentSection + 1) / SECTION_TITLES.length) * 100}%` }}
-                transition={{ duration: 0.3 }}
-              />
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>Step {currentSection + 1} of {SECTION_TITLES.length}</span>
+              <span>{SECTION_TITLES[currentSection]}</span>
             </div>
           </div>
 
-          {/* Form Content */}
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Sidebar - Section List */}
-            <div className="lg:col-span-1">
-              <div className="bg-card rounded-xl border border-border p-4 sticky top-24">
-                <h3 className="font-semibold mb-4">Sections</h3>
-                <div className="space-y-2">
-                  {SECTION_TITLES.map((title, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      onClick={() => setCurrentSection(index)}
-                      className={cn(
-                        "w-full text-left px-3 py-2 rounded-lg text-sm transition-colors",
-                        currentSection === index
-                          ? "bg-primary text-primary-foreground font-semibold"
-                          : "text-muted-foreground hover:bg-muted"
-                      )}
-                    >
-                      {index + 1}. {title}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Main Form Content */}
-            <div className="lg:col-span-3">
+          {/* Form */}
+          <form onSubmit={handleSubmit}>
+            <div className="bg-card border border-border rounded-lg shadow-lg">
               <motion.div
                 key={currentSection}
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="bg-card rounded-xl border border-border p-8"
+                className="p-8"
               >
-                <h2 className="text-2xl font-bold mb-6">
-                  {SECTION_TITLES[currentSection]}
-                </h2>
+                <h2 className="text-2xl font-semibold mb-6">{SECTION_TITLES[currentSection]}</h2>
 
                 <div className="space-y-6">
                   {/* Section 1: Personal Information */}
                   {currentSection === 0 && (
                     <>
                       <FormField
-                        label="Full Name (as per Passport)"
+                        label="Full Name (as per passport)"
                         name="fullName"
-                        type="text"
                         placeholder="Enter your full name"
                         value={formData.fullName}
                         onChange={handleInputChange}
                         required
                       />
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          label="Gender"
-                          name="gender"
-                          type="select"
-                          value={formData.gender}
-                          onChange={handleInputChange}
-                          options={["Male", "Female", "Other"]}
-                        />
-                        <FormField
-                          label="Date of Birth"
-                          name="dateOfBirth"
-                          type="date"
-                          value={formData.dateOfBirth}
-                          onChange={handleInputChange}
-                        />
-                      </div>
                       <FormField
-                        label="Place of Birth (City, Country)"
+                        label="Gender"
+                        name="gender"
+                        type="select"
+                        value={formData.gender}
+                        onChange={handleInputChange}
+                        options={["Male", "Female", "Other"]}
+                        required
+                      />
+                      <FormField
+                        label="Date of Birth"
+                        name="dateOfBirth"
+                        type="date"
+                        value={formData.dateOfBirth}
+                        onChange={handleInputChange}
+                        required
+                      />
+                      <FormField
+                        label="Place of Birth"
                         name="placeOfBirth"
-                        type="text"
                         placeholder="Enter place of birth"
                         value={formData.placeOfBirth}
                         onChange={handleInputChange}
+                        required
                       />
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          label="Nationality"
-                          name="nationality"
-                          type="text"
-                          placeholder="Enter nationality"
-                          value={formData.nationality}
-                          onChange={handleInputChange}
-                          required
-                        />
-                        <FormField
-                          label="Marital Status"
-                          name="maritalStatus"
-                          type="select"
-                          value={formData.maritalStatus}
-                          onChange={handleInputChange}
-                          options={["Single", "Married", "Divorced", "Widowed"]}
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          label="Occupation"
-                          name="occupation"
-                          type="text"
-                          placeholder="Enter occupation"
-                          value={formData.occupation}
-                          onChange={handleInputChange}
-                        />
-                        <FormField
-                          label="Religion (Optional)"
-                          name="religion"
-                          type="text"
-                          placeholder="Enter religion"
-                          value={formData.religion}
-                          onChange={handleInputChange}
-                        />
-                      </div>
+                      <FormField
+                        label="Nationality"
+                        name="nationality"
+                        placeholder="Enter your nationality"
+                        value={formData.nationality}
+                        onChange={handleInputChange}
+                        required
+                      />
+                      <FormField
+                        label="Marital Status"
+                        name="maritalStatus"
+                        type="select"
+                        value={formData.maritalStatus}
+                        onChange={handleInputChange}
+                        options={["Single", "Married", "Divorced", "Widowed"]}
+                        required
+                      />
+                      <FormField
+                        label="Occupation"
+                        name="occupation"
+                        placeholder="Enter your occupation"
+                        value={formData.occupation}
+                        onChange={handleInputChange}
+                        required
+                      />
+                      <FormField
+                        label="Religion (Optional)"
+                        name="religion"
+                        placeholder="Enter your religion"
+                        value={formData.religion}
+                        onChange={handleInputChange}
+                      />
                     </>
                   )}
 
@@ -448,56 +408,54 @@ export default function VisaApplication() {
                   {currentSection === 1 && (
                     <>
                       <FormField
-                        label="Passport Number"
-                        name="passportNumber"
-                        type="text"
-                        placeholder="Enter passport number"
-                        value={formData.passportNumber}
-                        onChange={handleInputChange}
-                        required
-                      />
-                      <FormField
                         label="Passport Type"
                         name="passportType"
                         type="select"
                         value={formData.passportType}
                         onChange={handleInputChange}
                         options={["Ordinary", "Official", "Diplomatic"]}
+                        required
                       />
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          label="Place of Issue"
-                          name="placeOfIssue"
-                          type="text"
-                          placeholder="Enter place of issue"
-                          value={formData.placeOfIssue}
-                          onChange={handleInputChange}
-                        />
-                        <FormField
-                          label="Issuing Country"
-                          name="issuingCountry"
-                          type="text"
-                          placeholder="Enter issuing country"
-                          value={formData.issuingCountry}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          label="Date of Issue"
-                          name="dateOfIssue"
-                          type="date"
-                          value={formData.dateOfIssue}
-                          onChange={handleInputChange}
-                        />
-                        <FormField
-                          label="Date of Expiry"
-                          name="dateOfExpiry"
-                          type="date"
-                          value={formData.dateOfExpiry}
-                          onChange={handleInputChange}
-                        />
-                      </div>
+                      <FormField
+                        label="Passport Number"
+                        name="passportNumber"
+                        placeholder="Enter passport number"
+                        value={formData.passportNumber}
+                        onChange={handleInputChange}
+                        required
+                      />
+                      <FormField
+                        label="Place of Issue"
+                        name="placeOfIssue"
+                        placeholder="Enter place of issue"
+                        value={formData.placeOfIssue}
+                        onChange={handleInputChange}
+                        required
+                      />
+                      <FormField
+                        label="Date of Issue"
+                        name="dateOfIssue"
+                        type="date"
+                        value={formData.dateOfIssue}
+                        onChange={handleInputChange}
+                        required
+                      />
+                      <FormField
+                        label="Date of Expiry"
+                        name="dateOfExpiry"
+                        type="date"
+                        value={formData.dateOfExpiry}
+                        onChange={handleInputChange}
+                        required
+                      />
+                      <FormField
+                        label="Issuing Country"
+                        name="issuingCountry"
+                        placeholder="Enter issuing country"
+                        value={formData.issuingCountry}
+                        onChange={handleInputChange}
+                        required
+                      />
                     </>
                   )}
 
@@ -505,11 +463,35 @@ export default function VisaApplication() {
                   {currentSection === 2 && (
                     <>
                       <FormField
-                        label="Email Address"
-                        name="email"
-                        type="email"
-                        placeholder="your@email.com"
-                        value={formData.email}
+                        label="Residential Address"
+                        name="residentialAddress"
+                        type="textarea"
+                        placeholder="Enter your full address"
+                        value={formData.residentialAddress}
+                        onChange={handleInputChange}
+                        required
+                      />
+                      <FormField
+                        label="City"
+                        name="city"
+                        placeholder="Enter city"
+                        value={formData.city}
+                        onChange={handleInputChange}
+                        required
+                      />
+                      <FormField
+                        label="Country"
+                        name="country"
+                        placeholder="Enter country"
+                        value={formData.country}
+                        onChange={handleInputChange}
+                        required
+                      />
+                      <FormField
+                        label="Postal Code"
+                        name="postalCode"
+                        placeholder="Enter postal code"
+                        value={formData.postalCode}
                         onChange={handleInputChange}
                         required
                       />
@@ -517,45 +499,20 @@ export default function VisaApplication() {
                         label="Phone Number"
                         name="phone"
                         type="tel"
-                        placeholder="+91 00000 00000"
+                        placeholder="+977 9xxxxxxxxx"
                         value={formData.phone}
                         onChange={handleInputChange}
                         required
                       />
                       <FormField
-                        label="Current Residential Address"
-                        name="residentialAddress"
-                        type="textarea"
-                        placeholder="Enter your residential address"
-                        value={formData.residentialAddress}
+                        label="Email Address"
+                        name="email"
+                        type="email"
+                        placeholder="your.email@example.com"
+                        value={formData.email}
                         onChange={handleInputChange}
+                        required
                       />
-                      <div className="grid grid-cols-3 gap-4">
-                        <FormField
-                          label="City"
-                          name="city"
-                          type="text"
-                          placeholder="Enter city"
-                          value={formData.city}
-                          onChange={handleInputChange}
-                        />
-                        <FormField
-                          label="Country"
-                          name="country"
-                          type="text"
-                          placeholder="Enter country"
-                          value={formData.country}
-                          onChange={handleInputChange}
-                        />
-                        <FormField
-                          label="Postal Code"
-                          name="postalCode"
-                          type="text"
-                          placeholder="Enter postal code"
-                          value={formData.postalCode}
-                          onChange={handleInputChange}
-                        />
-                      </div>
                     </>
                   )}
 
@@ -565,7 +522,6 @@ export default function VisaApplication() {
                       <FormField
                         label="Destination Country"
                         name="destinationCountry"
-                        type="text"
                         placeholder="Enter destination country"
                         value={formData.destinationCountry}
                         onChange={handleInputChange}
@@ -577,42 +533,42 @@ export default function VisaApplication() {
                         type="select"
                         value={formData.purposeOfVisit}
                         onChange={handleInputChange}
-                        options={["Tourism", "Sightseeing", "Cultural Visit", "Pilgrimage", "Wellness/Meditation Retreat"]}
+                        options={["Tourism", "Business", "Education", "Medical", "Family Visit", "Other"]}
+                        required
                       />
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          label="Intended Date of Arrival"
-                          name="arrivalDate"
-                          type="date"
-                          value={formData.arrivalDate}
-                          onChange={handleInputChange}
-                        />
-                        <FormField
-                          label="Intended Date of Departure"
-                          name="departureDate"
-                          type="date"
-                          value={formData.departureDate}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          label="Expected Duration of Stay (Days)"
-                          name="durationOfStay"
-                          type="number"
-                          placeholder="Enter number of days"
-                          value={formData.durationOfStay}
-                          onChange={handleInputChange}
-                        />
-                        <FormField
-                          label="Number of Entries Required"
-                          name="numberOfEntries"
-                          type="select"
-                          value={formData.numberOfEntries}
-                          onChange={handleInputChange}
-                          options={["Single", "Double", "Multiple"]}
-                        />
-                      </div>
+                      <FormField
+                        label="Expected Arrival Date"
+                        name="arrivalDate"
+                        type="date"
+                        value={formData.arrivalDate}
+                        onChange={handleInputChange}
+                        required
+                      />
+                      <FormField
+                        label="Expected Departure Date"
+                        name="departureDate"
+                        type="date"
+                        value={formData.departureDate}
+                        onChange={handleInputChange}
+                        required
+                      />
+                      <FormField
+                        label="Duration of Stay"
+                        name="durationOfStay"
+                        placeholder="e.g., 14 days"
+                        value={formData.durationOfStay}
+                        onChange={handleInputChange}
+                        required
+                      />
+                      <FormField
+                        label="Number of Entries"
+                        name="numberOfEntries"
+                        type="select"
+                        value={formData.numberOfEntries}
+                        onChange={handleInputChange}
+                        options={["Single Entry", "Multiple Entry"]}
+                        required
+                      />
                     </>
                   )}
 
@@ -625,29 +581,30 @@ export default function VisaApplication() {
                         type="select"
                         value={formData.accommodationType}
                         onChange={handleInputChange}
-                        options={["Hotel", "Guest House", "Resort", "Monastery Guest House"]}
+                        options={["Hotel", "Friend/Relative", "Hostel", "Rental", "Other"]}
+                        required
                       />
                       <FormField
-                        label="Accommodation Address (if known)"
+                        label="Accommodation Address"
                         name="accommodationAddress"
                         type="textarea"
                         placeholder="Enter accommodation address"
                         value={formData.accommodationAddress}
                         onChange={handleInputChange}
+                        required
                       />
                       <FormField
-                        label="Travel Package Name (if booked)"
+                        label="Travel Package Name (Optional)"
                         name="travelPackageName"
-                        type="text"
-                        placeholder="Enter travel package name"
+                        placeholder="Enter package name if applicable"
                         value={formData.travelPackageName}
                         onChange={handleInputChange}
                       />
                       <FormField
-                        label="Cities / Places to be Visited"
+                        label="Places to Visit (Optional)"
                         name="placesToVisit"
                         type="textarea"
-                        placeholder="Enter cities and places"
+                        placeholder="List places you plan to visit"
                         value={formData.placesToVisit}
                         onChange={handleInputChange}
                       />
@@ -658,28 +615,30 @@ export default function VisaApplication() {
                   {currentSection === 5 && (
                     <>
                       <FormField
-                        label="Who will bear the travel expenses?"
+                        label="Who will bear travel expenses?"
                         name="expensesBearer"
                         type="select"
                         value={formData.expensesBearer}
                         onChange={handleInputChange}
-                        options={["Self", "Sponsor"]}
+                        options={["Self", "Sponsor", "Company", "Other"]}
+                        required
                       />
                       <FormField
-                        label="Estimated Travel Budget (USD or local currency)"
+                        label="Estimated Budget"
                         name="estimatedBudget"
-                        type="text"
-                        placeholder="Enter estimated budget"
+                        placeholder="e.g., USD 5000"
                         value={formData.estimatedBudget}
                         onChange={handleInputChange}
+                        required
                       />
                       <FormField
-                        label="Do you have sufficient funds for the trip?"
+                        label="Do you have sufficient funds?"
                         name="sufficientFunds"
                         type="select"
                         value={formData.sufficientFunds}
                         onChange={handleInputChange}
                         options={["Yes", "No"]}
+                        required
                       />
                     </>
                   )}
@@ -687,24 +646,27 @@ export default function VisaApplication() {
                   {/* Section 7: Sponsor */}
                   {currentSection === 6 && (
                     <>
+                      <div className="bg-muted p-4 rounded-lg mb-4">
+                        <p className="text-sm text-muted-foreground">
+                          If you have a sponsor, please provide their information. Otherwise, you can skip this section.
+                        </p>
+                      </div>
                       <FormField
-                        label="Sponsor Name"
+                        label="Sponsor Name (Optional)"
                         name="sponsorName"
-                        type="text"
                         placeholder="Enter sponsor name"
                         value={formData.sponsorName}
                         onChange={handleInputChange}
                       />
                       <FormField
-                        label="Relationship with Applicant"
+                        label="Relationship with Sponsor (Optional)"
                         name="sponsorRelationship"
-                        type="text"
-                        placeholder="Enter relationship"
+                        placeholder="e.g., Parent, Friend, Employer"
                         value={formData.sponsorRelationship}
                         onChange={handleInputChange}
                       />
                       <FormField
-                        label="Sponsor Address"
+                        label="Sponsor Address (Optional)"
                         name="sponsorAddress"
                         type="textarea"
                         placeholder="Enter sponsor address"
@@ -712,7 +674,7 @@ export default function VisaApplication() {
                         onChange={handleInputChange}
                       />
                       <FormField
-                        label="Sponsor Contact Number"
+                        label="Sponsor Phone (Optional)"
                         name="sponsorPhone"
                         type="tel"
                         placeholder="Enter sponsor phone"
@@ -726,21 +688,24 @@ export default function VisaApplication() {
                   {currentSection === 7 && (
                     <>
                       <FormField
-                        label="Have you traveled abroad before?"
+                        label="Have you travelled abroad before?"
                         name="travelledBefore"
                         type="select"
                         value={formData.travelledBefore}
                         onChange={handleInputChange}
                         options={["Yes", "No"]}
+                        required
                       />
-                      <FormField
-                        label="Countries visited in the last 5 years"
-                        name="countriesVisited"
-                        type="textarea"
-                        placeholder="List countries"
-                        value={formData.countriesVisited}
-                        onChange={handleInputChange}
-                      />
+                      {formData.travelledBefore === "Yes" && (
+                        <FormField
+                          label="List of countries visited"
+                          name="countriesVisited"
+                          type="textarea"
+                          placeholder="Enter countries you've visited"
+                          value={formData.countriesVisited}
+                          onChange={handleInputChange}
+                        />
+                      )}
                       <FormField
                         label="Have you ever overstayed a visa?"
                         name="overstayedVisa"
@@ -748,6 +713,7 @@ export default function VisaApplication() {
                         value={formData.overstayedVisa}
                         onChange={handleInputChange}
                         options={["Yes", "No"]}
+                        required
                       />
                       <FormField
                         label="Have you ever been refused a visa?"
@@ -756,6 +722,7 @@ export default function VisaApplication() {
                         value={formData.refusedVisa}
                         onChange={handleInputChange}
                         options={["Yes", "No"]}
+                        required
                       />
                       {formData.refusedVisa === "Yes" && (
                         <FormField
@@ -780,6 +747,7 @@ export default function VisaApplication() {
                         value={formData.hasInsurance}
                         onChange={handleInputChange}
                         options={["Yes", "No"]}
+                        required
                       />
                       <FormField
                         label="Any serious medical condition? (Optional)"
@@ -838,9 +806,10 @@ export default function VisaApplication() {
                           name="agreeToTerms"
                           checked={formData.agreeToTerms}
                           onChange={handleInputChange}
-                          className="w-5 h-5"
+                          className="w-5 h-5 cursor-pointer"
+                          id="agreeToTerms"
                         />
-                        <label className="text-sm">
+                        <label htmlFor="agreeToTerms" className="text-sm cursor-pointer">
                           I agree to the terms & conditions and confirm that all information is accurate
                         </label>
                       </div>
@@ -854,7 +823,7 @@ export default function VisaApplication() {
                     type="button"
                     variant="outline"
                     onClick={() => setCurrentSection(Math.max(0, currentSection - 1))}
-                    disabled={currentSection === 0}
+                    disabled={currentSection === 0 || isSubmitting}
                   >
                     Previous
                   </Button>
@@ -863,16 +832,23 @@ export default function VisaApplication() {
                     <Button
                       type="submit"
                       className="ml-auto"
+                      disabled={isSubmitting || !formData.agreeToTerms}
                     >
-                      Submit Application
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Submitting...
+                        </>
+                      ) : (
+                        "Submit Application"
+                      )}
                     </Button>
                   ) : (
                     <Button
                       type="button"
-                      onClick={() =>
-                        setCurrentSection(Math.min(SECTION_TITLES.length - 1, currentSection + 1))
-                      }
+                      onClick={handleNext}
                       className="ml-auto"
+                      disabled={isSubmitting}
                     >
                       Next
                     </Button>
@@ -971,8 +947,9 @@ function FileUploadField({ label, name, onChange, file, required = false }: any)
           <p className="text-sm font-medium">Click to upload or drag and drop</p>
           <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG (Max 5MB)</p>
           {file && (
-            <div className="mt-3 p-2 bg-primary/10 rounded text-sm text-primary">
-              ✓ {file.name}
+            <div className="mt-3 p-2 bg-primary/10 rounded text-sm text-primary flex items-center justify-center gap-2">
+              <Check className="w-4 h-4" />
+              <span>{file.name}</span>
             </div>
           )}
         </label>
