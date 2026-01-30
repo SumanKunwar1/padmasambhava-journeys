@@ -133,12 +133,7 @@ export function HeroSection() {
                   {heroImages[currentImageIndex].subtitle}
                 </p>
               )}
-              <button
-                onClick={() => setIsBookingOpen(true)}
-                className="bg-primary hover:bg-primary/90 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all transform hover:scale-105 shadow-2xl"
-              >
-                Start Your Journey
-              </button>
+              
             </motion.div>
           </AnimatePresence>
         </div>

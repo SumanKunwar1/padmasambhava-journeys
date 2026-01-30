@@ -15,29 +15,26 @@ import { protect } from '../controllers/auth.controller';
 
 const router = express.Router();
 
-// Public routes - for frontend display
+// Public routes - for frontend display (must come FIRST before protect middleware)
 router.get('/active', getActiveHeroImages);
 
-// Protected routes - require admin authentication
-router.use(protect);
+// Admin stats route (protected) - must come before /:id to avoid route conflicts
+router.get('/admin/stats', protect, getHeroImageStats);
 
-// Stats route (must come before /:id to avoid conflicts)
-router.get('/admin/stats', getHeroImageStats);
+// Reorder route (protected)
+router.patch('/reorder', protect, reorderHeroImages);
 
-// Reorder route
-router.patch('/reorder', reorderHeroImages);
+// Toggle active status (protected)
+router.patch('/:id/toggle-active', protect, toggleHeroImageActive);
 
 // CRUD operations
 router.route('/')
-  .get(getAllHeroImages)
-  .post(createHeroImage);
+  .get(protect, getAllHeroImages)      // Protected - admin only
+  .post(protect, createHeroImage);     // Protected - admin only
 
 router.route('/:id')
-  .get(getHeroImage)
-  .patch(updateHeroImage)
-  .delete(deleteHeroImage);
-
-// Toggle active status
-router.patch('/:id/toggle-active', toggleHeroImageActive);
+  .get(protect, getHeroImage)          // Protected - admin only
+  .patch(protect, updateHeroImage)     // Protected - admin only
+  .delete(protect, deleteHeroImage);   // Protected - admin only
 
 export default router;

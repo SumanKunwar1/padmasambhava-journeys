@@ -48,6 +48,8 @@ export default function AdminLogin() {
     setIsLoading(true);
 
     try {
+      console.log("🔄 Attempting login...");
+      
       // Call backend API
       const response = await axios.post(
         `${API_URL}/auth/login`,
@@ -60,23 +62,39 @@ export default function AdminLogin() {
         }
       );
 
+      console.log("📡 Login response received:", {
+        status: response.data.status,
+        hasToken: !!response.data.token
+      });
+
       if (response.data.status === 'success') {
         const adminData = response.data.data.admin;
         const token = response.data.token;
 
-        // Store admin data and token
+        if (!token) {
+          throw new Error("No token received from server");
+        }
+
+        // ✅ CRITICAL FIX: Store token with key "token" (not "adminToken")
+        // This matches what auth.ts expects
+        localStorage.setItem("token", token);
         localStorage.setItem("adminUser", JSON.stringify(adminData));
-        localStorage.setItem("adminToken", token);
+        
+        console.log("✅ Token saved to localStorage");
+        console.log("✅ Admin data saved:", adminData.name);
         
         toast({
           title: "Login successful!",
           description: `Welcome back, ${adminData.name}!`,
         });
         
-        navigate("/admin/dashboard");
+        // Small delay to ensure localStorage is written
+        setTimeout(() => {
+          navigate("/admin/dashboard");
+        }, 100);
       }
     } catch (error: any) {
-      console.error("Login error:", error);
+      console.error("❌ Login error:", error);
       
       const errorMessage = error.response?.data?.message || 
                           error.message || 

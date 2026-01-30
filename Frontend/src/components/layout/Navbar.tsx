@@ -92,7 +92,7 @@ const navItems: NavItem[] = [
     label: "Retreats",
     icon: <Sparkles className="w-4 h-4 text-purple-500" />,
     children: [
-      { label: "Meditation Retreats", href: "/retreats/meditation" },
+      { label: "Weekly Retreats", href: "/retreats/meditation" },
       { label: "Spiritual Retreats", href: "/retreats/spiritual" },
       { label: "Wellness Retreats", href: "/retreats/wellness" },
       { label: "Yoga Retreats", href: "/retreats/yoga" },
