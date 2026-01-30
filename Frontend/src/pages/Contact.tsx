@@ -12,7 +12,7 @@ const contactInfo = [
   {
     icon: Phone,
     title: "Phone",
-    details: ["+91 8287636079", "+91 9876543210"],
+    details: ["(+91) 73639 33945"],
     color: "text-primary",
   },
   {
@@ -24,7 +24,7 @@ const contactInfo = [
   {
     icon: MapPin,
     title: "Office Address",
-    details: ["123 Travel Street", "New Delhi, India 110001"],
+    details: ["Siliguri 734001", "West Bengal", "India"],
     color: "text-rose-500",
   },
   {
@@ -155,7 +155,7 @@ const Contact = () => {
                       Phone Number
                     </label>
                     <Input 
-                      placeholder="+91 98765 43210"
+                      placeholder="(+91) 73639 33945"
                       value={formData.phone}
                       onChange={(e) => setFormData({...formData, phone: e.target.value})}
                     />

@@ -20,8 +20,9 @@ const Index = () => {
         <ExploreDestinations />
         <UpcomingTrips />
         <BookWithConfidence />
-        <VibeWithUs />
         <TrendingDestinations />
+        <VibeWithUs />
+        
         <Testimonials />
         <FAQSection />
         <BlogsSection />

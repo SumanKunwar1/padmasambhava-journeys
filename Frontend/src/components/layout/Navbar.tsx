@@ -18,6 +18,7 @@ import {
   LogIn,
   UserPlus,
   LogOut,
+  Plane,
   LayoutDashboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -56,12 +57,27 @@ const allTrips = [
 ];
 
 const navItems: NavItem[] = [
+
   {
     label: "EMI Trips",
      href: "/trips/upcoming",
     icon: <Users className="w-4 h-4 text-primary" />,
     
   },
+  {
+    label: "International Trips",
+     href: "/trips/upcoming",
+    icon: <Plane className="w-4 h-4 text-primary" />,
+    
+  },
+  {
+    label: "India Trips",
+     href: "/trips/upcoming",
+    icon: <Users className="w-4 h-4 text-primary" />,
+    
+  },
+
+
   {
     label: "Deals",
     icon: <Tag className="w-4 h-4 text-amber-500" />,
@@ -90,19 +106,17 @@ const navItems: NavItem[] = [
     icon: <Luggage className="w-4 h-4 text-sky-500" />,
   },
   {
-    label: "Retreats",
-    href: "/retreats/meditation" ,
+    label: "Retreats & Healings",
     icon: <Sparkles className="w-4 h-4 text-purple-500" />,
-    
-  },
-  {
-    label: "Healing",
-    href: "/retreats/wellness",
-    icon: <Globe className="w-4 h-4 text-teal-500" />,
+    children: [
+      { label: "Retreats", href: "/retreats/meditation" },
+      { label: "Healings", href: "/retreats/wellness" },
+    ], 
   },
   
+  
   {
-    label: "Visa & Documentation",
+    label: "Services",
     icon: <Info className="w-4 h-4 text-purple-500" />,
     children: [
       { label: "Visa Application", href: "/visa-application" },
