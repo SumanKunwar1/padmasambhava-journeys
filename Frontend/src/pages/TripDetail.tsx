@@ -289,47 +289,7 @@ export default function TripDetail() {
             </div>
           </section>
 
-          {/* Costing Section */}
-          <section id="costing" className="mb-12">
-            <h2 className="text-2xl font-display font-bold mb-6">
-              Pricing Details
-            </h2>
-            <div className="bg-muted rounded-xl overflow-hidden">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left p-4 font-semibold">Sharing Mode</th>
-                    <th className="text-right p-4 font-semibold">Price per Person</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {PRICING_DETAILS.map((detail, index) => (
-                    <tr key={index} className="border-b border-border">
-                      <td className="p-4">{detail.sharing}</td>
-                      <td className="p-4 text-right">
-                        {detail.isSupplementary ? (
-                          <span className="text-xl font-bold">
-                            +₹{Math.abs(detail.priceOffset).toLocaleString()}
-                          </span>
-                        ) : (
-                          <>
-                            <span className="text-xl font-bold">
-                              ₹{(tripData.price + detail.priceOffset).toLocaleString()}
-                            </span>
-                            {index === 0 && (
-                              <span className="ml-2 text-sm text-muted-foreground line-through">
-                                ₹{tripData.originalPrice.toLocaleString()}
-                              </span>
-                            )}
-                          </>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
+         
 
           {/* Notes Section */}
           <section id="notes" className="mb-12">
@@ -452,7 +412,7 @@ export default function TripDetail() {
               <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                 <span>Any Doubt?</span>
                 <a
-                  href={`https://wa.me/${WHATSAPP_CONTACT}`}
+                  href="https://wa.me/9779704502011"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border hover:border-primary hover:text-primary transition-colors"
