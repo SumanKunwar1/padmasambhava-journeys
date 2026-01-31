@@ -61,6 +61,8 @@ const TRIP_CATEGORIES = {
       { label: "Solo Trips", value: "solo", route: "/style/solo" },
       { label: "Weekend Trips", value: "weekend", route: "/trips/weekend" },
       { label: "Adventure Trips", value: "adventure", route: "/style/adventure" },
+      { label: "Cruise Trips", value: "cruise", route: "/trips/cruise" },
+
     ],
   },
   "Destinations": {

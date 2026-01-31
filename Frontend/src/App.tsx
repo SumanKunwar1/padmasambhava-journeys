@@ -24,6 +24,8 @@ import Blogs from "./pages/Blogs";
 import NotFound from "./pages/NotFound";
 import CruiseTrips from "./pages/CruiseTrips";
 import EMITrips from "./pages/EMITrips";
+import Healings from "./pages/Healing";
+
 
 // Auth Pages
 import SignUp from "./pages/SignUp";
@@ -250,7 +252,7 @@ const App = () => (
             <Route path="/retreats" element={<Retreats />} />
             <Route path="/retreats/meditation" element={<Retreats />} />
             <Route path="/retreats/spiritual" element={<Retreats />} />
-            <Route path="/retreats/wellness" element={<Retreats />} />
+            <Route path="/retreats/wellness" element={<Healings />} />
             <Route path="/retreats/yoga" element={<Retreats />} />
             
             {/* Customised Trips */}
