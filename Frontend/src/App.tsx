@@ -36,6 +36,7 @@ import VisaApplication from "./pages/VisaApplication";
 import Documentation from "./pages/Documentation";
 import Dashboard from "./pages/Dashboard";
 import Insurance from "./pages/Insurance";
+import AgentSignup from "./pages/AgentSignup";
 
 // Admin Pages
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -296,6 +297,7 @@ const App = () => (
             <Route path="/cancellation" element={<Contact />} />
             <Route path="/terms" element={<Contact />} />
             <Route path="/corporate" element={<Contact />} />
+            <Route path="/agent-signup" element={<AgentSignup />} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
