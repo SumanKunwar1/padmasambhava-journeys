@@ -96,6 +96,11 @@ const menuItems = [
     path: "/admin/agents",
   },
   {
+    title: "Testimonials",
+    icon: Users,
+    path: "/admin/testimonials",
+  },
+  {
     title: "Custom Trips",
     icon: Route,
     path: "/admin/custom-trips",

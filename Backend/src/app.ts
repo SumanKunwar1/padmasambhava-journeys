@@ -21,7 +21,7 @@ import exploreDestinationRoutes from './routes/exploreDestination.routes';
 import trendingDestinationRoutes from './routes/trendingDestination.routes';
 import insuranceRoutes from './routes/insurance.routes';
 import agentRoutes from './routes/agent.routes';
-
+import testimonialRoutes from './routes/testimonial.routes';
 const app: Application = express();
 
 // CORS configuration
@@ -69,7 +69,7 @@ app.use('/api/v1/explore-destinations', exploreDestinationRoutes);
 app.use('/api/v1/trending-destinations', trendingDestinationRoutes);
 app.use('/api/v1/insurance', insuranceRoutes);
 app.use('/api/v1/agents', agentRoutes);
-
+app.use('/api/v1/testimonials', testimonialRoutes);
 // Handle undefined routes
 app.all('*', (req: Request, _res: Response, next: NextFunction) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));

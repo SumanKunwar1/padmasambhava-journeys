@@ -56,6 +56,7 @@ import AdminCustomTrips from "./pages/admin/AdminCustomTrips";
 import AdminDocumentation from "./pages/admin/AdminDocumentation";
 import AdminInsurance from "./pages/admin/AdminInsurance";
 import AdminAgents from "./pages/admin/AdminAgents";
+import adminTestimonials, { AdminTestimonials } from "./pages/admin/AdminTestimonials";
 
 // Admin Homepage Management Pages
 import AdminHeroSection from "./pages/admin/AdminHeroSection";
@@ -142,6 +143,14 @@ const App = () => (
               element={
                 <ProtectedAdminRoute>
                   <AdminTripForm />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/testimonials"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminTestimonials />
                 </ProtectedAdminRoute>
               }
             />
