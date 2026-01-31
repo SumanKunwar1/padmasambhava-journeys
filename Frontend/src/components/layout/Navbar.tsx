@@ -20,6 +20,7 @@ import {
   LogOut,
   LayoutDashboard,
   Plane,
+  Briefcase,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -183,15 +184,23 @@ export function Navbar() {
       </div>
 
       <nav className="container-custom">
-        {/* Top row: Logo + Search + Phone + CTA */}
+        {/* Top row: Logo + Brand Name + Search + Phone + CTA */}
         <div className="flex items-center justify-between h-24 border-b border-border">
-          {/* Logo */}
-          <Link to="/" className="flex-shrink-0">
+          {/* Logo and Brand Name */}
+          <Link to="/" className="flex items-center gap-3 flex-shrink-0">
             <img 
               src="https://res.cloudinary.com/dihev9qxc/image/upload/v1768991877/453207561_122102729312441160_4787222294410407220_n-removebg-preview_voy795.png" 
               alt="Padmasambhava Trip" 
               className="h-28 w-auto"
             />
+            <div className="hidden lg:flex flex-col">
+              <span className="text-xl font-bold text-foreground leading-tight">
+                Padmasambhava Trips
+              </span>
+              <span className="text-sm text-muted-foreground font-medium">
+                India DMC
+              </span>
+            </div>
           </Link>
 
           {/* Search Bar */}
@@ -208,7 +217,7 @@ export function Navbar() {
                 }}
                 onFocus={() => setShowSearchResults(true)}
                 onBlur={() => setTimeout(() => setShowSearchResults(false), 200)}
-                className="pl-10 pr-4 h-10 rounded-full border-border focus:border-primary"
+                className="pl-10 pr-4 h-10 rounded-full border-muted-foreground/20 focus-visible:ring-primary"
               />
               
               {/* Search Results Dropdown */}
@@ -224,17 +233,17 @@ export function Navbar() {
                       <button
                         key={trip.href}
                         onClick={() => handleSearchSelect(trip.href)}
-                        className="w-full text-left px-4 py-3 hover:bg-muted transition-colors border-b border-border last:border-0"
+                        className="w-full text-left px-4 py-3 hover:bg-muted transition-colors flex items-center justify-between group"
                       >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium text-sm">{trip.name}</p>
-                            <p className="text-xs text-muted-foreground">{trip.destination}</p>
+                        <div>
+                          <div className="font-medium text-sm text-popover-foreground group-hover:text-primary">
+                            {trip.name}
                           </div>
-                          <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
-                            {trip.category}
-                          </span>
+                          <div className="text-xs text-muted-foreground">
+                            {trip.destination} • {trip.category}
+                          </div>
                         </div>
+                        <Search className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
                       </button>
                     ))}
                   </motion.div>
@@ -243,7 +252,7 @@ export function Navbar() {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <a
               href="tel: +917363933945"
               className="hidden sm:flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors"
@@ -265,6 +274,12 @@ export function Navbar() {
                   <Button size="sm" className="rounded-full">
                     <UserPlus className="w-4 h-4 mr-1" />
                     Sign Up
+                  </Button>
+                </Link>
+                <Link to="/agent-signup">
+                  <Button size="sm" variant="outline" className="rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+                    <Briefcase className="w-4 h-4 mr-1" />
+                    Agent Sign Up
                   </Button>
                 </Link>
               </div>
@@ -408,6 +423,12 @@ export function Navbar() {
                         <Button className="w-full">
                           <UserPlus className="w-4 h-4 mr-2" />
                           Sign Up
+                        </Button>
+                      </Link>
+                      <Link to="/agent-signup" onClick={() => setMobileOpen(false)}>
+                        <Button variant="outline" className="w-full border-primary text-primary">
+                          <Briefcase className="w-4 h-4 mr-2" />
+                          Agent Sign Up
                         </Button>
                       </Link>
                     </>
