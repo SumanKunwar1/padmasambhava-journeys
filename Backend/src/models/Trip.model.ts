@@ -87,7 +87,19 @@ const tripSchema = new Schema<ITrip>(
     tripCategory: {
       type: String,
       required: [true, 'Trip category is required'],
-      enum: ['group-trips', 'travel-styles', 'destinations', 'combo-trips', 'retreats', 'customised', 'deals'],
+      // FIXED: Added 'group-trips' to the enum
+      enum: [
+        'india-trips',
+        'international-trips', 
+        'emi-trips', 
+        'group-trips',  // ← ADDED THIS
+        'travel-styles', 
+        'destinations', 
+        'combo-trips', 
+        'retreats', 
+        'customised', 
+        'deals'
+      ],
     },
     tripType: {
       type: String,

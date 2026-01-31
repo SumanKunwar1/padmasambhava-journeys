@@ -81,10 +81,8 @@ const TRIP_CATEGORIES = {
   "Retreats": {
     value: "retreats",
     subcategories: [
-      { label: "Meditation Retreats", value: "meditation", route: "/retreats/meditation" },
-      { label: "Spiritual Retreats", value: "spiritual", route: "/retreats/spiritual" },
-      { label: "Wellness Retreats", value: "wellness", route: "/retreats/wellness" },
-      { label: "Yoga Retreats", value: "yoga", route: "/retreats/yoga" },
+      { label: "Retreats", value: "meditation", route: "/retreats/meditation" },
+      { label: "Healing", value: "wellness", route: "/retreats/wellness" },
     ],
   },
   "Customised Trips": {
