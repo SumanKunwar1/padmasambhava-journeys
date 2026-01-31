@@ -18,6 +18,7 @@ import {
   Image,
   TrendingUp,
   Compass,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -83,6 +84,11 @@ const menuItems = [
     title: "Visa Applications",
     icon: Plane,
     path: "/admin/visa-applications",
+  },
+  {
+    title: "Insurance",
+    icon: Shield,
+    path: "/admin/insurance",
   },
   {
     title: "Custom Trips",

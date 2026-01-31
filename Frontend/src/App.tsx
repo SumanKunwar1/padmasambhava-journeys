@@ -35,6 +35,7 @@ import Login from "./pages/Login";
 import VisaApplication from "./pages/VisaApplication";
 import Documentation from "./pages/Documentation";
 import Dashboard from "./pages/Dashboard";
+import Insurance from "./pages/Insurance";
 
 // Admin Pages
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -50,6 +51,7 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminVisaApplications from "./pages/admin/AdminVisaApplications";
 import AdminCustomTrips from "./pages/admin/AdminCustomTrips";
 import AdminDocumentation from "./pages/admin/AdminDocumentation";
+import AdminInsurance from "./pages/admin/AdminInsurance";
 
 // Admin Homepage Management Pages
 import AdminHeroSection from "./pages/admin/AdminHeroSection";
@@ -83,6 +85,7 @@ const App = () => (
             {/* Visa & Documentation Routes */}
             <Route path="/visa-application" element={<VisaApplication />} />
             <Route path="/documentation" element={<Documentation />} />
+            <Route path="/insurance" element={<Insurance />} />
             
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
@@ -203,6 +206,14 @@ const App = () => (
               element={
                 <ProtectedAdminRoute>
                   <AdminVisaApplications />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/insurance"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminInsurance />
                 </ProtectedAdminRoute>
               }
             />

@@ -121,6 +121,7 @@ const navItems: NavItem[] = [
     children: [
       { label: "Visa Application", href: "/visa-application" },
       { label: "Documentation Portal", href: "/documentation" },
+      { label: "Travel Insurance", href: "/insurance" },
     ],
   },
 ];
