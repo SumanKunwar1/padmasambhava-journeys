@@ -20,6 +20,7 @@ import heroImageRoutes from './routes/heroImage.routes';
 import exploreDestinationRoutes from './routes/exploreDestination.routes';
 import trendingDestinationRoutes from './routes/trendingDestination.routes';
 import insuranceRoutes from './routes/insurance.routes';
+import agentRoutes from './routes/agent.routes';
 
 const app: Application = express();
 
@@ -67,6 +68,7 @@ app.use('/api/v1/hero-images', heroImageRoutes);
 app.use('/api/v1/explore-destinations', exploreDestinationRoutes);
 app.use('/api/v1/trending-destinations', trendingDestinationRoutes);
 app.use('/api/v1/insurance', insuranceRoutes);
+app.use('/api/v1/agents', agentRoutes);
 
 // Handle undefined routes
 app.all('*', (req: Request, _res: Response, next: NextFunction) => {
