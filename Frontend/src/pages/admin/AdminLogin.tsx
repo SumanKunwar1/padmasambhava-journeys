@@ -7,10 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import axios from "axios";
-
-// API Base URL - get from environment variable
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5020";
+import axiosInstance from "@/lib/axios";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -48,20 +45,13 @@ export default function AdminLogin() {
     setIsLoading(true);
 
     try {
-      console.log("📝 Attempting login...");
-      console.log("🔗 API URL:", `${API_URL}/api/v1/auth/login`);
+      console.log("🔐 Attempting login...");
       
-      // Call backend API with full path
-      const response = await axios.post(
-        `${API_URL}/api/v1/auth/login`,
-        {
-          email: formData.email,
-          password: formData.password,
-        },
-        {
-          withCredentials: true, // Important for cookies
-        }
-      );
+      // FIXED: Use axiosInstance which handles baseURL automatically
+      const response = await axiosInstance.post('/auth/login', {
+        email: formData.email,
+        password: formData.password,
+      });
 
       console.log("📡 Login response received:", {
         status: response.data.status,
@@ -76,13 +66,13 @@ export default function AdminLogin() {
           throw new Error("No token received from server");
         }
 
-        // ✅ CRITICAL FIX: Store token with key "token" (not "adminToken")
-        // This matches what auth.ts expects
-        localStorage.setItem("token", token);
+        // ✅ CRITICAL: Store token with key "adminToken" to match axios interceptor
+        localStorage.setItem("adminToken", token);
         localStorage.setItem("adminUser", JSON.stringify(adminData));
         
-        console.log("✅ Token saved to localStorage");
+        console.log("✅ Token saved to localStorage as 'adminToken'");
         console.log("✅ Admin data saved:", adminData.name);
+        console.log("✅ Token preview:", token.substring(0, 30) + "...");
         
         toast({
           title: "Login successful!",
@@ -91,6 +81,7 @@ export default function AdminLogin() {
         
         // Small delay to ensure localStorage is written
         setTimeout(() => {
+          console.log("🔄 Navigating to dashboard...");
           navigate("/admin/dashboard");
         }, 100);
       }
