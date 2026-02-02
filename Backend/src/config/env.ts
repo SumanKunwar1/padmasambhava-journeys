@@ -54,7 +54,7 @@ export const config: Config = {
 if (process.env.NODE_ENV === 'development') {
   console.log('✅ Configuration loaded:');
   console.log(`   NODE_ENV: ${process.env.NODE_ENV}`);
-  console.log(`   PORT: ${process.env.PORT || 5000}`);
+  console.log(`   PORT: ${process.env.PORT || 5020}`);
   console.log(`   CLIENT_URL: ${process.env.CLIENT_URL || 'http://localhost:8080'}`);
 }
 

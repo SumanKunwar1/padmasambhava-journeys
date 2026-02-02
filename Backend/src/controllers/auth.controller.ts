@@ -26,14 +26,15 @@ const signToken = (id: string): string => {
 const createSendToken = (admin: any, statusCode: number, res: Response): void => {
   const token = signToken(admin._id.toString());
 
-  // Cookie options
+  // FIXED: Production-ready cookie options
   const cookieOptions = {
     expires: new Date(
       Date.now() + config.jwtCookieExpiresIn * 24 * 60 * 60 * 1000
     ),
     httpOnly: true,
-    secure: config.nodeEnv === 'production',
-    sameSite: 'lax' as const,
+    secure: config.nodeEnv === 'production', // HTTPS only in production
+    sameSite: config.nodeEnv === 'production' ? 'none' as const : 'lax' as const, // CRITICAL: 'none' for cross-origin in production
+    domain: config.nodeEnv === 'production' ? '.padmasambhavatrip.com' : undefined, // Allow subdomain cookies
   };
 
   res.cookie('jwt', token, cookieOptions);
@@ -85,10 +86,16 @@ export const login = catchAsync(
 // @access  Private
 export const logout = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    res.cookie('jwt', 'loggedout', {
+    // FIXED: Use same cookie options for logout
+    const cookieOptions = {
       expires: new Date(Date.now() + 10 * 1000),
       httpOnly: true,
-    });
+      secure: config.nodeEnv === 'production',
+      sameSite: config.nodeEnv === 'production' ? 'none' as const : 'lax' as const,
+      domain: config.nodeEnv === 'production' ? '.padmasambhavatrip.com' : undefined,
+    };
+
+    res.cookie('jwt', 'loggedout', cookieOptions);
 
     res.status(200).json({
       status: 'success',
@@ -134,6 +141,11 @@ export const protect = catchAsync(
       token = req.cookies.jwt;
     }
 
+    console.log('🔐 Protect middleware:');
+    console.log('   Authorization header:', req.headers.authorization ? 'Present' : 'Missing');
+    console.log('   Cookie jwt:', req.cookies?.jwt ? 'Present' : 'Missing');
+    console.log('   Token extracted:', token ? 'Yes' : 'No');
+
     if (!token) {
       return next(
         new AppError('You are not logged in! Please log in to get access.', 401)
@@ -145,6 +157,7 @@ export const protect = catchAsync(
     try {
       decoded = jwt.verify(token, config.jwtSecret as string) as IJWTPayload;
     } catch (error) {
+      console.error('❌ Token verification failed:', error);
       return next(new AppError('Invalid token. Please log in again.', 401));
     }
 
@@ -161,6 +174,8 @@ export const protect = catchAsync(
     if (!currentAdmin.isActive) {
       return next(new AppError('Your account has been deactivated', 403));
     }
+
+    console.log('✅ Authentication successful for:', currentAdmin.email);
 
     // Grant access to protected route
     (req as any).user = currentAdmin;

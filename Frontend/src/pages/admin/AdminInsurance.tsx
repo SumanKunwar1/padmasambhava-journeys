@@ -28,7 +28,7 @@ import axios from "axios";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5020/api/v1";
 
 interface InsuranceApplication {
   _id: string;

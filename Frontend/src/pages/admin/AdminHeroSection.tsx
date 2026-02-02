@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { cn } from "@/lib/utils";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5020";
 
 interface HeroImage {
   _id: string;

@@ -3,7 +3,7 @@ import app from './app';
 import { connectDB } from './config/database';
 import { config } from './config/env';
 
-const PORT = config.port || 5000;
+const PORT = config.port || 5020;
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err: Error) => {
