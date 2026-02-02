@@ -2,9 +2,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BookingFormModal } from "@/components/shared/BookingFormModal";
+import { API_BASE_URL } from "@/lib/api-config";
 import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL || "";
 
 interface HeroImage {
   _id: string;
@@ -25,7 +24,7 @@ export function HeroSection() {
   useEffect(() => {
     const fetchHeroImages = async () => {
       try {
-        const response = await axios.get(`${API_URL}/api/v1/hero-images/active`);
+        const response = await axios.get(`${API_BASE_URL}/hero-images/active`);
         if (response.data.status === "success" && response.data.data.heroImages.length > 0) {
           setHeroImages(response.data.data.heroImages);
         } else {

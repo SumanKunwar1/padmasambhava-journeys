@@ -3,9 +3,8 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { API_BASE_URL } from "@/lib/api-config";
 import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 type FilterType = "all" | "international" | "domestic" | "weekend";
 
@@ -35,7 +34,7 @@ export function ExploreDestinations() {
   useEffect(() => {
     const fetchDestinations = async () => {
       try {
-        const response = await axios.get(`${API_URL}/api/v1/explore-destinations/active`);
+        const response = await axios.get(`${API_BASE_URL}/explore-destinations/active`);
         if (response.data.status === "success") {
           setDestinations(response.data.data.exploreDestinations);
         }

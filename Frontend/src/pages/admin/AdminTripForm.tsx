@@ -10,8 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { cn } from "@/lib/utils";
 import axios from "axios";
+import { API_BASE_URL } from "@/lib/api-config";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
 
 interface ItineraryDay {
   day: number;
@@ -146,7 +146,7 @@ export default function AdminTripForm() {
   const fetchTripData = async (tripId: string) => {
     try {
       const token = localStorage.getItem("adminToken");
-      const response = await axios.get(`${API_URL}/trips/${tripId}`, {
+      const response = await axios.get(`${API_BASE_URL}/trips/${tripId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -378,14 +378,14 @@ export default function AdminTripForm() {
 
       let response;
       if (isEdit) {
-        response = await axios.patch(`${API_URL}/trips/${id}`, submitData, {
+        response = await axios.patch(`${API_BASE_URL}/trips/${id}`, submitData, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'multipart/form-data',
           },
         });
       } else {
-        response = await axios.post(`${API_URL}/trips`, submitData, {
+        response = await axios.post(`${API_BASE_URL}/trips`, submitData, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'multipart/form-data',

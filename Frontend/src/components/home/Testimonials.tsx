@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import { Star } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api-config";
 
 interface Testimonial {
   _id: string;
@@ -21,7 +22,7 @@ export function Testimonials() {
     const fetchTestimonials = async () => {
       try {
         const response = await fetch(
-          "http://localhost:5000/api/v1/testimonials/public?limit=20"
+          `${API_BASE_URL}/testimonials/public?limit=20`
         );
 
         if (response.ok) {

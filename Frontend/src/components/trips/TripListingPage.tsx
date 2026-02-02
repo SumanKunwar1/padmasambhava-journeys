@@ -12,9 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { WhatsAppButton } from "@/components/shared/WhatsAppButton";
+import { API_BASE_URL } from "@/lib/api-config";
 import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
 
 interface Trip {
   _id: string;
@@ -79,7 +78,7 @@ const TripListingPage = ({
   const fetchTrips = async () => {
     try {
       setLoading(true);
-      let url = `${API_URL}/trips?`;
+      let url = `${API_BASE_URL}/trips?`;
       
       if (tripCategory) {
         url += `tripCategory=${tripCategory}&`;
@@ -203,10 +202,11 @@ const TripListingPage = ({
         </div>
 
         {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative max-w-2xl">
+        <div className="mb-8">
+          <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
+              type="text"
               placeholder="Search trips by name or destination..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -217,12 +217,12 @@ const TripListingPage = ({
 
         {/* Destination Filter Pills */}
         {filterDestinations.length > 1 && (
-          <div className="flex flex-wrap gap-2 mb-8">
+          <div className="flex flex-wrap gap-3 mb-8">
             {filterDestinations.map((dest) => (
               <button
                 key={dest}
                 onClick={() => setActiveDestination(dest)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                   activeDestination === dest
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground hover:bg-muted/80 border border-border"

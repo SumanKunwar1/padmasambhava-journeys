@@ -1,10 +1,9 @@
 // src/services/api/customTrips.ts
 import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+import { API_BASE_URL } from '@/lib/api-config';
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: API_BASE_URL,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -59,7 +58,7 @@ export const customTripService = {
     return response.data;
   },
 
-  // Get statistics (admin) - FIXED: Changed from /stats/overview to /admin/stats
+  // Get statistics (admin)
   getStats: async () => {
     const response = await api.get('/custom-trips/admin/stats');
     return response.data;

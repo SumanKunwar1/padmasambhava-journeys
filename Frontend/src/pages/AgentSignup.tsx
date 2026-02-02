@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { API_BASE_URL } from "@/lib/api-config";
 
 export default function AgentSignup() {
   const navigate = useNavigate();
@@ -47,7 +48,7 @@ export default function AgentSignup() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/v1/agents", {
+      const response = await fetch(`${API_BASE_URL}/agents`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -196,85 +197,107 @@ export default function AgentSignup() {
 
                 <div className="mt-8 pt-6 border-t border-slate-200">
                   <p className="text-sm text-muted-foreground mb-4">
-                    Join <strong className="text-foreground">500+</strong> travel agents already partnering with us
+                    <strong className="text-foreground">Already working with other DMCs?</strong> That's fine! Join our network and compare the difference in service quality and commission structure.
                   </p>
-                  <div className="flex -space-x-3">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <div
-                        key={i}
-                        className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-blue-500 border-2 border-white flex items-center justify-center text-white text-xs font-semibold"
-                      >
-                        {String.fromCharCode(64 + i)}
-                      </div>
-                    ))}
-                    <div className="w-10 h-10 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center text-slate-600 text-xs font-semibold">
-                      +495
+                  <div className="flex items-start gap-3 p-4 bg-primary/5 rounded-xl">
+                    <div className="flex-shrink-0 w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                      <span className="text-primary text-xl">💡</span>
+                    </div>
+                    <div>
+                      <p className="text-sm text-foreground font-medium mb-1">Quick Tip</p>
+                      <p className="text-xs text-muted-foreground">Applications are reviewed within 24 hours. Have your business documents ready for faster approval.</p>
                     </div>
                   </div>
                 </div>
               </div>
+
+              {/* Contact Card */}
+              <div className="bg-gradient-to-br from-primary/10 to-blue-500/10 rounded-2xl p-6 border border-primary/20">
+                <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <Phone className="w-5 h-5 text-primary" />
+                  Need Immediate Assistance?
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Our partner team is available to answer your questions
+                </p>
+                <div className="space-y-2">
+                  <a 
+                    href="tel:+917363933945" 
+                    className="flex items-center gap-2 text-sm text-primary hover:underline"
+                  >
+                    <Phone className="w-4 h-4" />
+                    (+91) 73639 33945
+                  </a>
+                  <a 
+                    href="mailto:partners@padmasambhavatrips.com" 
+                    className="flex items-center gap-2 text-sm text-primary hover:underline"
+                  >
+                    <Mail className="w-4 h-4" />
+                    partners@padmasambhavatrips.com
+                  </a>
+                </div>
+              </div>
             </motion.div>
 
-            {/* Form Section - Right Side */}
+            {/* Application Form - Right Side */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
               className="lg:col-span-3"
             >
-              <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-slate-200">
-                <h2 className="text-2xl font-bold text-foreground mb-6">
-                  Partner Application Form
-                </h2>
-
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-slate-200">
+                <h2 className="text-2xl font-bold text-foreground mb-6">Application Form</h2>
+                
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Full Name */}
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName" className="text-sm font-medium flex items-center gap-2">
-                      <User className="w-4 h-4 text-primary" />
-                      Full Name *
-                    </Label>
-                    <Input
-                      id="fullName"
-                      name="fullName"
-                      type="text"
-                      required
-                      value={formData.fullName}
-                      onChange={handleChange}
-                      onFocus={() => setFocusedField("fullName")}
-                      onBlur={() => setFocusedField(null)}
-                      placeholder="Enter your full name"
-                      className={cn(
-                        "h-12 transition-all duration-200",
-                        focusedField === "fullName" && "ring-2 ring-primary/20 border-primary"
-                      )}
-                    />
+                  {/* Full Name & Company Name - Grid */}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="fullName" className="text-sm font-medium flex items-center gap-2">
+                        <User className="w-4 h-4 text-primary" />
+                        Full Name *
+                      </Label>
+                      <Input
+                        id="fullName"
+                        name="fullName"
+                        type="text"
+                        required
+                        value={formData.fullName}
+                        onChange={handleChange}
+                        onFocus={() => setFocusedField("fullName")}
+                        onBlur={() => setFocusedField(null)}
+                        placeholder="Your full name"
+                        className={cn(
+                          "h-12 transition-all duration-200",
+                          focusedField === "fullName" && "ring-2 ring-primary/20 border-primary"
+                        )}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="companyName" className="text-sm font-medium flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-primary" />
+                        Company Name *
+                      </Label>
+                      <Input
+                        id="companyName"
+                        name="companyName"
+                        type="text"
+                        required
+                        value={formData.companyName}
+                        onChange={handleChange}
+                        onFocus={() => setFocusedField("companyName")}
+                        onBlur={() => setFocusedField(null)}
+                        placeholder="Your company name"
+                        className={cn(
+                          "h-12 transition-all duration-200",
+                          focusedField === "companyName" && "ring-2 ring-primary/20 border-primary"
+                        )}
+                      />
+                    </div>
                   </div>
 
-                  {/* Company Name */}
-                  <div className="space-y-2">
-                    <Label htmlFor="companyName" className="text-sm font-medium flex items-center gap-2">
-                      <Building2 className="w-4 h-4 text-primary" />
-                      Company / Agency Name *
-                    </Label>
-                    <Input
-                      id="companyName"
-                      name="companyName"
-                      type="text"
-                      required
-                      value={formData.companyName}
-                      onChange={handleChange}
-                      onFocus={() => setFocusedField("companyName")}
-                      onBlur={() => setFocusedField(null)}
-                      placeholder="Your travel agency name"
-                      className={cn(
-                        "h-12 transition-all duration-200",
-                        focusedField === "companyName" && "ring-2 ring-primary/20 border-primary"
-                      )}
-                    />
-                  </div>
-
-                  {/* Email and Phone - Grid */}
+                  {/* Email & Phone - Grid */}
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2">

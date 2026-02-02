@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import axios from "axios";
 
 // API Base URL - get from environment variable
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -48,11 +48,12 @@ export default function AdminLogin() {
     setIsLoading(true);
 
     try {
-      console.log("🔄 Attempting login...");
+      console.log("📝 Attempting login...");
+      console.log("🔗 API URL:", `${API_URL}/api/v1/auth/login`);
       
-      // Call backend API
+      // Call backend API with full path
       const response = await axios.post(
-        `${API_URL}/auth/login`,
+        `${API_URL}/api/v1/auth/login`,
         {
           email: formData.email,
           password: formData.password,

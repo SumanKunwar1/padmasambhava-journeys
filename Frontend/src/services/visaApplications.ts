@@ -1,11 +1,10 @@
 // src/services/api/visaApplications.ts
 import axios, { AxiosError } from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+import { API_BASE_URL } from '@/lib/api-config';
 
 // Create axios instance without default Content-Type
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: API_BASE_URL,
   withCredentials: true,
 });
 

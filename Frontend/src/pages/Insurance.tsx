@@ -17,9 +17,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { cn } from "@/lib/utils";
+import { API_BASE_URL } from "@/lib/api-config";
 import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
 
 interface Traveler {
   fullName: string;
@@ -222,26 +221,28 @@ export default function Insurance() {
 
   const removeTraveler = (index: number) => {
     if (formData.travelers.length > 1) {
-      const newTravelers = formData.travelers.filter((_, i) => i !== index);
       setFormData((prev) => ({
         ...prev,
         numberOfTravelers: prev.numberOfTravelers - 1,
-        travelers: newTravelers,
+        travelers: prev.travelers.filter((_, i) => i !== index),
       }));
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: string) => {
-    if (e.target.files) {
-      if (type === "passportCopy") {
-        setFiles((prev) => ({ ...prev, passportCopy: e.target.files![0] }));
-      } else if (type === "medicalDocuments") {
-        const newFiles = Array.from(e.target.files);
-        setFiles((prev) => ({
-          ...prev,
-          medicalDocuments: [...prev.medicalDocuments, ...newFiles],
-        }));
-      }
+  const handleFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: "passportCopy" | "medicalDocuments"
+  ) => {
+    const selectedFiles = e.target.files;
+    if (!selectedFiles) return;
+
+    if (field === "passportCopy") {
+      setFiles((prev) => ({ ...prev, passportCopy: selectedFiles[0] }));
+    } else {
+      setFiles((prev) => ({
+        ...prev,
+        medicalDocuments: [...prev.medicalDocuments, ...Array.from(selectedFiles)],
+      }));
     }
   };
 
@@ -252,45 +253,32 @@ export default function Insurance() {
     }));
   };
 
-  const calculateEstimate = () => {
-    let basePrice = 0;
-    const planPrices: { [key: string]: number } = {
-      Basic: 500,
-      Standard: 1000,
-      Premium: 2000,
-      Family: 3500,
-    };
-
-    basePrice = planPrices[formData.planType] || 1000;
-
-    if (formData.tripType === "International") {
-      basePrice *= 2;
+  const calculatePremium = () => {
+    let basePremium = 0;
+    switch (formData.planType) {
+      case "Basic":
+        basePremium = 500;
+        break;
+      case "Standard":
+        basePremium = 1000;
+        break;
+      case "Premium":
+        basePremium = 2000;
+        break;
+      case "Family":
+        basePremium = 3500;
+        break;
     }
 
-    if (formData.departureDate && formData.returnDate) {
-      const departure = new Date(formData.departureDate);
-      const returnDate = new Date(formData.returnDate);
-      const duration = Math.ceil((returnDate.getTime() - departure.getTime()) / (1000 * 60 * 60 * 24));
-      
-      if (duration > 7) {
-        basePrice += (duration - 7) * 100;
-      }
-    }
+    let total = basePremium * formData.numberOfTravelers;
 
-    if (formData.planType !== "Family") {
-      basePrice *= formData.numberOfTravelers;
-    }
+    if (formData.additionalCoverages.adventureSports) total += 500;
+    if (formData.additionalCoverages.preExistingConditions) total += 800;
+    if (formData.additionalCoverages.seniorCitizen) total += 1000;
+    if (formData.additionalCoverages.pregnancy) total += 1200;
+    if (formData.additionalCoverages.valuables) total += 300;
 
-    let additionalCost = 0;
-    if (formData.additionalCoverages.adventureSports) additionalCost += 500;
-    if (formData.additionalCoverages.preExistingConditions) additionalCost += 1000;
-    if (formData.additionalCoverages.seniorCitizen) additionalCost += 800;
-    if (formData.additionalCoverages.pregnancy) additionalCost += 1200;
-    if (formData.additionalCoverages.valuables) additionalCost += 300;
-
-    const total = basePrice + additionalCost;
     setCalculatedPremium(total);
-    return total;
   };
 
   const nextSection = () => {
@@ -312,103 +300,184 @@ export default function Insurance() {
     setIsSubmitting(true);
 
     try {
-      const submitFormData = new FormData();
+      const formDataToSend = new FormData();
 
-      Object.keys(formData).forEach((key) => {
-        if (key === "travelers" || key === "additionalCoverages") {
-          submitFormData.append(key, JSON.stringify(formData[key as keyof typeof formData]));
-        } else {
-          submitFormData.append(key, String(formData[key as keyof typeof formData]));
+      Object.entries(formData).forEach(([key, value]) => {
+        if (key === "travelers") {
+          formDataToSend.append(key, JSON.stringify(value));
+        } else if (key === "additionalCoverages") {
+          formDataToSend.append(key, JSON.stringify(value));
+        } else if (value !== null && value !== undefined && value !== "") {
+          formDataToSend.append(key, value.toString());
         }
       });
 
       if (files.passportCopy) {
-        submitFormData.append("passportCopy", files.passportCopy);
+        formDataToSend.append("passportCopy", files.passportCopy);
       }
 
-      files.medicalDocuments.forEach((file) => {
-        submitFormData.append("medicalDocuments", file);
+      files.medicalDocuments.forEach((file, index) => {
+        formDataToSend.append(`medicalDocument${index}`, file);
       });
 
-      const response = await axios.post(`${API_URL}/insurance`, submitFormData, {
+      const response = await axios.post(`${API_BASE_URL}/insurance`, formDataToSend, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
 
-      if (response.data.status === "success") {
+      if (response.data) {
         toast({
-          title: "Application Submitted!",
-          description: "Your travel insurance application has been submitted successfully. We'll contact you soon.",
+          title: "Application Submitted Successfully",
+          description: "We'll review your application and contact you soon.",
         });
 
+        // Reset form
+        setFormData({
+          applicantName: "",
+          email: "",
+          phone: "",
+          address: "",
+          city: "",
+          state: "",
+          pincode: "",
+          country: "India",
+          destination: "",
+          tripType: "International",
+          departureDate: "",
+          returnDate: "",
+          purposeOfTravel: "Leisure",
+          planType: "Standard",
+          coverageAmount: 500000,
+          numberOfTravelers: 1,
+          travelers: [
+            {
+              fullName: "",
+              dateOfBirth: "",
+              gender: "Male",
+              passportNumber: "",
+              nationality: "Indian",
+              email: "",
+              phone: "",
+            },
+          ],
+          additionalCoverages: {
+            adventureSports: false,
+            preExistingConditions: false,
+            seniorCitizen: false,
+            pregnancy: false,
+            valuables: false,
+          },
+          emergencyContactName: "",
+          emergencyContactPhone: "",
+          emergencyContactRelation: "",
+          hasPreExistingConditions: false,
+          preExistingConditionsDetails: "",
+          currentMedications: "",
+          allergies: "",
+        });
+        setFiles({ passportCopy: null, medicalDocuments: [] });
         setCurrentSection(0);
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        setCalculatedPremium(null);
       }
     } catch (error: any) {
-      console.error("Error submitting application:", error);
+      console.error("Submission error:", error);
       toast({
-        title: "Submission Failed",
-        description: error.response?.data?.message || "Failed to submit application. Please try again.",
         variant: "destructive",
+        title: "Submission Failed",
+        description: error.response?.data?.message || "Please try again later.",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const progress = ((currentSection + 1) / SECTION_TITLES.length) * 100;
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-8"
-          >
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-              <Shield className="w-8 h-8 text-primary" />
-            </div>
-            <h1 className="text-4xl font-display font-bold mb-3">Travel Insurance Application</h1>
-            <p className="text-muted-foreground">
-              Protect your journey with comprehensive travel insurance coverage
-            </p>
-          </motion.div>
-
-          {/* Progress Indicator */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-3">
-              {SECTION_TITLES.map((title, index) => (
-                <div
-                  key={index}
-                  className={cn(
-                    "flex-1 h-2 rounded-full mx-1 transition-colors",
-                    index <= currentSection ? "bg-primary" : "bg-muted"
-                  )}
-                />
-              ))}
-            </div>
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>Step {currentSection + 1} of {SECTION_TITLES.length}</span>
-              <span>{SECTION_TITLES[currentSection]}</span>
-            </div>
+      <div className="container mx-auto px-4 py-12 max-w-4xl">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
+            <Shield className="w-4 h-4" />
+            <span>Travel Insurance</span>
           </div>
+          <h1 className="text-4xl font-bold mb-4">Travel Insurance Application</h1>
+          <p className="text-muted-foreground">
+            Protect your journey with comprehensive travel insurance coverage
+          </p>
+        </div>
 
-          {/* Form */}
+        {/* Insurance Plans */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12">
+          {planOptions.map((plan) => (
+            <div
+              key={plan.type}
+              className={cn(
+                "p-4 border-2 rounded-lg text-center cursor-pointer transition-all",
+                formData.planType === plan.type
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-primary/50"
+              )}
+              onClick={() => setFormData((prev) => ({ ...prev, planType: plan.type }))}
+            >
+              <h3 className="font-semibold mb-2">{plan.type}</h3>
+              <p className="text-2xl font-bold text-primary mb-1">{plan.price}</p>
+              <p className="text-sm text-muted-foreground">Coverage: {plan.coverage}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Premium Calculator */}
+        <div className="bg-card border border-border rounded-lg p-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Calculator className="w-5 h-5 text-primary" />
+              <h3 className="font-semibold">Premium Calculator</h3>
+            </div>
+            <Button onClick={calculatePremium} variant="outline" size="sm">
+              Calculate Premium
+            </Button>
+          </div>
+          {calculatedPremium !== null && (
+            <div className="bg-primary/10 rounded-lg p-4">
+              <p className="text-sm text-muted-foreground mb-1">Estimated Premium</p>
+              <p className="text-3xl font-bold text-primary">₹{calculatedPremium.toLocaleString()}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Form */}
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
           <form onSubmit={handleSubmit}>
-            <div className="bg-card border border-border rounded-lg shadow-lg">
+            {/* Progress Bar */}
+            <div className="bg-muted px-8 py-4">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="font-semibold">{SECTION_TITLES[currentSection]}</h2>
+                <span className="text-sm text-muted-foreground">
+                  Step {currentSection + 1} of {SECTION_TITLES.length}
+                </span>
+              </div>
+              <div className="w-full bg-background rounded-full h-2">
+                <div
+                  className="bg-primary h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Form Sections */}
+            <div className="p-8">
               <motion.div
                 key={currentSection}
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="p-8"
+                transition={{ duration: 0.3 }}
               >
-                <h2 className="text-2xl font-semibold mb-6">{SECTION_TITLES[currentSection]}</h2>
-
                 <div className="space-y-6">
                   {/* Section 0: Personal Information */}
                   {currentSection === 0 && (
@@ -423,7 +492,7 @@ export default function Insurance() {
                           required
                         />
                         <FormField
-                          label="Email"
+                          label="Email Address"
                           type="email"
                           name="email"
                           value={formData.email}
@@ -448,6 +517,7 @@ export default function Insurance() {
                           name="country"
                           value={formData.country}
                           onChange={handleInputChange}
+                          placeholder="India"
                           required
                         />
                       </div>
@@ -484,7 +554,7 @@ export default function Insurance() {
                           name="pincode"
                           value={formData.pincode}
                           onChange={handleInputChange}
-                          placeholder="Pincode"
+                          placeholder="PIN Code"
                           required
                         />
                       </div>
@@ -494,28 +564,27 @@ export default function Insurance() {
                   {/* Section 1: Travel Details */}
                   {currentSection === 1 && (
                     <>
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <FormField
-                          label="Destination"
-                          name="destination"
-                          value={formData.destination}
-                          onChange={handleInputChange}
-                          placeholder="Where are you traveling?"
-                          required
-                        />
-                        <FormField
-                          label="Trip Type"
-                          type="select"
-                          name="tripType"
-                          value={formData.tripType}
-                          onChange={handleInputChange}
-                          options={[
-                            { value: "Domestic", label: "Domestic" },
-                            { value: "International", label: "International" },
-                          ]}
-                          required
-                        />
-                      </div>
+                      <FormField
+                        label="Destination"
+                        name="destination"
+                        value={formData.destination}
+                        onChange={handleInputChange}
+                        placeholder="Enter destination country/countries"
+                        required
+                      />
+
+                      <FormField
+                        label="Trip Type"
+                        type="select"
+                        name="tripType"
+                        value={formData.tripType}
+                        onChange={handleInputChange}
+                        required
+                        options={[
+                          { value: "International", label: "International" },
+                          { value: "Domestic", label: "Domestic" },
+                        ]}
+                      />
 
                       <div className="grid md:grid-cols-2 gap-4">
                         <FormField
@@ -542,12 +611,13 @@ export default function Insurance() {
                         name="purposeOfTravel"
                         value={formData.purposeOfTravel}
                         onChange={handleInputChange}
+                        required
                         options={[
-                          { value: "Leisure", label: "Leisure" },
+                          { value: "Leisure", label: "Leisure/Tourism" },
                           { value: "Business", label: "Business" },
-                          { value: "Study", label: "Study" },
-                          { value: "Medical", label: "Medical" },
-                          { value: "Other", label: "Other" },
+                          { value: "Education", label: "Education" },
+                          { value: "Medical", label: "Medical Treatment" },
+                          { value: "Adventure", label: "Adventure Sports" },
                         ]}
                       />
                     </>
@@ -556,87 +626,62 @@ export default function Insurance() {
                   {/* Section 2: Insurance Plan */}
                   {currentSection === 2 && (
                     <>
-                      <div>
-                        <label className="block text-sm font-medium mb-4">
-                          Select Your Plan <span className="text-red-500">*</span>
-                        </label>
-                        <div className="grid md:grid-cols-2 gap-4">
-                          {planOptions.map((plan) => (
-                            <div
-                              key={plan.type}
-                              onClick={() =>
-                                setFormData((prev) => ({ ...prev, planType: plan.type }))
-                              }
-                              className={cn(
-                                "relative border-2 rounded-lg p-6 cursor-pointer transition-all",
-                                formData.planType === plan.type
-                                  ? "border-primary bg-primary/5"
-                                  : "border-border hover:border-primary/50"
-                              )}
-                            >
-                              <div className="flex items-start justify-between mb-3">
-                                <div>
-                                  <h4 className="font-bold text-lg">{plan.type}</h4>
-                                  <p className="text-2xl font-bold text-primary">{plan.price}</p>
-                                </div>
-                                {formData.planType === plan.type && (
-                                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-                                    <Shield className="w-4 h-4 text-white" />
-                                  </div>
-                                )}
-                              </div>
-                              <p className="text-sm text-muted-foreground">
-                                Coverage: {plan.coverage}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                      <FormField
+                        label="Plan Type"
+                        type="select"
+                        name="planType"
+                        value={formData.planType}
+                        onChange={handleInputChange}
+                        required
+                        options={[
+                          { value: "Basic", label: "Basic - ₹500" },
+                          { value: "Standard", label: "Standard - ₹1,000" },
+                          { value: "Premium", label: "Premium - ₹2,000" },
+                          { value: "Family", label: "Family - ₹3,500" },
+                        ]}
+                      />
 
-                      {/* Premium Calculator */}
-                      <div className="bg-muted/50 rounded-lg p-6 border border-border">
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-lg font-semibold">Premium Estimate</h3>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={calculateEstimate}
-                          >
-                            <Calculator className="w-4 h-4 mr-2" />
-                            Calculate
-                          </Button>
-                        </div>
-                        {calculatedPremium !== null && (
-                          <div className="text-center">
-                            <p className="text-3xl font-bold text-primary">
-                              ₹{calculatedPremium.toLocaleString()}
-                            </p>
-                            <p className="text-sm text-muted-foreground mt-2">
-                              Estimated premium for your coverage
-                            </p>
-                          </div>
-                        )}
-                      </div>
+                      <FormField
+                        label="Coverage Amount"
+                        type="select"
+                        name="coverageAmount"
+                        value={formData.coverageAmount}
+                        onChange={handleInputChange}
+                        required
+                        options={[
+                          { value: "300000", label: "₹3,00,000" },
+                          { value: "500000", label: "₹5,00,000" },
+                          { value: "1000000", label: "₹10,00,000" },
+                          { value: "1500000", label: "₹15,00,000" },
+                        ]}
+                      />
+
+                      <FormField
+                        label="Number of Travelers"
+                        type="number"
+                        name="numberOfTravelers"
+                        value={formData.numberOfTravelers}
+                        onChange={(e) => {
+                          const count = parseInt(e.target.value);
+                          if (count >= 1 && count <= 10) {
+                            handleInputChange(e);
+                          }
+                        }}
+                        required
+                      />
                     </>
                   )}
 
                   {/* Section 3: Traveler Information */}
                   {currentSection === 3 && (
                     <>
-                      <div className="flex items-center justify-between mb-4">
-                        <p className="text-sm text-muted-foreground">
-                          {formData.numberOfTravelers} {formData.numberOfTravelers === 1 ? 'Traveler' : 'Travelers'}
-                        </p>
-                      </div>
-
                       {formData.travelers.map((traveler, index) => (
                         <div
                           key={index}
-                          className="border border-border rounded-lg p-6 space-y-4"
+                          className="border border-border rounded-lg p-6 space-y-4 relative"
                         >
                           <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-semibold text-lg">Traveler {index + 1}</h3>
+                            <h3 className="font-semibold">Traveler {index + 1}</h3>
                             {index > 0 && (
                               <Button
                                 type="button"
@@ -650,92 +695,91 @@ export default function Insurance() {
                           </div>
 
                           <div className="grid md:grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm font-medium mb-2">
-                                Full Name <span className="text-red-500">*</span>
-                              </label>
-                              <Input
-                                value={traveler.fullName}
-                                onChange={(e) =>
-                                  handleTravelerChange(index, "fullName", e.target.value)
-                                }
-                                placeholder="Full name"
-                                required
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-sm font-medium mb-2">
-                                Date of Birth <span className="text-red-500">*</span>
-                              </label>
-                              <Input
-                                type="date"
-                                value={traveler.dateOfBirth}
-                                onChange={(e) =>
-                                  handleTravelerChange(index, "dateOfBirth", e.target.value)
-                                }
-                                required
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-sm font-medium mb-2">
-                                Gender <span className="text-red-500">*</span>
-                              </label>
-                              <select
-                                value={traveler.gender}
-                                onChange={(e) =>
-                                  handleTravelerChange(index, "gender", e.target.value)
-                                }
-                                className="w-full px-3 py-2 border border-input rounded-md bg-background"
-                                required
-                              >
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
-                                <option value="Other">Other</option>
-                              </select>
-                            </div>
-
-                            <div>
-                              <label className="block text-sm font-medium mb-2">
-                                Passport Number <span className="text-red-500">*</span>
-                              </label>
-                              <Input
-                                value={traveler.passportNumber}
-                                onChange={(e) =>
-                                  handleTravelerChange(index, "passportNumber", e.target.value)
-                                }
-                                placeholder="Passport number"
-                                required
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-sm font-medium mb-2">
-                                Nationality <span className="text-red-500">*</span>
-                              </label>
-                              <Input
-                                value={traveler.nationality}
-                                onChange={(e) =>
-                                  handleTravelerChange(index, "nationality", e.target.value)
-                                }
-                                placeholder="Nationality"
-                                required
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-sm font-medium mb-2">Email</label>
-                              <Input
-                                type="email"
-                                value={traveler.email}
-                                onChange={(e) =>
-                                  handleTravelerChange(index, "email", e.target.value)
-                                }
-                                placeholder="Email"
-                              />
-                            </div>
+                            <FormField
+                              label="Full Name"
+                              name={`traveler${index}_fullName`}
+                              value={traveler.fullName}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                handleTravelerChange(index, "fullName", e.target.value)
+                              }
+                              placeholder="Full name as per passport"
+                              required
+                            />
+                            <FormField
+                              label="Date of Birth"
+                              type="date"
+                              name={`traveler${index}_dateOfBirth`}
+                              value={traveler.dateOfBirth}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                handleTravelerChange(index, "dateOfBirth", e.target.value)
+                              }
+                              required
+                            />
                           </div>
+
+                          <div className="grid md:grid-cols-2 gap-4">
+                            <FormField
+                              label="Gender"
+                              type="select"
+                              name={`traveler${index}_gender`}
+                              value={traveler.gender}
+                              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                                handleTravelerChange(index, "gender", e.target.value)
+                              }
+                              required
+                              options={[
+                                { value: "Male", label: "Male" },
+                                { value: "Female", label: "Female" },
+                                { value: "Other", label: "Other" },
+                              ]}
+                            />
+                            <FormField
+                              label="Passport Number"
+                              name={`traveler${index}_passportNumber`}
+                              value={traveler.passportNumber}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                handleTravelerChange(index, "passportNumber", e.target.value)
+                              }
+                              placeholder="Passport number"
+                              required
+                            />
+                          </div>
+
+                          <div className="grid md:grid-cols-2 gap-4">
+                            <FormField
+                              label="Nationality"
+                              name={`traveler${index}_nationality`}
+                              value={traveler.nationality}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                handleTravelerChange(index, "nationality", e.target.value)
+                              }
+                              placeholder="Nationality"
+                              required
+                            />
+                            <FormField
+                              label="Email"
+                              type="email"
+                              name={`traveler${index}_email`}
+                              value={traveler.email}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                handleTravelerChange(index, "email", e.target.value)
+                              }
+                              placeholder="Email address"
+                              required
+                            />
+                          </div>
+
+                          <FormField
+                            label="Phone"
+                            type="tel"
+                            name={`traveler${index}_phone`}
+                            value={traveler.phone}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                              handleTravelerChange(index, "phone", e.target.value)
+                            }
+                            placeholder="Phone number"
+                            required
+                          />
                         </div>
                       ))}
 
@@ -756,44 +800,44 @@ export default function Insurance() {
                   {/* Section 4: Additional Coverage */}
                   {currentSection === 4 && (
                     <>
-                      <div className="space-y-4">
+                      <div className="space-y-3">
                         {[
                           {
-                            name: "adventureSports",
+                            key: "adventureSports",
                             label: "Adventure Sports Coverage",
-                            description: "Covers skiing, scuba diving, paragliding (+₹500)",
+                            desc: "Cover activities like trekking, skiing, scuba diving (+₹500)",
                           },
                           {
-                            name: "preExistingConditions",
+                            key: "preExistingConditions",
                             label: "Pre-existing Conditions",
-                            description: "Coverage for pre-existing medical conditions (+₹1,000)",
+                            desc: "Coverage for known medical conditions (+₹800)",
                           },
                           {
-                            name: "seniorCitizen",
-                            label: "Senior Citizen Coverage",
-                            description: "Enhanced coverage for travelers above 60 years (+₹800)",
+                            key: "seniorCitizen",
+                            label: "Senior Citizen (60+)",
+                            desc: "Enhanced coverage for travelers above 60 (+₹1,000)",
                           },
                           {
-                            name: "pregnancy",
-                            label: "Pregnancy Coverage",
-                            description: "Coverage for pregnancy-related complications (+₹1,200)",
+                            key: "pregnancy",
+                            label: "Pregnancy Cover",
+                            desc: "Medical coverage related to pregnancy (+₹1,200)",
                           },
                           {
-                            name: "valuables",
-                            label: "Valuable Items Protection",
-                            description: "Enhanced coverage for jewelry, electronics (+₹300)",
+                            key: "valuables",
+                            label: "Valuables Protection",
+                            desc: "Coverage for loss/theft of valuables (+₹300)",
                           },
                         ].map((coverage) => (
                           <label
-                            key={coverage.name}
-                            className="flex items-start gap-3 p-4 border border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                            key={coverage.key}
+                            className="flex items-start gap-3 p-4 border border-border rounded-lg cursor-pointer hover:bg-muted/50"
                           >
                             <input
                               type="checkbox"
-                              name={`additionalCoverages.${coverage.name}`}
+                              name={`additionalCoverages.${coverage.key}`}
                               checked={
                                 formData.additionalCoverages[
-                                  coverage.name as keyof typeof formData.additionalCoverages
+                                  coverage.key as keyof typeof formData.additionalCoverages
                                 ]
                               }
                               onChange={handleInputChange}
@@ -801,9 +845,7 @@ export default function Insurance() {
                             />
                             <div>
                               <p className="font-medium">{coverage.label}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {coverage.description}
-                              </p>
+                              <p className="text-sm text-muted-foreground">{coverage.desc}</p>
                             </div>
                           </label>
                         ))}
@@ -990,7 +1032,7 @@ export default function Insurance() {
               </motion.div>
 
               {/* Navigation Buttons */}
-              <div className="flex gap-4 justify-between px-8 pb-8">
+              <div className="flex gap-4 justify-between px-8 pb-8 mt-8">
                 <Button
                   type="button"
                   variant="outline"

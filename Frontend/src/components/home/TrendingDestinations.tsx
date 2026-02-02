@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { API_BASE_URL } from "@/lib/api-config";
+import axios from "axios";
 
 interface TrendingDestination {
   _id: string;
@@ -13,28 +15,6 @@ interface TrendingDestination {
   order: number;
   isActive: boolean;
 }
-
-// Create a reusable API client utility
-const apiClient = {
-  baseURL: import.meta.env.VITE_API_URL || '', // Will be empty in production for relative paths
-  
-  async get(endpoint: string) {
-    const url = this.baseURL ? `${this.baseURL}${endpoint}` : endpoint;
-    
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return response.json();
-  }
-};
 
 export function TrendingDestinations() {
   const { toast } = useToast();
@@ -51,11 +31,10 @@ export function TrendingDestinations() {
       setIsLoading(true);
       setError(null);
       
-      // Use relative path - proxy will handle it in dev, same-origin in prod
-      const data = await apiClient.get('/api/v1/trending-destinations/active');
+      const response = await axios.get(`${API_BASE_URL}/trending-destinations/active`);
       
-      if (data.status === 'success' && data.data?.trendingDestinations) {
-        setDestinations(data.data.trendingDestinations);
+      if (response.data.status === 'success' && response.data.data?.trendingDestinations) {
+        setDestinations(response.data.data.trendingDestinations);
       } else {
         setDestinations([]);
       }

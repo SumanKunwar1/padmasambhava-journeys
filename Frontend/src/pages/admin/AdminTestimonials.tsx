@@ -13,6 +13,7 @@ import {
   Users,
   MessageSquare,
 } from "lucide-react";
+import { API_URL } from "@/lib/api-config";
 
 interface Testimonial {
   _id: string;
@@ -67,7 +68,7 @@ export function AdminTestimonials() {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        "http://localhost:5000/api/v1/testimonials/admin/stats",
+        `${API_URL}/testimonials/admin/stats`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -105,7 +106,7 @@ export function AdminTestimonials() {
       }
 
       const response = await fetch(
-        `http://localhost:5000/api/v1/testimonials?${params}`,
+        `${API_URL}/testimonials?${params}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -138,8 +139,8 @@ export function AdminTestimonials() {
     try {
       const token = localStorage.getItem("token");
       const url = editingTestimonial
-        ? `http://localhost:5000/api/v1/testimonials/${editingTestimonial._id}`
-        : "http://localhost:5000/api/v1/testimonials";
+        ? `${API_URL}/testimonials/${editingTestimonial._id}`
+        : `${API_URL}/testimonials`;
 
       const response = await fetch(url, {
         method: editingTestimonial ? "PATCH" : "POST",
@@ -188,7 +189,7 @@ export function AdminTestimonials() {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:5000/api/v1/testimonials/${id}`,
+        `${API_URL}/testimonials/${id}`,
         {
           method: "DELETE",
           headers: {
@@ -214,7 +215,7 @@ export function AdminTestimonials() {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:5000/api/v1/testimonials/${id}/toggle-active`,
+        `${API_URL}/testimonials/${id}/toggle-active`,
         {
           method: "PATCH",
           headers: {
@@ -236,7 +237,7 @@ export function AdminTestimonials() {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:5000/api/v1/testimonials/${id}/toggle-featured`,
+        `${API_URL}/testimonials/${id}/toggle-featured`,
         {
           method: "PATCH",
           headers: {
@@ -255,6 +256,7 @@ export function AdminTestimonials() {
   };
 
   const resetForm = () => {
+    setEditingTestimonial(null);
     setFormData({
       name: "",
       trip: "",
@@ -264,223 +266,241 @@ export function AdminTestimonials() {
       isActive: true,
       featured: false,
     });
-    setEditingTestimonial(null);
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Testimonials Management
-        </h1>
-        <p className="text-gray-600">
-          Manage customer reviews and testimonials
-        </p>
-      </div>
-
-      {/* Statistics Cards */}
-      {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Total Testimonials</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {stats.totalTestimonials}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <MessageSquare className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Active</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {stats.activeTestimonials}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <Eye className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Featured</p>
-                <p className="text-2xl font-bold text-purple-600">
-                  {stats.featuredTestimonials}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <Award className="w-6 h-6 text-purple-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">Average Rating</p>
-                <p className="text-2xl font-bold text-yellow-600">
-                  {stats.averageRating} ⭐
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-yellow-600" />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Actions Bar */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-          {/* Search */}
-          <div className="relative flex-1 w-full lg:max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search testimonials..."
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
-          {/* Filters */}
-          <div className="flex gap-3 w-full lg:w-auto">
-            <select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="All">All Status</option>
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-
-            <select
-              value={featuredFilter}
-              onChange={(e) => {
-                setFeaturedFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="All">All Types</option>
-              <option value="Featured">Featured</option>
-              <option value="Regular">Regular</option>
-            </select>
-
-            <button
-              onClick={() => {
-                resetForm();
-                setShowModal(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
-            >
-              <Plus className="w-5 h-5" />
-              Add Testimonial
-            </button>
-          </div>
+      <div className="bg-white border-b border-gray-200 px-6 py-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-gray-900">Testimonials</h1>
+          <button
+            onClick={() => {
+              resetForm();
+              setShowModal(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <Plus className="w-5 h-5" />
+            Add Testimonial
+          </button>
         </div>
       </div>
 
-      {/* Testimonials Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        {loading ? (
-          <div className="p-12 text-center">
-            <div className="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            <p className="mt-4 text-gray-600">Loading testimonials...</p>
+      {/* Main Content */}
+      <div className="p-6 max-w-7xl mx-auto">
+        {/* Stats Cards */}
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Total</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {stats.totalTestimonials}
+                  </p>
+                </div>
+                <MessageSquare className="w-8 h-8 text-gray-400" />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Active</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {stats.activeTestimonials}
+                  </p>
+                </div>
+                <Eye className="w-8 h-8 text-green-400" />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Inactive</p>
+                  <p className="text-2xl font-bold text-red-600">
+                    {stats.inactiveTestimonials}
+                  </p>
+                </div>
+                <EyeOff className="w-8 h-8 text-red-400" />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Featured</p>
+                  <p className="text-2xl font-bold text-purple-600">
+                    {stats.featuredTestimonials}
+                  </p>
+                </div>
+                <Award className="w-8 h-8 text-purple-400" />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Avg Rating</p>
+                  <p className="text-2xl font-bold text-accent">
+                    {stats.averageRating}
+                  </p>
+                </div>
+                <Star className="w-8 h-8 text-accent" />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Total Ratings</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {stats.totalRatings}
+                  </p>
+                </div>
+                <TrendingUp className="w-8 h-8 text-blue-400" />
+              </div>
+            </div>
           </div>
-        ) : testimonials.length === 0 ? (
-          <div className="p-12 text-center">
-            <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600">No testimonials found</p>
+        )}
+
+        {/* Filters */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Search */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Search
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name or trip..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            {/* Status Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Status
+              </label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option>All</option>
+                <option>Active</option>
+                <option>Inactive</option>
+              </select>
+            </div>
+
+            {/* Featured Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Featured
+              </label>
+              <select
+                value={featuredFilter}
+                onChange={(e) => setFeaturedFilter(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option>All</option>
+                <option>Featured</option>
+                <option>Not Featured</option>
+              </select>
+            </div>
           </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Customer
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Trip
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Rating
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Review
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {testimonials.map((testimonial) => (
-                    <tr key={testimonial._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {testimonial.testimonialId}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <img
-                            src={testimonial.image}
-                            alt={testimonial.name}
-                            className="w-10 h-10 rounded-full object-cover mr-3"
-                          />
-                          <div className="text-sm font-medium text-gray-900">
-                            {testimonial.name}
+        </div>
+
+        {/* Table */}
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          {loading ? (
+            <div className="p-8 text-center">
+              <div className="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              <p className="mt-4 text-gray-600">Loading testimonials...</p>
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                        Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                        Trip
+                      </th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                        Rating
+                      </th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                        Review
+                      </th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {testimonials.map((testimonial) => (
+                      <tr
+                        key={testimonial._id}
+                        className="border-b border-gray-200 hover:bg-gray-50"
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={testimonial.image}
+                              alt={testimonial.name}
+                              className="w-10 h-10 rounded-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src =
+                                  "https://via.placeholder.com/40";
+                              }}
+                            />
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {testimonial.name}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {testimonial.testimonialId}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        {testimonial.trip}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-1">
-                          {Array.from({ length: testimonial.rating }).map(
-                            (_, i) => (
-                              <Star
-                                key={i}
-                                className="w-4 h-4 fill-yellow-400 text-yellow-400"
-                              />
-                            )
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 max-w-md truncate">
-                        {testimonial.review}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex flex-col gap-1">
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          {testimonial.trip}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex gap-0.5">
+                            {Array.from({ length: testimonial.rating }).map(
+                              (_, i) => (
+                                <Star
+                                  key={i}
+                                  className="w-4 h-4 fill-accent text-accent"
+                                />
+                              )
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-700 max-w-xs">
+                          <p className="line-clamp-2">{testimonial.review}</p>
+                        </td>
+                        <td className="px-6 py-4">
                           <span
-                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
                               testimonial.isActive
                                 ? "bg-green-100 text-green-800"
                                 : "bg-red-100 text-red-800"
@@ -488,254 +508,253 @@ export function AdminTestimonials() {
                           >
                             {testimonial.isActive ? "Active" : "Inactive"}
                           </span>
-                          {testimonial.featured && (
-                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
-                              Featured
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => toggleActive(testimonial._id)}
-                            className="text-gray-600 hover:text-gray-900"
-                            title={
-                              testimonial.isActive ? "Deactivate" : "Activate"
-                            }
-                          >
-                            {testimonial.isActive ? (
-                              <EyeOff className="w-5 h-5" />
-                            ) : (
-                              <Eye className="w-5 h-5" />
-                            )}
-                          </button>
-                          <button
-                            onClick={() => toggleFeatured(testimonial._id)}
-                            className={`${
-                              testimonial.featured
-                                ? "text-purple-600"
-                                : "text-gray-600"
-                            } hover:text-purple-900`}
-                            title={
-                              testimonial.featured ? "Unfeature" : "Feature"
-                            }
-                          >
-                            <Award className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => handleEdit(testimonial)}
-                            className="text-blue-600 hover:text-blue-900"
-                            title="Edit"
-                          >
-                            <Edit className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(testimonial._id)}
-                            className="text-red-600 hover:text-red-900"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-                <button
-                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Previous
-                </button>
-                <span className="text-sm text-gray-700">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next
-                </button>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => toggleActive(testimonial._id)}
+                              className={`${
+                                testimonial.isActive
+                                  ? "text-gray-600"
+                                  : "text-green-600"
+                              } hover:text-gray-900`}
+                              title={
+                                testimonial.isActive ? "Deactivate" : "Activate"
+                              }
+                            >
+                              {testimonial.isActive ? (
+                                <Eye className="w-5 h-5" />
+                              ) : (
+                                <EyeOff className="w-5 h-5" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => toggleFeatured(testimonial._id)}
+                              className={`${
+                                testimonial.featured
+                                  ? "text-purple-600"
+                                  : "text-gray-600"
+                              } hover:text-purple-900`}
+                              title={
+                                testimonial.featured ? "Unfeature" : "Feature"
+                              }
+                            >
+                              <Award className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => handleEdit(testimonial)}
+                              className="text-blue-600 hover:text-blue-900"
+                              title="Edit"
+                            >
+                              <Edit className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(testimonial._id)}
+                              className="text-red-600 hover:text-red-900"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            )}
-          </>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-sm text-gray-700">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                    }
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Modal */}
+        {showModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-gray-200">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {editingTestimonial ? "Edit Testimonial" : "Add New Testimonial"}
+                </h2>
+              </div>
+
+              <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Customer Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter customer name"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Trip Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.trip}
+                      onChange={(e) =>
+                        setFormData({ ...formData, trip: e.target.value })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter trip name"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Rating *
+                  </label>
+                  <select
+                    required
+                    value={formData.rating}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        rating: Number(e.target.value),
+                      })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value={5}>5 Stars - Excellent</option>
+                    <option value={4}>4 Stars - Very Good</option>
+                    <option value={3}>3 Stars - Good</option>
+                    <option value={2}>2 Stars - Fair</option>
+                    <option value={1}>1 Star - Poor</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Review *
+                  </label>
+                  <textarea
+                    required
+                    value={formData.review}
+                    onChange={(e) =>
+                      setFormData({ ...formData, review: e.target.value })
+                    }
+                    rows={4}
+                    maxLength={500}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter customer review (10-500 characters)"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    {formData.review.length}/500 characters
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Image URL *
+                  </label>
+                  <input
+                    type="url"
+                    required
+                    value={formData.image}
+                    onChange={(e) =>
+                      setFormData({ ...formData, image: e.target.value })
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="https://example.com/image.jpg"
+                  />
+                  {formData.image && (
+                    <img
+                      src={formData.image}
+                      alt="Preview"
+                      className="mt-2 w-20 h-20 rounded-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src =
+                          "https://via.placeholder.com/200?text=Invalid+URL";
+                      }}
+                    />
+                  )}
+                </div>
+
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.isActive}
+                      onChange={(e) =>
+                        setFormData({ ...formData, isActive: e.target.checked })
+                      }
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">Active</span>
+                  </label>
+
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={formData.featured}
+                      onChange={(e) =>
+                        setFormData({ ...formData, featured: e.target.checked })
+                      }
+                      className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                    />
+                    <span className="text-sm text-gray-700">Featured</span>
+                  </label>
+                </div>
+
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowModal(false);
+                      resetForm();
+                    }}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    {editingTestimonial ? "Update" : "Create"} Testimonial
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         )}
       </div>
-
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-2xl font-bold text-gray-900">
-                {editingTestimonial ? "Edit Testimonial" : "Add New Testimonial"}
-              </h2>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Customer Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter customer name"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Trip Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.trip}
-                    onChange={(e) =>
-                      setFormData({ ...formData, trip: e.target.value })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter trip name"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Rating *
-                </label>
-                <select
-                  required
-                  value={formData.rating}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      rating: Number(e.target.value),
-                    })
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value={5}>5 Stars - Excellent</option>
-                  <option value={4}>4 Stars - Very Good</option>
-                  <option value={3}>3 Stars - Good</option>
-                  <option value={2}>2 Stars - Fair</option>
-                  <option value={1}>1 Star - Poor</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Review *
-                </label>
-                <textarea
-                  required
-                  value={formData.review}
-                  onChange={(e) =>
-                    setFormData({ ...formData, review: e.target.value })
-                  }
-                  rows={4}
-                  maxLength={500}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter customer review (10-500 characters)"
-                />
-                <p className="text-sm text-gray-500 mt-1">
-                  {formData.review.length}/500 characters
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Image URL *
-                </label>
-                <input
-                  type="url"
-                  required
-                  value={formData.image}
-                  onChange={(e) =>
-                    setFormData({ ...formData, image: e.target.value })
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="https://example.com/image.jpg"
-                />
-                {formData.image && (
-                  <img
-                    src={formData.image}
-                    alt="Preview"
-                    className="mt-2 w-20 h-20 rounded-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src =
-                        "https://via.placeholder.com/200?text=Invalid+URL";
-                    }}
-                  />
-                )}
-              </div>
-
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.isActive}
-                    onChange={(e) =>
-                      setFormData({ ...formData, isActive: e.target.checked })
-                    }
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">Active</span>
-                </label>
-
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.featured}
-                    onChange={(e) =>
-                      setFormData({ ...formData, featured: e.target.checked })
-                    }
-                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                  />
-                  <span className="text-sm text-gray-700">Featured</span>
-                </label>
-              </div>
-
-              <div className="flex gap-3 pt-4 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                    resetForm();
-                  }}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  {editingTestimonial ? "Update" : "Create"} Testimonial
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

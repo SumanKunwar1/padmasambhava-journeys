@@ -2,21 +2,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import {
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  Eye,
-} from "lucide-react";
+import { Plus, Search, Edit, Trash2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { cn } from "@/lib/utils";
 import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
+import { API_BASE_URL } from "@/lib/api-config";
 
 interface Trip {
   _id: string;
@@ -30,6 +23,13 @@ interface Trip {
   image: string;
 }
 
+interface Stats {
+  totalTrips: number;
+  activeTrips: number;
+  totalBookings: number;
+  avgPrice: number;
+}
+
 export default function AdminTrips() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -37,7 +37,7 @@ export default function AdminTrips() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("All");
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<Stats>({
     totalTrips: 0,
     activeTrips: 0,
     totalBookings: 0,
@@ -51,8 +51,8 @@ export default function AdminTrips() {
 
   const fetchTrips = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.get(`${API_URL}/trips?status=`, {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API_BASE_URL}/trips?status=`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -73,8 +73,8 @@ export default function AdminTrips() {
 
   const fetchStats = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.get(`${API_URL}/trips/admin/stats`, {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API_BASE_URL}/trips/admin/stats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -92,8 +92,8 @@ export default function AdminTrips() {
     }
 
     try {
-      const token = localStorage.getItem("adminToken");
-      await axios.delete(`${API_URL}/trips/${id}`, {
+      const token = localStorage.getItem("token");
+      await axios.delete(`${API_BASE_URL}/trips/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -102,7 +102,7 @@ export default function AdminTrips() {
         title: "Trip deleted",
         description: "The trip has been deleted successfully",
       });
-      fetchStats(); // Refresh stats
+      fetchStats();
     } catch (error: any) {
       console.error("Error deleting trip:", error);
       toast({
@@ -144,7 +144,6 @@ export default function AdminTrips() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-display font-bold">Trips Management</h1>
@@ -158,7 +157,6 @@ export default function AdminTrips() {
           </Button>
         </div>
 
-        {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -183,7 +181,6 @@ export default function AdminTrips() {
           </div>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-card rounded-lg border border-border p-4">
             <p className="text-sm text-muted-foreground">Total Trips</p>
@@ -205,7 +202,6 @@ export default function AdminTrips() {
           </div>
         </div>
 
-        {/* Trips Table */}
         <div className="bg-card rounded-xl border border-border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">

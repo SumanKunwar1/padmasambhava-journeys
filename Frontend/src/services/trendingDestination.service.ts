@@ -1,6 +1,5 @@
 // src/services/trendingDestination.service.ts
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { API_BASE_URL } from '@/lib/api-config';
 
 export interface TrendingDestination {
   _id: string;
@@ -34,7 +33,7 @@ class TrendingDestinationService {
 
   // Get all trending destinations (Admin)
   async getAll(): Promise<TrendingDestination[]> {
-    const response = await fetch(`${API_URL}/api/v1/trending-destinations`, {
+    const response = await fetch(`${API_BASE_URL}/trending-destinations`, {
       headers: this.getAuthHeaders(),
     });
 
@@ -48,7 +47,7 @@ class TrendingDestinationService {
 
   // Get active trending destinations (Public)
   async getActive(): Promise<TrendingDestination[]> {
-    const response = await fetch(`${API_URL}/api/v1/trending-destinations/active`);
+    const response = await fetch(`${API_BASE_URL}/trending-destinations/active`);
 
     if (!response.ok) {
       throw new Error('Failed to fetch active trending destinations');
@@ -60,7 +59,7 @@ class TrendingDestinationService {
 
   // Get single trending destination (Admin)
   async getById(id: string): Promise<TrendingDestination> {
-    const response = await fetch(`${API_URL}/api/v1/trending-destinations/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/trending-destinations/${id}`, {
       headers: this.getAuthHeaders(),
     });
 
@@ -74,7 +73,7 @@ class TrendingDestinationService {
 
   // Create trending destination (Admin)
   async create(input: TrendingDestinationInput): Promise<TrendingDestination> {
-    const response = await fetch(`${API_URL}/api/v1/trending-destinations`, {
+    const response = await fetch(`${API_BASE_URL}/trending-destinations`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
       body: JSON.stringify(input),
@@ -91,7 +90,7 @@ class TrendingDestinationService {
 
   // Update trending destination (Admin)
   async update(id: string, input: Partial<TrendingDestinationInput>): Promise<TrendingDestination> {
-    const response = await fetch(`${API_URL}/api/v1/trending-destinations/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/trending-destinations/${id}`, {
       method: 'PATCH',
       headers: this.getAuthHeaders(),
       body: JSON.stringify(input),
@@ -108,7 +107,7 @@ class TrendingDestinationService {
 
   // Toggle active status (Admin)
   async toggleActive(id: string): Promise<TrendingDestination> {
-    const response = await fetch(`${API_URL}/api/v1/trending-destinations/${id}/toggle-active`, {
+    const response = await fetch(`${API_BASE_URL}/trending-destinations/${id}/toggle-active`, {
       method: 'PATCH',
       headers: this.getAuthHeaders(),
     });
@@ -124,7 +123,7 @@ class TrendingDestinationService {
 
   // Delete trending destination (Admin)
   async delete(id: string): Promise<void> {
-    const response = await fetch(`${API_URL}/api/v1/trending-destinations/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/trending-destinations/${id}`, {
       method: 'DELETE',
       headers: this.getAuthHeaders(),
     });
@@ -137,7 +136,7 @@ class TrendingDestinationService {
 
   // Reorder trending destinations (Admin)
   async reorder(destinationIds: string[]): Promise<TrendingDestination[]> {
-    const response = await fetch(`${API_URL}/api/v1/trending-destinations/reorder`, {
+    const response = await fetch(`${API_BASE_URL}/trending-destinations/reorder`, {
       method: 'PATCH',
       headers: this.getAuthHeaders(),
       body: JSON.stringify({ destinationIds }),
@@ -163,7 +162,7 @@ class TrendingDestinationService {
       maximum: number;
     };
   }> {
-    const response = await fetch(`${API_URL}/api/v1/trending-destinations/admin/stats`, {
+    const response = await fetch(`${API_BASE_URL}/trending-destinations/admin/stats`, {
       headers: this.getAuthHeaders(),
     });
 
