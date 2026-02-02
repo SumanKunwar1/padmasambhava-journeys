@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { cn } from "@/lib/utils";
-import { API_URL } from "@/lib/api-config";
+import { API_BASE_URL } from "@/lib/api-config";
 
 interface Booking {
   _id: string;
@@ -60,7 +60,7 @@ export default function AdminBookings() {
       }
 
       const response = await fetch(
-        `${API_URL}/bookings?${params}`,
+        `${API_BASE_URL}/bookings?${params}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -89,7 +89,7 @@ export default function AdminBookings() {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `${API_URL}/bookings/admin/stats`,
+        `${API_BASE_URL}/bookings/admin/stats`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -110,7 +110,7 @@ export default function AdminBookings() {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `${API_URL}/bookings/${id}`,
+        `${API_BASE_URL}/bookings/${id}`,
         {
           method: "PATCH",
           headers: {
@@ -145,7 +145,7 @@ export default function AdminBookings() {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `${API_URL}/bookings/${id}`,
+        `${API_BASE_URL}/bookings/${id}`,
         {
           method: "DELETE",
           headers: {
