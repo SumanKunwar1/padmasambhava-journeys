@@ -16,6 +16,7 @@ const WeekendTrips = () => {
       description="Need a quick escape from the daily grind? Our weekend trips are perfect for those who want to maximize their free time with unforgettable experiences. Just pack your bags and let us handle the rest. From mountain retreats to peaceful valleys, find your perfect 2-3 day escape."
       heroImage={destSpiti}
       filterDestinations={destinations}
+      tripCategory="travel-styles"
       tripType="weekend"
     />
   );

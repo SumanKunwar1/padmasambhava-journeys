@@ -16,7 +16,7 @@ const EMITrips = () => {
       description="Make your travel dreams come true with our easy EMI payment options. Choose from a wide range of domestic and international destinations and pay in comfortable monthly installments. No need to wait or save for months - start your journey now with zero down payment options available on select packages. Enjoy hassle-free booking with instant approval and flexible tenure options from 3 to 12 months."
       heroImage="https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200&h=400&fit=crop"
       filterDestinations={destinations}
-      tripCategory="emi"
+      tripCategory="emi-trips"
     />
   );
 };

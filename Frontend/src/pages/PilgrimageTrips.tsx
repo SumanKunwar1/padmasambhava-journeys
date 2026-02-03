@@ -8,8 +8,6 @@ const destinations = [
   "Sikkim",
   "Darjeeling",
   "Tsopema", "Himalchal",
-  
- 
 ];
 
 const PilgrimageTrips = () => {
@@ -21,6 +19,7 @@ const PilgrimageTrips = () => {
       description="Embark on a spiritual journey that transcends the ordinary. Our pilgrimage trips are designed to nurture your soul, connect you with ancient traditions, and provide a transformative experience. From the monasteries of Bhutan to the ghats of Varanasi, walk the path of enlightenment with expert guides and like-minded travelers."
       heroImage={heroPilgrimage}
       filterDestinations={destinations}
+      tripCategory="travel-styles"
       tripType="pilgrimage"
     />
   );

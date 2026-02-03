@@ -3,7 +3,7 @@ import TripListingPage from "@/components/trips/TripListingPage";
 import destBali from "@/assets/dest-bali.jpg";
 
 const destinations = [
-  
+  "All",
   "Canada",
   "USA",
   "Australia",
@@ -45,7 +45,7 @@ const InternationalTrips = () => {
       description="Discover the magic of international travel with our carefully curated packages. From the ancient temples of Japan to the vibrant streets of Thailand, the pristine beaches of Bali to the winter wonderlands of Georgia - we bring you the best of the world at your doorstep."
       heroImage={destBali}
       filterDestinations={destinations}
-      tripType="international"
+      tripCategory="international-trips"
     />
   );
 };

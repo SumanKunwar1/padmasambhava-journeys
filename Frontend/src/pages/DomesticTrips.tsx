@@ -16,7 +16,7 @@ const DomesticTrips = () => {
       description="India is a land of diverse landscapes, rich culture, and endless adventures. Our domestic trips take you to the most breathtaking destinations across the country. Whether it's the snow-capped peaks of the Himalayas, the serene backwaters of Kerala, or the golden deserts of Rajasthan - experience the best of India."
       heroImage={destLadakh}
       filterDestinations={destinations}
-      tripType="domestic"
+      tripCategory="india-trips"
     />
   );
 };
