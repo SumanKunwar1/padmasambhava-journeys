@@ -58,27 +58,21 @@ const allTrips = [
 ];
 
 const navItems: NavItem[] = [
-
   {
     label: "EMI Trips",
-     href: "/trips/emi",
+    href: "/trips/emi",
     icon: <Users className="w-4 h-4 text-primary" />,
-    
   },
   {
     label: "International Trips",
-     href: "/international-trips",
+    href: "/international-trips",
     icon: <Plane className="w-4 h-4 text-sky-500" />,
-    
   },
   {
     label: "India Trips",
-     href: "/domestic-trips",
+    href: "/domestic-trips",
     icon: <span className="text-base">🇮🇳</span>,
-    
   },
-
-
   {
     label: "Deals",
     icon: <Tag className="w-4 h-4 text-amber-500" />,
@@ -87,7 +81,6 @@ const navItems: NavItem[] = [
       { label: "Limited Time Offers", href: "/deals/limited" },
     ],
   },
-  
   {
     label: "Travel Styles",
     icon: <MapPin className="w-4 h-4 text-rose-500" />,
@@ -114,8 +107,6 @@ const navItems: NavItem[] = [
       { label: "Healings", href: "/retreats/wellness" },
     ], 
   },
-  
-  
   {
     label: "Services",
     icon: <Info className="w-4 h-4 text-purple-500" />,
@@ -131,6 +122,7 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [expandedMobileItem, setExpandedMobileItem] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchResults, setShowSearchResults] = useState(false);
   const navigate = useNavigate();
@@ -169,6 +161,10 @@ export function Navbar() {
     setMobileOpen(false);
   };
 
+  const toggleMobileDropdown = (label: string) => {
+    setExpandedMobileItem(expandedMobileItem === label ? null : label);
+  };
+
   return (
     <header
       className={cn(
@@ -184,7 +180,7 @@ export function Navbar() {
       </div>
 
       <nav className="container-custom">
-        {/* Top row: Logo + Brand Name + Search + Phone + CTA */}
+        {/* Top row: Logo + Brand Name + Agent Login (ALWAYS VISIBLE AT TOP) */}
         <div className="flex items-center justify-between h-24 border-b border-border">
           {/* Logo and Brand Name */}
           <Link to="/" className="flex items-center gap-3 flex-shrink-0">
@@ -203,69 +199,78 @@ export function Navbar() {
             </div>
           </Link>
 
-          {/* Search Bar */}
-          <div className="hidden md:flex flex-1 max-w-md mx-6 relative">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search your trip..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setShowSearchResults(true);
-                }}
-                onFocus={() => setShowSearchResults(true)}
-                onBlur={() => setTimeout(() => setShowSearchResults(false), 200)}
-                className="pl-10 pr-4 h-10 rounded-full border-muted-foreground/20 focus-visible:ring-primary"
-              />
-              
-              {/* Search Results Dropdown */}
-              <AnimatePresence>
-                {showSearchResults && searchResults.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute top-full left-0 right-0 mt-2 bg-popover border border-border rounded-xl shadow-lg overflow-hidden z-50"
-                  >
-                    {searchResults.map((trip) => (
-                      <button
-                        key={trip.href}
-                        onClick={() => handleSearchSelect(trip.href)}
-                        className="w-full text-left px-4 py-3 hover:bg-muted transition-colors flex items-center justify-between group"
-                      >
-                        <div>
-                          <div className="font-medium text-sm text-popover-foreground group-hover:text-primary">
-                            {trip.name}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {trip.destination} • {trip.category}
-                          </div>
-                        </div>
-                        <Search className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
+          {/* Right side content */}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            {/* Search Bar - Desktop */}
+            <div className="hidden md:block relative">
+              <div className="relative">
+                <Input
+                  type="text"
+                  placeholder="Search trips..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setShowSearchResults(true);
+                  }}
+                  onFocus={() => setShowSearchResults(true)}
+                  className="w-64 rounded-full pl-10 text-sm"
+                />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
 
-          <div className="flex items-center gap-3">
+                {/* Search Results Dropdown */}
+                <AnimatePresence>
+                  {showSearchResults && searchResults.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute top-full left-0 right-0 mt-2 bg-popover border border-border rounded-xl shadow-lg overflow-hidden z-50"
+                    >
+                      {searchResults.map((trip) => (
+                        <button
+                          key={trip.href}
+                          onClick={() => handleSearchSelect(trip.href)}
+                          className="w-full text-left px-4 py-3 hover:bg-muted transition-colors border-b last:border-b-0 text-sm"
+                        >
+                          <div className="font-medium text-foreground">{trip.name}</div>
+                          <div className="text-xs text-muted-foreground">{trip.destination} • {trip.category}</div>
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+
+            {/* Phone Icon - Desktop */}
             <a
               href="tel: +917363933945"
-              className="hidden sm:flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors"
+              className="hidden lg:flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors"
             >
-              <Phone className="w-4 h-4" />
-              <span className="font-medium">(+91) 73639 33945 </span>
+              <Phone className="w-5 h-5" />
+              <span>(+91) 73639 33945</span>
             </a>
 
-            {/* Auth Buttons */}
+            {/* ===== AGENT LOGIN - ALWAYS VISIBLE AT TOP RIGHT ON ALL DEVICES ===== */}
+            <Link to="/agent-signup">
+              <Button size="sm" variant="outline" className="rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground hidden sm:inline-flex">
+                <Briefcase className="w-4 h-4 mr-1" />
+                Agent Login
+              </Button>
+            </Link>
+
+            {/* Mobile Agent Button - Icon only */}
+            <Link to="/agent-signup" className="sm:hidden">
+              <Button size="sm" variant="outline" className="rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+                <Briefcase className="w-4 h-4" />
+              </Button>
+            </Link>
+
+            {/* User Auth Section - Login and Sign Up (Desktop) */}
             {!user ? (
               <div className="hidden sm:flex items-center gap-2">
                 <Link to="/login">
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" className="rounded-full">
                     <LogIn className="w-4 h-4 mr-1" />
                     Login
                   </Button>
@@ -274,12 +279,6 @@ export function Navbar() {
                   <Button size="sm" className="rounded-full">
                     <UserPlus className="w-4 h-4 mr-1" />
                     Sign Up
-                  </Button>
-                </Link>
-                <Link to="/agent-signup">
-                  <Button size="sm" variant="outline" className="rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground">
-                    <Briefcase className="w-4 h-4 mr-1" />
-                    Agent Sign Up
                   </Button>
                 </Link>
               </div>
@@ -302,7 +301,7 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Bottom row: Navigation items */}
+        {/* Bottom row: Navigation items - Desktop */}
         <div className="hidden lg:flex items-center justify-center h-12 gap-1">
           {navItems.map((item) => (
             <div
@@ -362,19 +361,22 @@ export function Navbar() {
           ))}
         </div>
 
-        {/* Mobile Navigation */}
+        {/* FULL MOBILE NAVIGATION DROPDOWN - COMPLETE MENU + AUTH */}
         <AnimatePresence>
           {mobileOpen && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="lg:hidden border-t border-border overflow-hidden"
+              transition={{ duration: 0.3 }}
+              className="lg:hidden border-t border-border overflow-hidden max-h-[80vh] overflow-y-auto"
             >
-              <div className="py-4 space-y-2">
+              <div className="py-4 space-y-1 px-2">
+                {/* ALL NAVIGATION ITEMS */}
                 {navItems.map((item) => (
-                  <div key={item.label}>
+                  <div key={item.label} className="space-y-1">
                     {item.href ? (
+                      // Single menu item
                       <Link
                         to={item.href}
                         onClick={() => setMobileOpen(false)}
@@ -382,60 +384,83 @@ export function Navbar() {
                           "flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors",
                           item.highlighted
                             ? "text-primary"
-                            : "hover:bg-muted"
+                            : "text-foreground hover:bg-muted"
                         )}
                       >
                         {item.icon}
                         {item.label}
                       </Link>
                     ) : (
+                      // Dropdown menu item
                       <div className="space-y-1">
-                        <div className="flex items-center gap-3 px-4 py-2 text-muted-foreground text-sm font-medium">
+                        <button
+                          onClick={() => toggleMobileDropdown(item.label)}
+                          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-foreground hover:bg-muted transition-colors font-medium"
+                        >
                           {item.icon}
-                          {item.label}
-                        </div>
-                        {item.children?.map((child) => (
-                          <Link
-                            key={child.label}
-                            to={child.href}
-                            onClick={() => setMobileOpen(false)}
-                            className="block pl-11 pr-4 py-2 hover:bg-muted rounded-lg transition-colors"
-                          >
-                            {child.label}
-                          </Link>
-                        ))}
+                          <span className="flex-1 text-left">{item.label}</span>
+                          <ChevronDown 
+                            className={cn(
+                              "w-4 h-4 transition-transform",
+                              expandedMobileItem === item.label && "rotate-180"
+                            )}
+                          />
+                        </button>
+                        
+                        {/* Dropdown items */}
+                        <AnimatePresence>
+                          {expandedMobileItem === item.label && item.children && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              className="space-y-1 pl-6"
+                            >
+                              {item.children.map((child) => (
+                                <Link
+                                  key={child.label}
+                                  to={child.href}
+                                  onClick={() => {
+                                    setMobileOpen(false);
+                                    setExpandedMobileItem(null);
+                                  }}
+                                  className="block px-4 py-3 text-sm text-foreground hover:bg-muted rounded-lg transition-colors"
+                                >
+                                  {child.label}
+                                </Link>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     )}
                   </div>
                 ))}
-                
-                {/* Mobile Auth Section */}
-                <div className="pt-4 px-4 space-y-3 border-t border-border">
+
+                {/* DIVIDER */}
+                <div className="my-4 border-t border-border"></div>
+
+                {/* AUTH SECTION - LOGIN & SIGN UP AT BOTTOM */}
+                <div className="px-2 space-y-3 pb-4">
                   {!user ? (
                     <>
                       <Link to="/login" onClick={() => setMobileOpen(false)}>
-                        <Button variant="outline" className="w-full">
+                        <Button variant="outline" className="w-full rounded-lg">
                           <LogIn className="w-4 h-4 mr-2" />
                           Login
                         </Button>
                       </Link>
                       <Link to="/signup" onClick={() => setMobileOpen(false)}>
-                        <Button className="w-full">
+                        <Button className="w-full rounded-lg">
                           <UserPlus className="w-4 h-4 mr-2" />
                           Sign Up
-                        </Button>
-                      </Link>
-                      <Link to="/agent-signup" onClick={() => setMobileOpen(false)}>
-                        <Button variant="outline" className="w-full border-primary text-primary">
-                          <Briefcase className="w-4 h-4 mr-2" />
-                          Agent Sign Up
                         </Button>
                       </Link>
                     </>
                   ) : (
                     <>
                       <Link to="/dashboard" onClick={() => setMobileOpen(false)}>
-                        <Button variant="outline" className="w-full">
+                        <Button variant="outline" className="w-full rounded-lg">
                           <LayoutDashboard className="w-4 h-4 mr-2" />
                           Dashboard
                         </Button>
@@ -443,22 +468,24 @@ export function Navbar() {
                       <Button
                         variant="outline"
                         onClick={handleLogout}
-                        className="w-full"
+                        className="w-full rounded-lg"
                       >
                         <LogOut className="w-4 h-4 mr-2" />
                         Logout
                       </Button>
                     </>
                   )}
+
+                  {/* PHONE & CONTACT */}
                   <a
                     href="tel: +917363933945"
-                    className="flex items-center gap-2 text-sm text-foreground px-4 py-3"
+                    className="flex items-center gap-2 text-sm text-foreground px-4 py-3 rounded-lg hover:bg-muted transition-colors"
                   >
                     <Phone className="w-4 h-4" />
-                    <span>(+91)73639 33945</span>
+                    <span>(+91) 73639 33945</span>
                   </a>
                   <Link to="/contact" onClick={() => setMobileOpen(false)}>
-                    <Button className="w-full">Plan Your Trip</Button>
+                    <Button className="w-full rounded-lg">Plan Your Trip</Button>
                   </Link>
                 </div>
               </div>
