@@ -1,0 +1,16 @@
+[
+  {
+    "id": "1770967471276-ui2ilcz15",
+    "bookingId": "DL000001",
+    "customerName": "Suman Kunwar",
+    "email": "sumankunwar590@gmail.com",
+    "phone": "9868738347",
+    "message": "",
+    "travelers": 1,
+    "selectedDate": "May 21 - 30, 2026",
+    "totalAmount": 100000,
+    "status": "Pending",
+    "createdAt": "2026-02-13T07:24:31.276Z",
+    "updatedAt": "2026-02-13T07:24:31.276Z"
+  }
+]

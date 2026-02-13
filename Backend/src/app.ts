@@ -22,6 +22,7 @@ import trendingDestinationRoutes from './routes/trendingDestination.routes';
 import insuranceRoutes from './routes/insurance.routes';
 import agentRoutes from './routes/agent.routes';
 import testimonialRoutes from './routes/testimonial.routes';
+import dalaiLamaBookingRoutes from './routes/dalaiLamaBooking.routes';
 
 const app: Application = express();
 
@@ -156,6 +157,7 @@ app.use('/api/v1/trending-destinations', trendingDestinationRoutes);
 app.use('/api/v1/insurance', insuranceRoutes);
 app.use('/api/v1/agents', agentRoutes);
 app.use('/api/v1/testimonials', testimonialRoutes);
+app.use('/api/v1/dalai-lama-bookings', dalaiLamaBookingRoutes);
 
 // ========== 404 HANDLER ==========
 app.all('*', (req: Request, _res: Response, next: NextFunction) => {

@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { title } from "process";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -65,6 +66,7 @@ const menuItems = [
     icon: Calendar,
     path: "/admin/bookings",
   },
+  {title: "Dalai Lama Bookings", icon: Calendar, path: "/admin/dalai-lama-bookings"},
   {
     title: "Blogs",
     icon: FileText,
