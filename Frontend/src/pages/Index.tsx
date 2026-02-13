@@ -1,6 +1,7 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { HeroSection } from "@/components/home/HeroSection";
+import { DalaiLamaDarshan } from "@/components/home/DalaiLamaDarshan"; // ← NEW IMPORT
 import { ExploreDestinations } from "@/components/home/ExploreDestinations";
 import { TrendingDestinations } from "@/components/home/TrendingDestinations";
 import { UpcomingTrips } from "@/components/home/UpcomingTrips";
@@ -17,6 +18,10 @@ const Index = () => {
       <Navbar />
       <main>
         <HeroSection />
+        {/* 🙏 NEW SECTION - DALAI LAMA DARSHAN */}
+        <DalaiLamaDarshan />
+        {/* ↑ Place this section where you want it to appear on homepage */}
+        
         <ExploreDestinations />
         <UpcomingTrips />
         <BookWithConfidence />

@@ -27,6 +27,7 @@ import NotFound from "./pages/NotFound";
 import CruiseTrips from "./pages/CruiseTrips";
 import EMITrips from "./pages/EMITrips";
 import Healings from "./pages/Healing";
+import DalaiLamaDarshanPage from "./pages/DalaiLamaDarshan";
 
 
 // Auth Pages
@@ -56,7 +57,8 @@ import AdminCustomTrips from "./pages/admin/AdminCustomTrips";
 import AdminDocumentation from "./pages/admin/AdminDocumentation";
 import AdminInsurance from "./pages/admin/AdminInsurance";
 import AdminAgents from "./pages/admin/AdminAgents";
-import adminTestimonials, { AdminTestimonials } from "./pages/admin/AdminTestimonials";
+import  { AdminTestimonials } from "./pages/admin/AdminTestimonials";
+import AdminDalaiLamaBookings from "./pages/admin/AdminDalaiLamaBookings";
 
 // Admin Homepage Management Pages
 import AdminHeroSection from "./pages/admin/AdminHeroSection";
@@ -112,6 +114,15 @@ const App = () => (
                 </ProtectedAdminRoute>
               }
             />
+            <Route 
+              path="/admin/dalai-lama-bookings"
+              element={
+                <ProtectedAdminRoute>   
+                  <AdminDalaiLamaBookings />
+                </ProtectedAdminRoute>
+              }
+            />
+
             <Route
               path="/admin/homepage/trending"
               element={
@@ -276,6 +287,7 @@ const App = () => (
             <Route path="/domestic-trips" element={<DomesticTrips />} />
             <Route path="/trips/emi" element={<EMITrips />} />
             <Route path="/trips/cruise" element={<CruiseTrips />} />
+            <Route path="/dalai-lama-darshan" element={<DalaiLamaDarshanPage />} />
             
             {/* Destination Routes */}
             <Route path="/destination/:slug" element={<TripDetail />} />
