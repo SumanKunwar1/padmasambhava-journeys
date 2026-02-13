@@ -18,8 +18,11 @@ router.post('/', createBooking);
 // Protected routes - require authentication
 router.use(protect);
 
+// ⭐ CRITICAL: Static routes BEFORE dynamic routes
 router.get('/admin/stats', getBookingStats);
 router.get('/', getAllBookings);
+
+// Dynamic routes last
 router.get('/:id', getBooking);
 router.patch('/:id', updateBooking);
 router.delete('/:id', deleteBooking);

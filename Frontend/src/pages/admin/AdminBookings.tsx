@@ -1,13 +1,13 @@
 // src/pages/admin/AdminBookings.tsx
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, Eye, Trash2, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Search, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { cn } from "@/lib/utils";
-import { API_BASE_URL } from "@/lib/api-config";
+import axiosInstance from "@/lib/axios";
 
 interface Booking {
   _id: string;
@@ -17,8 +17,8 @@ interface Booking {
   tripName: string;
   travelers: number;
   totalAmount: number;
-  status: "confirmed" | "pending" | "cancelled";
-  bookingDate: string;
+  status: "Confirmed" | "Pending" | "Cancelled";
+  createdAt: string;
   selectedDate?: string;
 }
 
@@ -28,6 +28,13 @@ interface Stats {
   pendingBookings: number;
   cancelledBookings: number;
   totalRevenue: number;
+}
+
+interface FetchParams {
+  page: number;
+  limit: number;
+  search: string;
+  status?: string;
 }
 
 export default function AdminBookings() {
@@ -43,43 +50,36 @@ export default function AdminBookings() {
   useEffect(() => {
     fetchBookings();
     fetchStats();
-  }, [statusFilter, currentPage]);
+  }, [statusFilter, currentPage, searchQuery]);
 
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: "10",
+
+      const params: FetchParams = {
+        page: currentPage,
+        limit: 10,
         search: searchQuery,
-      });
+      };
 
       if (statusFilter !== "all") {
-        params.append("status", statusFilter);
+        params.status = statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1);
       }
 
-      const response = await fetch(
-        `${API_BASE_URL}/bookings?${params}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await axiosInstance.get('/bookings', { params });
 
-      if (response.ok) {
-        const data = await response.json();
-        setBookings(data.data.bookings || []);
-        setTotalPages(data.data.pagination?.pages || 1);
+      if (response.data?.data?.bookings) {
+        setBookings(response.data.data.bookings);
+        setTotalPages(response.data.data.pagination?.pages || 1);
       }
-    } catch (error) {
-      console.error("Error fetching bookings:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch bookings",
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      if (error.response?.status !== 401) {
+        toast({
+          title: "Error",
+          description: error.response?.data?.message || "Failed to fetch bookings",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -87,55 +87,13 @@ export default function AdminBookings() {
 
   const fetchStats = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `${API_BASE_URL}/bookings/admin/stats`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await axiosInstance.get('/bookings/admin/stats');
 
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data.data);
+      if (response.data?.data) {
+        setStats(response.data.data);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching stats:", error);
-    }
-  };
-
-  const handleStatusChange = async (id: string, newStatus: string) => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `${API_BASE_URL}/bookings/${id}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ status: newStatus }),
-        }
-      );
-
-      if (response.ok) {
-        toast({
-          title: "Booking updated",
-          description: `Status changed to ${newStatus}`,
-        });
-        fetchBookings();
-        fetchStats();
-      }
-    } catch (error) {
-      console.error("Error updating booking:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update booking",
-        variant: "destructive",
-      });
     }
   };
 
@@ -143,44 +101,32 @@ export default function AdminBookings() {
     if (!confirm("Are you sure you want to delete this booking?")) return;
 
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `${API_BASE_URL}/bookings/${id}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await axiosInstance.delete(`/bookings/${id}`);
 
-      if (response.ok) {
-        toast({
-          title: "Booking deleted",
-          description: "The booking has been deleted successfully",
-        });
-        fetchBookings();
-        fetchStats();
-      }
-    } catch (error) {
-      console.error("Error deleting booking:", error);
+      toast({
+        title: "Booking deleted",
+        description: "The booking has been deleted successfully",
+      });
+      fetchBookings();
+      fetchStats();
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to delete booking",
+        description: error.response?.data?.message || "Failed to delete booking",
         variant: "destructive",
       });
     }
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "confirmed":
-        return "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300";
-      case "cancelled":
-        return "bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300";
-      default:
-        return "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300";
-    }
+    const normalized = status.toLowerCase();
+    if (normalized === "confirmed")
+      return "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300";
+    if (normalized === "pending")
+      return "bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300";
+    if (normalized === "cancelled")
+      return "bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300";
+    return "bg-gray-100 dark:bg-gray-950 text-gray-700 dark:text-gray-300";
   };
 
   return (
@@ -204,7 +150,7 @@ export default function AdminBookings() {
             />
           </div>
           <div className="flex gap-2">
-            {["all", "confirmed", "pending", "cancelled"].map((status) => (
+            {["all", "pending", "confirmed", "cancelled"].map((status) => (
               <Button
                 key={status}
                 variant={statusFilter === status ? "default" : "outline"}
@@ -295,7 +241,7 @@ export default function AdminBookings() {
                       <td className="p-4 text-sm">{booking.tripName}</td>
                       <td className="p-4 font-semibold">₹{booking.totalAmount.toLocaleString()}</td>
                       <td className="p-4 text-sm">
-                        {new Date(booking.bookingDate).toLocaleDateString()}
+                        {new Date(booking.createdAt).toLocaleDateString()}
                       </td>
                       <td className="p-4">
                         <span
@@ -309,9 +255,6 @@ export default function AdminBookings() {
                       </td>
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Button variant="ghost" size="sm">
-                            <Eye className="w-4 h-4" />
-                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -334,7 +277,7 @@ export default function AdminBookings() {
                 variant="outline"
                 size="sm"
                 disabled={currentPage === 1}
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
               >
                 Previous
               </Button>
@@ -345,7 +288,7 @@ export default function AdminBookings() {
                 variant="outline"
                 size="sm"
                 disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
               >
                 Next
               </Button>
