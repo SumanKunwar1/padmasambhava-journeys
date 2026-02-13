@@ -175,9 +175,9 @@ export function Navbar() {
       )}
     >
       {/* Top announcement bar */}
-      <div className="bg-primary text-primary-foreground py-2 text-center text-sm">
-        <span className="font-medium">Sacred Darshan of His Holiness the Dalai Lama Early Bird – Save up to ₹5,000 🎉</span>
-      </div>
+      <Link to="/dalai-lama-darshan" className="block bg-primary text-primary-foreground py-2 text-center text-sm hover:bg-primary/90 transition-colors cursor-pointer">
+        <span className="font-medium">Secret Audience of His Holiness 14th Dalai Lama - Book An Appointment</span>
+      </Link>
 
       <nav className="container-custom">
         {/* Top row: Logo + Brand Name + Agent Login (ALWAYS VISIBLE AT TOP) */}
@@ -186,7 +186,7 @@ export function Navbar() {
           <Link to="/" className="flex items-center gap-3 flex-shrink-0">
             <img 
               src="https://res.cloudinary.com/dihev9qxc/image/upload/v1768991877/453207561_122102729312441160_4787222294410407220_n-removebg-preview_voy795.png" 
-              alt="Padmasambhava Trip" 
+              alt="Padmasambhava Trips" 
               className="h-28 w-auto"
             />
             <div className="hidden lg:flex flex-col">
@@ -244,7 +244,7 @@ export function Navbar() {
 
             {/* Phone Icon - Desktop */}
             <a
-              href="tel: +917363933945"
+              href="tel:+917363933945"
               className="hidden lg:flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors"
             >
               <Phone className="w-5 h-5" />
@@ -478,11 +478,11 @@ export function Navbar() {
 
                   {/* PHONE & CONTACT */}
                   <a
-                    href="tel: +917363933945"
+                    href="tel: +977 970-4502011"
                     className="flex items-center gap-2 text-sm text-foreground px-4 py-3 rounded-lg hover:bg-muted transition-colors"
                   >
                     <Phone className="w-4 h-4" />
-                    <span>(+91) 73639 33945</span>
+                    <span>(+977) 970-4502011</span>
                   </a>
                   <Link to="/contact" onClick={() => setMobileOpen(false)}>
                     <Button className="w-full rounded-lg">Plan Your Trip</Button>

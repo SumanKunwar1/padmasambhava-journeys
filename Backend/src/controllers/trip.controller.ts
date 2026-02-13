@@ -11,7 +11,7 @@ import { uploadToCloudinary, deleteFromCloudinary } from '../utils/cloudinary';
 export const getAllTrips = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     // Build query
-    const queryObj = { ...req.query };
+    const queryObj: Record<string, any> = { ...req.query };
     const excludedFields = ['page', 'sort', 'limit', 'fields', 'search'];
     excludedFields.forEach((el) => delete queryObj[el]);
 
@@ -19,26 +19,24 @@ export const getAllTrips = catchAsync(
     let queryStr = JSON.stringify(queryObj);
     queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
 
-    let query = Trip.find(JSON.parse(queryStr));
+    let query: any = Trip.find(JSON.parse(queryStr));
 
     // Filter by category (support both single and multiple categories)
     if (req.query.tripCategory) {
-      query = query.find({ tripCategory: { $in: [req.query.tripCategory] } });
+      query = query.where('tripCategory').in([req.query.tripCategory]);
     }
     if (req.query.tripType) {
-      query = query.find({ tripType: req.query.tripType });
+      query = query.where('tripType').equals(req.query.tripType);
     }
 
     // Search functionality
     if (req.query.search) {
-      query = query.find({
-        $text: { $search: req.query.search as string },
-      });
+      query = query.where('$text').equals({ $search: req.query.search as string });
     }
 
     // Filter by status (only active trips for public)
     if (!req.query.status) {
-      query = query.find({ status: 'Active' });
+      query = query.where('status').equals('Active');
     }
 
     // Sorting
@@ -63,7 +61,7 @@ export const getAllTrips = catchAsync(
     query = query.skip(skip).limit(limit);
 
     // Execute query
-    const trips = await query;
+    const trips = await query.exec();
     const total = await Trip.countDocuments(JSON.parse(queryStr));
 
     res.status(200).json({
@@ -84,7 +82,7 @@ export const getAllTrips = catchAsync(
 // @access  Public
 export const getTripById = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const trip = await Trip.findById(req.params.id);
+    const trip = await Trip.findById(req.params.id).exec();
 
     if (!trip) {
       return next(new AppError('No trip found with that ID', 404));
@@ -181,7 +179,7 @@ export const createTrip = catchAsync(
 export const updateTrip = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     // Find trip
-    const trip = await Trip.findById(req.params.id);
+    const trip = await Trip.findById(req.params.id).exec();
 
     if (!trip) {
       return next(new AppError('No trip found with that ID', 404));
@@ -259,7 +257,7 @@ export const updateTrip = catchAsync(
         new: true,
         runValidators: true,
       }
-    );
+    ).exec();
 
     res.status(200).json({
       status: 'success',
@@ -275,7 +273,7 @@ export const updateTrip = catchAsync(
 // @access  Private (Admin)
 export const deleteTrip = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const trip = await Trip.findById(req.params.id);
+    const trip = await Trip.findById(req.params.id).exec();
 
     if (!trip) {
       return next(new AppError('No trip found with that ID', 404));
@@ -295,7 +293,7 @@ export const deleteTrip = catchAsync(
       }
     }
 
-    await Trip.findByIdAndDelete(req.params.id);
+    await Trip.findByIdAndDelete(req.params.id).exec();
 
     res.status(204).json({
       status: 'success',
@@ -315,7 +313,7 @@ export const getTripsByCategory = catchAsync(
     const trips = await Trip.find({ 
       tripCategory: { $in: [category] },
       status: 'Active'
-    }).sort('-createdAt');
+    }).sort('-createdAt').exec();
 
     res.status(200).json({
       status: 'success',
@@ -337,7 +335,7 @@ export const getTripsByType = catchAsync(
     const trips = await Trip.find({ 
       tripType: type,
       status: 'Active'
-    }).sort('-createdAt');
+    }).sort('-createdAt').exec();
 
     res.status(200).json({
       status: 'success',
@@ -360,7 +358,8 @@ export const getFeaturedTrips = catchAsync(
       status: 'Active',
     })
       .sort('-bookings')
-      .limit(limit);
+      .limit(limit)
+      .exec();
 
     res.status(200).json({
       status: 'success',
