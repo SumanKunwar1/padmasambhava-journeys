@@ -406,12 +406,13 @@ export default function TripDetail() {
               >
                 Book Now
               </Button>
+              
 
               {/* WhatsApp */}
               <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                 <span>Any Doubt?</span>
                 <a
-                  href="https://wa.me/9779704502011"
+                  href="https://wa.me/+917363933945"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border hover:border-primary hover:text-primary transition-colors"
