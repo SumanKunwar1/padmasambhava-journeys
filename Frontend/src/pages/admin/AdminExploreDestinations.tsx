@@ -9,6 +9,11 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import { cn } from "@/lib/utils";
 import { getAuthToken } from "@/utils/auth";
 
+// Inline token getter that prioritizes adminToken (set by AdminLogin.tsx)
+const getAdminToken = (): string | null => {
+  return localStorage.getItem('adminToken') || localStorage.getItem('token') || getAuthToken();
+};
+
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5020";
 
 type FilterType = "all" | "international" | "domestic" | "weekend";
@@ -49,7 +54,7 @@ export default function AdminExploreDestinations() {
   const loadDestinations = async () => {
     try {
       setIsLoading(true);
-      const token = getAuthToken();
+      const token = getAdminToken();
 
       if (!token) {
         toast({
@@ -183,7 +188,7 @@ export default function AdminExploreDestinations() {
     setIsSaving(true);
 
     try {
-      const token = getAuthToken();
+      const token = getAdminToken();
 
       if (!token) {
         toast({
@@ -269,7 +274,7 @@ export default function AdminExploreDestinations() {
     if (!confirm("Are you sure you want to delete this destination?")) return;
 
     try {
-      const token = getAuthToken();
+      const token = getAdminToken();
 
       if (!token) {
         toast({
@@ -326,7 +331,7 @@ export default function AdminExploreDestinations() {
 
   const toggleActive = async (id: string) => {
     try {
-      const token = getAuthToken();
+      const token = getAdminToken();
 
       if (!token) {
         toast({

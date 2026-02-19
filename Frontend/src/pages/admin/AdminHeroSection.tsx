@@ -30,10 +30,17 @@ const getCookie = (name: string): string | null => {
 
 // Helper function to get auth token
 const getAuthToken = (): string | null => {
-  // First try localStorage
+  // Try adminToken first (set by AdminLogin)
+  const adminToken = localStorage.getItem("adminToken");
+  if (adminToken) {
+    console.log("✅ Token found in localStorage (adminToken)");
+    return adminToken;
+  }
+
+  // Fallback: try legacy 'token' key
   const localToken = localStorage.getItem("token");
   if (localToken) {
-    console.log("✅ Token found in localStorage");
+    console.log("✅ Token found in localStorage (token)");
     return localToken;
   }
   
@@ -102,7 +109,8 @@ export default function AdminHeroSection() {
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
           console.error("❌ Authentication failed:", response.status);
-          // Clear invalid token
+          // Clear invalid tokens
+          localStorage.removeItem("adminToken");
           localStorage.removeItem("token");
           
           toast({

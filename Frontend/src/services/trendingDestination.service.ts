@@ -24,7 +24,8 @@ export interface TrendingDestinationInput {
 
 class TrendingDestinationService {
   private getAuthHeaders() {
-    const token = localStorage.getItem('token');
+    // Use 'adminToken' to match what AdminLogin.tsx saves
+    const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
     return {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
