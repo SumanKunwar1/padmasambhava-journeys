@@ -145,7 +145,7 @@ export function Footer() {
               </p>
               <p className="text-sm text-muted-foreground flex items-center gap-2 mb-3">
                 <Phone className="w-4 h-4 shrink-0" />
-                 (+91) 7363933945
+                 +91 73639 33945
               </p>
               <button className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-full text-sm hover:bg-muted transition-colors">
                 <MapPin className="w-4 h-4" />
