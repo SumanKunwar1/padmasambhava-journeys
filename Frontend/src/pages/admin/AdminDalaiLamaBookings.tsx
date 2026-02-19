@@ -17,7 +17,7 @@ interface DalaiLamaBooking {
   phone: string;
   travelers: number;
   selectedDate: string;
-  totalAmount: number;
+  totalAmount?: number;
   status: "Pending" | "Confirmed" | "Cancelled";
   createdAt: string;
   message?: string;
@@ -214,7 +214,7 @@ export default function AdminDalaiLamaBookings() {
             </div>
             <div className="bg-card rounded-lg border border-border p-4">
               <p className="text-sm text-muted-foreground">Total Revenue</p>
-              <p className="text-2xl font-bold">₹{(stats.totalRevenue / 100000).toFixed(1)}L</p>
+              <p className="text-2xl font-bold">₹{((stats.totalRevenue || 0) / 100000).toFixed(1)}L</p>
             </div>
           </div>
         )}
@@ -277,7 +277,12 @@ export default function AdminDalaiLamaBookings() {
                         <span className="font-semibold">{booking.travelers}</span>
                       </td>
                       <td className="p-4 text-sm">{booking.selectedDate}</td>
-                      <td className="p-4 font-semibold">₹{booking.totalAmount.toLocaleString()}</td>
+                      <td className="p-4 font-semibold">
+                        {booking.totalAmount != null
+                          ? `₹${booking.totalAmount.toLocaleString()}`
+                          : <span className="text-muted-foreground text-xs">—</span>
+                        }
+                      </td>
                       <td className="p-4">
                         <select
                           value={booking.status}

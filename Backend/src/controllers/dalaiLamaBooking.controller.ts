@@ -4,23 +4,22 @@ import { catchAsync } from '../utils/catchAsync';
 import { AppError } from '../utils/appError';
 import DalaiLamaBooking from '../models/DalaiLamaBooking.model';
 
-// @desc    Create new Dalai Lama booking
+// @desc    Create new Dalai Lama inquiry
 // @route   POST /api/v1/dalai-lama-bookings
 // @access  Public
 export const createDalaiLamaBooking = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { 
-      customerName, 
-      email, 
-      phone, 
-      message, 
-      travelers, 
-      selectedDate, 
-      totalAmount 
+    const {
+      customerName,
+      email,
+      phone,
+      message,
+      travelers,
+      selectedDate,
     } = req.body;
 
     // Validate required fields
-    if (!customerName || !email || !phone || !travelers || !selectedDate || totalAmount === undefined) {
+    if (!customerName || !email || !phone || !travelers || !selectedDate) {
       return next(new AppError('Please provide all required fields', 400));
     }
 
@@ -30,7 +29,7 @@ export const createDalaiLamaBooking = catchAsync(
       return next(new AppError('Please provide a valid email address', 400));
     }
 
-    // Create booking
+    // Create booking/inquiry
     const booking = await DalaiLamaBooking.create({
       customerName,
       email,
@@ -38,12 +37,12 @@ export const createDalaiLamaBooking = catchAsync(
       message: message || '',
       travelers,
       selectedDate,
-      totalAmount,
     });
 
     res.status(201).json({
       status: 'success',
-      message: 'Dalai Lama Darshan booking request submitted successfully. We will contact you soon.',
+      message:
+        'Your inquiry has been received. Our team will reach out within 24 hours.',
       data: {
         booking,
       },
@@ -51,7 +50,7 @@ export const createDalaiLamaBooking = catchAsync(
   }
 );
 
-// @desc    Get all Dalai Lama bookings
+// @desc    Get all Dalai Lama bookings/inquiries
 // @route   GET /api/v1/dalai-lama-bookings
 // @access  Private (Admin)
 export const getAllDalaiLamaBookings = catchAsync(
@@ -116,10 +115,9 @@ export const updateDalaiLamaBooking = catchAsync(
       return next(new AppError('Invalid status value', 400));
     }
 
-    const booking = await DalaiLamaBooking.findByIdAndUpdate(
-      req.params.id,
-      { status }
-    );
+    const booking = await DalaiLamaBooking.findByIdAndUpdate(req.params.id, {
+      status,
+    });
 
     if (!booking) {
       return next(new AppError('Booking not found', 404));

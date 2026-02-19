@@ -1,145 +1,164 @@
 // src/components/home/DalaiLamaDarshan.tsx
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ChevronRight, MapPin, Calendar, Users, Sparkles } from "lucide-react";
+import { ArrowRight, MapPin, Calendar, Users, Sparkles, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function DalaiLamaDarshan() {
-  const pricePerPerson = 100000;
-
   return (
-    <section className="py-12 md:py-16 bg-background">
-      <div className="container-custom">
-        <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
-          {/* Left: Image Section */}
+    <section className="py-16 md:py-24 bg-background relative overflow-hidden">
+      {/* Subtle mandala background pattern */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `radial-gradient(circle at 20% 50%, hsl(var(--primary)) 0%, transparent 50%),
+                             radial-gradient(circle at 80% 20%, hsl(var(--primary)) 0%, transparent 40%)`,
+          }}
+        />
+      </div>
+
+      <div className="container-custom relative">
+        {/* Section label */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="flex items-center gap-3 mb-10"
+        >
+          <div className="h-px w-10 bg-primary/40" />
+          <span className="text-xs font-bold tracking-[0.2em] text-primary uppercase">
+            Exclusive Pilgrimage
+          </span>
+          <div className="h-px w-10 bg-primary/40" />
+        </motion.div>
+
+        <div className="grid lg:grid-cols-5 gap-0 items-stretch">
+          {/* Left: Image - takes 3 columns */}
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="relative"
+            transition={{ duration: 0.7 }}
+            className="lg:col-span-3 relative"
           >
-            <div className="relative rounded-2xl overflow-hidden shadow-lg">
-              {/* Main Image */}
+            {/* Main large image */}
+            <div className="relative h-[420px] md:h-[540px] rounded-2xl overflow-hidden group">
               <img
                 src="https://i1.himalayas.life/c/u/f67894297b6134a6b759b3a9ec15b6cb/2019/01/30042912/dalai-lama.jpg"
                 alt="His Holiness the Dalai Lama"
-                className="w-full h-80 md:h-96 object-cover"
+                className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
               />
+              {/* Layered gradients for depth */}
+              <div className="absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-              {/* Overlay gradient */}
-              <div className="absolute inset-0 bg-gradient-to-t from-primary/40 via-transparent to-transparent" />
-
-              {/* Badge */}
-              <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm px-4 py-2 rounded-full">
-                <p className="text-sm font-semibold text-primary">
-                  🙏 9 Days Spiritual Journey
-                </p>
+              {/* Bottom overlay info */}
+              <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
+                <div className="flex items-end justify-between">
+                  <div>
+                    <p className="text-white/70 text-xs font-semibold tracking-wider uppercase mb-1">
+                      Sacred Journey
+                    </p>
+                    <p className="text-white text-xl md:text-2xl font-bold leading-tight">
+                      His Holiness<br />the 14th Dalai Lama
+                    </p>
+                  </div>
+                  {/* Duration badge */}
+                  <div className="bg-white/15 backdrop-blur-md border border-white/20 rounded-xl px-4 py-3 text-center">
+                    <p className="text-white font-black text-2xl leading-none">9</p>
+                    <p className="text-white/80 text-xs font-semibold tracking-wide">DAYS</p>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Decorative accent */}
-            <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-secondary rounded-full opacity-60 -z-10" />
+            {/* Floating info chips */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.4 }}
+              className="absolute -bottom-5 left-6 flex gap-2"
+            >
+              <div className="bg-primary text-primary-foreground rounded-full px-4 py-2 text-xs font-bold shadow-lg flex items-center gap-1.5">
+                <Sparkles className="w-3 h-3" />
+                Limited Spots
+              </div>
+              <div className="bg-white border border-border rounded-full px-4 py-2 text-xs font-bold shadow-lg text-foreground">
+                🙏 Audience Included
+              </div>
+            </motion.div>
           </motion.div>
 
-          {/* Right: Content Section */}
+          {/* Right: Content - takes 2 columns */}
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="space-y-4"
+            transition={{ duration: 0.7, delay: 0.15 }}
+            className="lg:col-span-2 lg:pl-10 pt-10 lg:pt-0 flex flex-col justify-center"
           >
-            {/* Tag */}
-            <div className="inline-block">
-              <span className="text-sm font-semibold text-primary flex items-center gap-2">
-                <Sparkles className="w-4 h-4" />
-                EXCLUSIVE PILGRIMAGE
-              </span>
-            </div>
-
-            {/* Title */}
-            <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground">
-              Blessed Audience with His Holiness the 14th Dalai Lama
+            <h2 className="text-3xl md:text-4xl xl:text-[2.6rem] font-display font-bold text-foreground leading-tight mb-5">
+              Blessed Audience with
+              <span className="block text-primary mt-1">His Holiness</span>
             </h2>
 
-            {/* Description */}
-            <p className="text-base text-muted-foreground leading-relaxed">
-              Experience a transformative 9-day spiritual journey to receive
-              blessings from His Holiness the Dalai Lama at Mundgod, visiting
-              sacred monasteries across South and North India.
+            <p className="text-base text-muted-foreground leading-relaxed mb-7">
+              A once-in-a-lifetime 9-day spiritual pilgrimage through sacred
+              monasteries across South and North India — culminating in a
+              personal blessing from the Dalai Lama at Mundgod.
             </p>
 
-            {/* Key Info */}
-            <div className="space-y-2 pt-2">
+            {/* Journey stats */}
+            <div className="grid grid-cols-3 gap-3 mb-7">
+              {[
+                { icon: "🕌", label: "Monasteries", value: "8 Sites" },
+                { icon: "🗺️", label: "Route", value: "3 States" },
+                { icon: "🌿", label: "Meals", value: "Pure Veg" },
+              ].map((stat, i) => (
+                <div key={i} className="bg-secondary/80 rounded-xl p-3 text-center">
+                  <p className="text-lg mb-0.5">{stat.icon}</p>
+                  <p className="font-bold text-sm text-foreground">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Key details */}
+            <div className="space-y-2.5 mb-8">
               <div className="flex items-center gap-3 text-sm text-foreground">
-                <Calendar className="w-4 h-4 text-primary" />
-                <span>
-                  <strong>Dates:</strong> January 7-16, 2025 (& Multiple Dates)
-                </span>
+                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Calendar className="w-3.5 h-3.5 text-primary" />
+                </div>
+                <span>Multiple departures — March through July 2026</span>
               </div>
               <div className="flex items-center gap-3 text-sm text-foreground">
-                <MapPin className="w-4 h-4 text-primary" />
-                <span>
-                  <strong>Route:</strong> Kathmandu → Bangalore → Delhi
-                </span>
+                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <MapPin className="w-3.5 h-3.5 text-primary" />
+                </div>
+                <span>Kathmandu → Bangalore → Mundgod → Delhi</span>
               </div>
               <div className="flex items-center gap-3 text-sm text-foreground">
-                <Users className="w-4 h-4 text-primary" />
-                <span>
-                  <strong>Group:</strong> Limited spots | Expert guides included
-                </span>
+                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Users className="w-3.5 h-3.5 text-primary" />
+                </div>
+                <span>Expert spiritual guides · 24/7 support included</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm text-foreground">
+                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Star className="w-3.5 h-3.5 text-primary" />
+                </div>
+                <span>Flights, accommodation & all meals included</span>
               </div>
             </div>
 
-            {/* Price Highlight */}
-            <div className="bg-primary/10 border-2 border-primary/30 rounded-lg p-4 my-4">
-              <p className="text-xs text-muted-foreground mb-1">
-                Starting From
-              </p>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-primary">
-                  ₹{pricePerPerson.toLocaleString()}
-                </span>
-                <span className="text-sm text-muted-foreground">per person</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Includes flights, accommodation, meals & H.H. audience
-              </p>
-            </div>
-
-            {/* Highlights - Mini cards */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-secondary rounded-lg p-3">
-                <p className="text-xs text-muted-foreground mb-1">Includes</p>
-                <p className="font-semibold text-sm text-foreground">
-                  H.H. Audience
-                </p>
-              </div>
-              <div className="bg-secondary rounded-lg p-3">
-                <p className="text-xs text-muted-foreground mb-1">Meals</p>
-                <p className="font-semibold text-sm text-foreground">
-                  Pure Vegetarian
-                </p>
-              </div>
-              <div className="bg-secondary rounded-lg p-3">
-                <p className="text-xs text-muted-foreground mb-1">Duration</p>
-                <p className="font-semibold text-sm text-foreground">9 Days</p>
-              </div>
-              <div className="bg-secondary rounded-lg p-3">
-                <p className="text-xs text-muted-foreground mb-1">Support</p>
-                <p className="font-semibold text-sm text-foreground">
-                  24/7 Available
-                </p>
-              </div>
-            </div>
-
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+            {/* CTAs */}
+            <div className="flex flex-col sm:flex-row gap-3">
               <Link to="/dalai-lama-darshan" className="flex-1">
-                <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-base py-6">
-                  Book Now
-                  <ChevronRight className="w-4 h-4 ml-2" />
+                <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm py-5 group">
+                  View Details
+                  <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
               <a
@@ -148,7 +167,7 @@ export function DalaiLamaDarshan() {
                 rel="noopener noreferrer"
                 className="flex-1"
               >
-                <Button variant="outline" className="w-full font-bold border-2">
+                <Button variant="outline" className="w-full font-bold border-2 text-sm py-5">
                   💬 Chat on WhatsApp
                 </Button>
               </a>
