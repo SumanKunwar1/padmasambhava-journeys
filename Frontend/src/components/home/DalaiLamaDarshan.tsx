@@ -45,7 +45,7 @@ export function DalaiLamaDarshan() {
             {/* Main large image */}
             <div className="relative h-[420px] md:h-[540px] rounded-2xl overflow-hidden group">
               <img
-                src="https://i1.himalayas.life/c/u/f67894297b6134a6b759b3a9ec15b6cb/2019/01/30042912/dalai-lama.jpg"
+                src="https://res.cloudinary.com/dcsgax3ld/image/upload/v1771326166/615407781_25649516711325385_1794480527887579625_n_1_wx0j4q.jpg"
                 alt="His Holiness the Dalai Lama"
                 className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
               />
