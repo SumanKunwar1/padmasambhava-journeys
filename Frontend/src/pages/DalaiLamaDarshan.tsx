@@ -263,7 +263,7 @@ export default function DalaiLamaDarshanPage() {
                     <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
                   </Button>
                   <a
-                    href="https://wa.me/919876543210?text=Hi!%20I%27m%20interested%20in%20the%20Dalai%20Lama%20Darshan%20pilgrimage"
+                    href="https://wa.me/+917363933945?text=Hi!%20I%27m%20interested%20in%20the%20Dalai%20Lama%20Darshan%20pilgrimage"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -603,7 +603,7 @@ export default function DalaiLamaDarshanPage() {
                       </Button>
 
                       <a
-                        href={`https://wa.me/919876543210?text=Hi!%20I%27m%20interested%20in%20the%20Dalai%20Lama%20Darshan%20pilgrimage%20for%20${selectedDate.label}.%20Total%20travelers:%20${travelers}`}
+                        href={`https://wa.me/+917363933945?text=Hi!%20I%27m%20interested%20in%20the%20Dalai%20Lama%20Darshan%20pilgrimage%20for%20${selectedDate.label}.%20Total%20travelers:%20${travelers}`}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
