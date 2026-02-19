@@ -21,14 +21,17 @@ import { Button } from "@/components/ui/button";
 
 // Pilgrimage journey images
 const pilgrimageImages = [
-  "https://scontent.fktm9-2.fna.fbcdn.net/v/t39.30808-6/615407781_25649516711325385_1794480527887579625_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=833d8c&_nc_ohc=B_S_wH_epK8Q7kNvwFmZpCz&_nc_oc=AdnGMx-8GGJT2hvwKErP-neFDUjeRLIRGNSeKzWvB4O-9eDZhInpsbSP6dVj4ZWtA-s&_nc_zt=23&_nc_ht=scontent.fktm9-2.fna&_nc_gid=7q327lB9dprI6WOcSM8-SA&oh=00_AfvjyxnvsFKtfrN8oSMgBhst7FhwyWi4ylDARsZoUDAnFg&oe=69936384",
-  "https://scontent.fktm9-2.fna.fbcdn.net/v/t39.30808-6/613281737_25649517241325332_7368243054541655567_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=833d8c&_nc_ohc=v-0mAAHlXU8Q7kNvwGN_p9w&_nc_oc=AdmIWYeQAa6nEE2ReQ8EJM2Z1LEKoZZPQwJR68fl3oiKEAIENRdqBkE0DJIYGlffQzY&_nc_zt=23&_nc_ht=scontent.fktm9-2.fna&_nc_gid=z5ozv7eNrdaIdG2Oi_723A&oh=00_AfvdI-KmrVhqJgeSypprn1MBRINXaT5By-fxxkmS0hnP2A&oe=699357FC",
-  "https://scontent.fktm9-2.fna.fbcdn.net/v/t39.30808-6/615831139_25649518104658579_2217277330478332336_n.jpg?_nc_cat=107&ccb=1-7&_nc_sid=833d8c&_nc_ohc=dHZy0Ou5GHIQ7kNvwF6JtVR&_nc_oc=AdkHhCxR8sku2gI7DiYWBk3KbCoJK54qvXMZT9tAFzCCSasFMzNnuTIozcKUMHo9DyU&_nc_zt=23&_nc_ht=scontent.fktm9-2.fna&_nc_gid=u7wF7OZuuRkQDXB43_sAqg&oh=00_Aft4kgblR55UJT-ReCuuyHU7UgFwZv9pxf2240w_UEkAJQ&oe=69936ED7",
-  "https://scontent.fktm9-2.fna.fbcdn.net/v/t39.30808-6/615330000_25649523071324749_556856111905171096_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=833d8c&_nc_ohc=8b0jy2uuSdkQ7kNvwEYmBd4&_nc_oc=Adlt_C_Cfr91Q2fRRHX_65_isw8XvfppxwCwtEdWghj9E2zb5294Ax4TfYFBZS5OxnI&_nc_zt=23&_nc_ht=scontent.fktm9-2.fna&_nc_gid=Q_FORfoZtQftZoZXbv_72A&oh=00_AfvdWe7tJFPjgDBoSk5oLRxcnyFW72YzB7w_W0Rttq2GNQ&oe=69935C57",
-  "https://scontent.fktm9-2.fna.fbcdn.net/v/t39.30808-6/614898602_25649544384655951_4647058322178075868_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=833d8c&_nc_ohc=MSLJv3SW4NcQ7kNvwFzBHrE&_nc_oc=AdmHA_-BLguzKbCHUpOC8tkq5IW2K87-HETXCtJQ1c2OS9rlXpzMhsIqBCGo2sPa-0Q&_nc_zt=23&_nc_ht=scontent.fktm9-2.fna&_nc_gid=gm7YTOuDqjqdVQWTN-xAwQ&oh=00_AfsLl1Cvyv0_lHUN9es2wTbd5JekJQC1wvF5tqjMoAaMbw&oe=69937E2B",
-  "https://scontent.fktm9-2.fna.fbcdn.net/v/t39.30808-6/615749780_25649544914655898_8181865544175473920_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=833d8c&_nc_ohc=95n-YVbFWLgQ7kNvwEzoT6W&_nc_oc=Adl4vmS-scu8JylsBxUJHxDEyqcTkddLRke6aKy_s4BVdH7ceUB9gggcgk8aCSnxLfk&_nc_zt=23&_nc_ht=scontent.fktm9-2.fna&_nc_gid=m6RPFYx41u8WBUGfxrdg1Q&oh=00_AfvOVdBZ0IDe8RlW5pA3Ezr_dSDkkCDrdjAsf90gdfNzyg&oe=69937147",
-  "https://scontent.fktm9-2.fna.fbcdn.net/v/t39.30808-6/614487863_25649546081322448_1741576006573135087_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=833d8c&_nc_ohc=WTS-OhaX4roQ7kNvwHQULS4&_nc_oc=AdmLukbFDBUPiMI6wqtJpS0B4xirkzb-eOyQBJJfSRA4AUyu8iDFvyKHAdbAlY4Nd3k&_nc_zt=23&_nc_ht=scontent.fktm9-2.fna&_nc_gid=mYC5EQt-c0-r4ey-mA0Vjw&oh=00_AftwZGiO0KhGobjnjPyTEP4rw5DfnVXufSGxY7u0bpwI7A&oe=699381B6",
-  "https://scontent.fktm9-2.fna.fbcdn.net/v/t39.30808-6/613773166_25649543144656075_7472832031259212044_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=833d8c&_nc_ohc=RXwFs3hjKvgQ7kNvwHJhGgX&_nc_oc=AdnET8q6K8flls_nZBBGL8Vp4z6ZI8JHGti7ZaJfmhssL7074Vyg32Sh3wpo9Tiy1o0&_nc_zt=23&_nc_ht=scontent.fktm9-2.fna&_nc_gid=_GE9JJ9zHFow4r2RUB901g&oh=00_Afva7qNq9BlH-xP3TuWTWZcknQGRhSDrZD3GXE30fw7TGA&oe=69936DAB",
+  "https://res.cloudinary.com/dcsgax3ld/image/upload/v1771326183/615407781_25649516711325385_1794480527887579625_n_1_fllh85.jpg",
+  "https://res.cloudinary.com/dcsgax3ld/image/upload/v1771326157/615437310_25649530281324028_8075386305152341324_n_mdtrhn.jpg",
+  "https://res.cloudinary.com/dcsgax3ld/image/upload/v1771326184/613281737_25649517241325332_7368243054541655567_n_1_w9tz4c.jpg",
+  "https://res.cloudinary.com/dcsgax3ld/image/upload/v1771326184/615831139_25649518104658579_2217277330478332336_n_1_kq9wxl.jpg",
+  "https://res.cloudinary.com/dcsgax3ld/image/upload/v1771326158/615205300_25649528121324244_11936629256746867_n_aa1o9c.jpg",
+  "https://res.cloudinary.com/dcsgax3ld/image/upload/v1771326158/615205300_25649528121324244_11936629256746867_n_aa1o9c.jpg",
+  "https://res.cloudinary.com/dcsgax3ld/image/upload/v1771326153/615164896_25649531911323865_5261475497619979381_n_thyhy7.jpg",
+  "https://res.cloudinary.com/dcsgax3ld/image/upload/v1771326153/614599939_25649539447989778_2042450989832947657_n_v4cbfa.jpg",
+  "https://res.cloudinary.com/dcsgax3ld/image/upload/v1771326152/615467517_25649540114656378_3282776082181225722_n_rdook3.jpg",
+  "https://res.cloudinary.com/dcsgax3ld/image/upload/v1771326152/615399085_25649524354657954_2267486247401336271_n_myj9tj.jpg",
+ 
 ];
 
 const availableDates = [
