@@ -45,7 +45,7 @@ export function DalaiLamaDarshan() {
             {/* Main large image */}
             <div className="relative h-[420px] md:h-[540px] rounded-2xl overflow-hidden group">
               <img
-                src="https://res.cloudinary.com/dcsgax3ld/image/upload/v1771326166/615407781_25649516711325385_1794480527887579625_n_1_wx0j4q.jpg"
+                src="https://res.cloudinary.com/dcsgax3ld/image/upload/v1771570455/WhatsApp_Image_2026-02-20_at_11.49.23_vtyqxm.jpg"
                 alt="His Holiness the Dalai Lama"
                 className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
               />
@@ -66,7 +66,7 @@ export function DalaiLamaDarshan() {
                   </div>
                   {/* Duration badge */}
                   <div className="bg-white/15 backdrop-blur-md border border-white/20 rounded-xl px-4 py-3 text-center">
-                    <p className="text-white font-black text-2xl leading-none">9</p>
+                    <p className="text-white font-black text-2xl leading-none">7</p>
                     <p className="text-white/80 text-xs font-semibold tracking-wide">DAYS</p>
                   </div>
                 </div>
@@ -105,15 +105,15 @@ export function DalaiLamaDarshan() {
             </h2>
 
             <p className="text-base text-muted-foreground leading-relaxed mb-7">
-              A once-in-a-lifetime 9-day spiritual pilgrimage through sacred
-              monasteries across South and North India — culminating in a
-              personal blessing from the Dalai Lama at Mundgod.
+              A once-in-a-lifetime 7-day spiritual pilgrimage through Dharamshala,
+              the holy lake of Tsopema, and the Golden Temple of Amritsar —
+              culminating in a personal blessing from His Holiness the 14th Dalai Lama.
             </p>
 
             {/* Journey stats */}
             <div className="grid grid-cols-3 gap-3 mb-7">
               {[
-                { icon: "🕌", label: "Monasteries", value: "8 Sites" },
+                { icon: "🕌", label: "Sacred Sites", value: "5+ Sites" },
                 { icon: "🗺️", label: "Route", value: "3 States" },
                 { icon: "🌿", label: "Meals", value: "Pure Veg" },
               ].map((stat, i) => (
@@ -137,7 +137,7 @@ export function DalaiLamaDarshan() {
                 <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                   <MapPin className="w-3.5 h-3.5 text-primary" />
                 </div>
-                <span>Kathmandu → Bangalore → Mundgod → Delhi</span>
+                <span>Kathmandu → Delhi → Dharamshala → Tsopema → Amritsar</span>
               </div>
               <div className="flex items-center gap-3 text-sm text-foreground">
                 <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -162,7 +162,7 @@ export function DalaiLamaDarshan() {
                 </Button>
               </Link>
               <a
-                href="https://wa.me/919876543210?text=Hi!%20I%27m%20interested%20in%20the%20Dalai%20Lama%20Darshan%20pilgrimage"
+                href="https://wa.me/9704502011?text=Hi!%20I%27m%20interested%20in%20the%20Dalai%20Lama%20Darshan%20pilgrimage"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1"

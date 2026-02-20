@@ -35,163 +35,111 @@ const pilgrimageImages = [
 ];
 
 const availableDates = [
-  { id: 1, label: "Mar 7 - 16, 2026", month: "March", spots: 15 },
-  { id: 2, label: "Apr 14 - 23, 2026", month: "April", spots: 18 },
-  { id: 3, label: "May 7 - 16, 2026", month: "May", spots: 12 },
-  { id: 4, label: "May 21 - 30, 2026", month: "May", spots: 16 },
-  { id: 5, label: "Jun 11 - 20, 2026", month: "June", spots: 20 },
-  { id: 6, label: "Jul 2 - 11, 2026", month: "July", spots: 14 },
+  { id: 1, label: "Mar 7 - 13, 2026", month: "March", spots: 15 },
+  { id: 2, label: "Apr 14 - 20, 2026", month: "April", spots: 18 },
+  { id: 3, label: "May 7 - 13, 2026", month: "May", spots: 12 },
+  { id: 4, label: "May 21 - 27, 2026", month: "May", spots: 16 },
+  { id: 5, label: "Jun 11 - 17, 2026", month: "June", spots: 20 },
+  { id: 6, label: "Jul 2 - 8, 2026", month: "July", spots: 14 },
 ];
 
 const fullItinerary = [
   {
     day: 1,
-    date: "Jan 7",
-    title: "Kathmandu → Bangalore → Bylakuppe",
+    title: "Kathmandu → Delhi (Flight) → Dharamshala (Drive)",
     activities: [
       "Departure from Tribhuvan International Airport, Kathmandu",
-      "Arrival at Bangalore Airport",
-      "Meet & greet by tour partner representative",
-      "Drive to Bylakuppe (scenic journey through Western Ghats)",
-      "Visit Namdroling Monastery (5-6 hours)",
-      "Explore Tibetan settlement",
+      "Arrival at Delhi International Airport",
+      "Meet & greet by our representative",
+      "Drive to Dharamshala (approx. 12–14 hours)",
+      "Evening rest and orientation",
     ],
-    overnight: "Bylakuppe",
+    overnight: "Dharamshala / Driving",
   },
   {
     day: 2,
-    date: "Jan 8",
-    title: "Namdroling & Sera Monastery",
+    title: "Dharamshala – Audience Preparation",
     activities: [
-      "Visit Namdroling Monastery - Golden Temple",
-      "Explore Ngagyur Nyingma Institute",
-      "Visit Nyingma Retreat Center",
-      "Drive to Sera Monastery (Sera Je & Sera Mey)",
-      "Experience debate sessions if available",
-      "Evening prayers at monastery",
+      "Official briefing session regarding the audience with His Holiness",
+      "Explore the sacred surroundings of Dharamshala",
+      "Evening rest and spiritual preparation",
     ],
-    overnight: "Bylakuppe",
+    overnight: "Dharamshala",
   },
   {
     day: 3,
-    date: "Jan 9",
-    title: "Mundgod - Audience Preparation",
+    title: "✨ Special Audience with His Holiness → Tsopema",
     activities: [
-      "Drive to Mundgod (preparation begins)",
-      "Briefing session for H.H. Dalai Lama audience",
-      "Visit Gaden Jangtse Monastery",
-      "Visit Gaden Shartse Monastery",
-      "Visit Drepung Gomang",
-      "Visit Drepung Loseling College",
-      "Evening meditation and rest",
+      "Attend the special audience with His Holiness the 14th Dalai Lama (as per official schedule)",
+      "Receive personal blessings and teachings",
+      "Afternoon drive to Tsopema / Rewalsar Lake (6–8 hours)",
     ],
-    overnight: "Mundgod",
-  },
-  {
-    day: 4,
-    date: "Jan 10",
-    title: "✨ SPECIAL AUDIENCE WITH H.H. DALAI LAMA",
-    activities: [
-      "Early morning preparations",
-      "Receive teachings and blessings from His Holiness",
-      "Group photo opportunity (if permitted)",
-      "Blessed moments of presence",
-      "Reflection and meditation",
-      "Evening celebration dinner",
-    ],
-    overnight: "Mundgod",
+    overnight: "Rewalsar (Tsopema) / Driving",
     highlighted: true,
   },
   {
-    day: 5,
-    date: "Jan 11",
-    title: "Bylakuppe → Bangalore → Delhi",
+    day: 4,
+    title: "Tsopema Pilgrimage & Monastery Visits",
     activities: [
-      "Early morning drive to Bangalore (260km, 5 hours)",
-      "Visit local attractions if time permits",
-      "Flight Bangalore → Delhi",
-      "Transfer to hotel",
-      "Evening exploration of Delhi",
-    ],
-    overnight: "Delhi",
-  },
-  {
-    day: 6,
-    date: "Jan 12",
-    title: "Delhi → Tsopema (Rewalsar Lake)",
-    activities: [
-      "Early morning drive to Tsopema (Sacred Padmasambhava site)",
-      "Arrive at Rewalsar Lake (Tsopema) - the holy lake",
-      "Visit Guru Rinpoche Cave - sacred pilgrimage site",
+      "Visit sacred sites associated with Guru Rinpoche (Padmasambhava)",
+      "Guru Rinpoche Cave",
+      "Tso-Pema Monasteries",
+      "Padmasambhava Statue Viewpoint",
       "Evening Kora (circumambulation) around the holy lake",
-      "Spiritual meditation by the lake",
-      "Prayer sessions",
     ],
     overnight: "Rewalsar",
   },
   {
-    day: 7,
-    date: "Jan 13",
-    title: "Tsopema - Deep Spiritual Immersion",
-    activities: [
-      "Early morning visit to Rewalsar Lake",
-      "Visit Guru Rinpoche Cave - sacred pilgrimage site",
-      "Explore Tso-Pema Monasteries",
-      "Visit Padmasambhava Statue Viewpoint",
-      "Evening Kora around the holy lake",
-      "Sunset meditation and prayers",
-    ],
-    overnight: "Rewalsar",
-  },
-  {
-    day: 8,
-    date: "Jan 15",
+    day: 5,
     title: "Tsopema → Amritsar (Golden Temple)",
     activities: [
       "Early morning drive to Amritsar",
-      "Arrive at Sri Harmandir Sahib (Golden Temple)",
-      "Langar Seva experience - serve and eat with community",
-      "Circumambulation of the Golden Temple",
-      "Optional: Wagah Border Flag Ceremony",
-      "Evening prayers and reflection",
+      "Visit Sri Harmandir Sahib (Golden Temple)",
+      "Participate in Langar Seva (community kitchen service)",
+      "Optional visit to Wagah Border Flag Ceremony",
     ],
     overnight: "Amritsar",
   },
   {
-    day: 9,
-    date: "Jan 16",
-    title: "Amritsar → Delhi → Kathmandu",
+    day: 6,
+    title: "Amritsar → Delhi (Drive 8–10 Hours)",
     activities: [
-      "Early morning at Golden Temple",
-      "Morning breakfast at hotel",
-      "Drive to Delhi Airport",
-      "Flight Delhi → Kathmandu",
-      "Arrival in Kathmandu",
-      "Tour ends with Blessings from His Holiness",
+      "Breakfast at hotel",
+      "Drive back to Delhi (8–10 hours)",
+      "Evening at leisure",
+    ],
+    overnight: "Delhi / Driving",
+  },
+  {
+    day: 7,
+    title: "Delhi → Kathmandu (Flight)",
+    activities: [
+      "Breakfast at hotel",
+      "Transfer to Delhi International Airport",
+      "Flight back to Kathmandu",
+      "Tour concludes with blessings and cherished spiritual memories",
     ],
     overnight: "Home",
   },
 ];
 
 const inclusions = [
-  "Round-trip Flights (Kathmandu-Bangalore, Bangalore-Delhi, Delhi-Kathmandu)",
-  "AC Vehicles for entire ground transportation",
-  "Accommodation in non-star hotels and monastery guest houses",
-  "All meals (breakfast, lunch, dinner) - Pure Vegetarian",
-  "Special arrangements for H.H. Dalai Lama audience",
-  "Entrance fees to all monasteries and pilgrimage sites",
+  "Round-trip international flights (Kathmandu → Delhi → Kathmandu)",
+  "Private AC vehicles for all ground transportation",
+  "Accommodation in non-star hotels and monastery guesthouses",
+  "Daily pure vegetarian meals (breakfast, lunch & dinner)",
+  "Audience coordination arrangements for His Holiness",
+  "Monastery entrance fees",
   "Airport transfers and assistance",
-  "Expert guides and trained trip captains",
-  "Spiritual briefing and preparation sessions",
-  "All permits and taxes",
+  "All necessary permits and government taxes",
 ];
 
 const exclusions = [
-  "Personal expenses (shopping, tips, laundry)",
+  "Personal expenses (shopping, tips, laundry, etc.)",
   "Travel insurance (recommended)",
-  "Unpredictable costs due to weather or flight delays",
-  "Donations to monasteries (optional but appreciated)",
-  "Any items not mentioned in inclusions",
+  "Costs arising from flight delays, weather, or unforeseen events",
+  "Donations to monasteries",
+  "Any services not specifically mentioned under inclusions",
 ];
 
 export default function DalaiLamaDarshanPage() {
@@ -207,81 +155,16 @@ export default function DalaiLamaDarshanPage() {
         {/* ═══════════════════════════════════════════════════
             HERO — Full-bleed banner image at very top
         ═══════════════════════════════════════════════════ */}
-        <section className="relative h-[60vh] md:h-[75vh] w-full overflow-hidden">
-          {/* Banner image */}
-          <img
-            src="https://peregrinetreks.com/wp-content/uploads/2024/07/Dalai-Lama.webp"
-            alt="His Holiness the 14th Dalai Lama"
-            className="w-full h-full object-cover object-center"
-          />
-
-          {/* Multi-layer gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-transparent" />
-
-          {/* Navbar sits on top via its own fixed/sticky positioning */}
-
-          {/* Hero content at bottom */}
-          <div className="absolute bottom-0 left-0 right-0 px-6 pb-10 md:pb-14">
-            <div className="container-custom">
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7 }}
-                className="max-w-3xl"
-              >
-                {/* Eyebrow */}
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="h-px w-8 bg-white/50" />
-                  <span className="text-xs font-bold tracking-[0.2em] text-white/80 uppercase">
-                    🙏 Exclusive Pilgrimage · 9 Days
-                  </span>
-                </div>
-
-                <h1 className="text-4xl md:text-6xl font-display font-bold text-white leading-tight mb-4">
-                  His Holiness the
-                  <br />
-                  <span className="text-primary">14th Dalai Lama</span>
-                  <br />
-                  Darshan Pilgrimage
-                </h1>
-
-                <p className="text-base md:text-lg text-white/75 max-w-2xl leading-relaxed mb-8">
-                  Receive direct blessings from His Holiness, visit sacred
-                  monasteries, and experience inner transformation on this
-                  exclusive 9-day journey through South and North India.
-                </p>
-
-                {/* Hero CTAs */}
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Button
-                    size="lg"
-                    onClick={() => setIsInquiryOpen(true)}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-8 py-5 text-base group"
-                  >
-                    Inquiry Now
-                    <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
-                  </Button>
-                  <a
-                    href="https://wa.me/+917363933945?text=Hi!%20I%27m%20interested%20in%20the%20Dalai%20Lama%20Darshan%20pilgrimage"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="border-white/40 text-white hover:bg-white/10 hover:border-white/60 font-bold px-8 py-5 text-base bg-transparent"
-                    >
-                      💬 WhatsApp Us
-                    </Button>
-                  </a>
-                </div>
-              </motion.div>
-            </div>
+        <section className="w-full overflow-hidden">
+          {/* Clean hero image — no overlays */}
+          <div className="h-[60vh] md:h-[75vh] w-full">
+            <img
+              src="https://res.cloudinary.com/dcsgax3ld/image/upload/v1771568647/WhatsApp_Image_2026-02-19_at_19.27.14_1_ogf2ir.jpg"
+              alt="His Holiness the 14th Dalai Lama"
+              className="w-full h-full object-cover object-center"
+            />
           </div>
 
-          {/* Bottom fade into page */}
-          <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-background to-transparent" />
         </section>
 
         {/* ═══════════════════════════════════════════════════
@@ -291,8 +174,8 @@ export default function DalaiLamaDarshanPage() {
           <div className="container-custom">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-0 divide-x divide-white/20">
               {[
-                { icon: "📅", label: "Duration", value: "9 Days" },
-                { icon: "✨", label: "Blessed Audience", value: "Day 4" },
+                { icon: "📅", label: "Duration", value: "7 Days" },
+                { icon: "✨", label: "Blessed Audience", value: "Day 3" },
                 { icon: "🕌", label: "Sacred Sites", value: "8 Monasteries" },
                 { icon: "🌿", label: "Meals", value: "Pure Vegetarian" },
               ].map((item, idx) => (
@@ -306,6 +189,34 @@ export default function DalaiLamaDarshanPage() {
               ))}
             </div>
           </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════
+            ABOUT SECTION — Full width description
+        ═══════════════════════════════════════════════════ */}
+        <section className="w-full bg-background py-14 md:py-20 px-6 md:px-12 lg:px-24">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-px w-10 bg-primary" />
+              <span className="text-xs font-bold tracking-[0.2em] text-primary uppercase">
+                About the Pilgrimage
+              </span>
+            </div>
+
+            <h2 className="text-3xl md:text-5xl font-display font-bold text-foreground leading-tight mb-8">
+              A Once-in-a-Lifetime Audience with{" "}
+              <span className="text-primary">His Holiness the 14th Dalai Lama</span>
+            </h2>
+
+            <p className="text-base md:text-xl text-muted-foreground leading-relaxed text-justify font-serif">
+              His Holiness the 14th Dalai Lama is one of the most revered spiritual figures of our time — a beacon of compassion, wisdom, and peace for millions across the world. The Dalai Lama Darshan is a rare and sacred opportunity to receive his personal blessings, sit in his presence, and experience a moment of profound spiritual grace that stays with you forever. Over 7 transformative days, this exclusive pilgrimage journeys from Dharamshala — the sacred seat of the Tibetan Government-in-Exile — to the holy lake of Tsopema and the Golden Temple of Amritsar, connecting you to centuries of living Buddhist tradition. This is not just a trip. It is a calling.
+            </p>
+          </motion.div>
         </section>
 
         {/* ═══════════════════════════════════════════════════
@@ -329,7 +240,7 @@ export default function DalaiLamaDarshanPage() {
                   <div className="flex items-center gap-3">
                     <div className="h-px flex-1 bg-border" />
                     <h2 className="text-2xl font-display font-bold text-foreground whitespace-nowrap">
-                      Complete 9-Day Itinerary
+                      Complete 7-Day Itinerary
                     </h2>
                     <div className="h-px flex-1 bg-border" />
                   </div>
@@ -364,7 +275,7 @@ export default function DalaiLamaDarshanPage() {
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground mb-3">
-                          📅 {day.date} &nbsp;·&nbsp; Overnight: {day.overnight}
+                          🏨 Overnight: {day.overnight}
                         </p>
                         <div className="grid md:grid-cols-2 gap-1.5">
                           {day.activities.map((activity, idx) => (
