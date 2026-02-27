@@ -1,8 +1,8 @@
 // models/Agent.model.ts
-import mongoose, { Document, Schema, Model } from 'mongoose';
+import mongoose, { Document, Schema } from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 export interface IAgent extends Document {
-  agentId: string;
   fullName: string;
   companyName: string;
   email: string;
@@ -12,143 +12,55 @@ export interface IAgent extends Document {
   website?: string;
   experience: string;
   status: 'Pending' | 'Approved' | 'Rejected';
+  password?: string;
+  agentId?: string;
+  isActive: boolean;
+  notes?: string;
   commissionRate: number;
   totalBookings: number;
   totalRevenue: number;
-  isActive: boolean;
-  notes?: string;
-  approvedBy?: mongoose.Types.ObjectId;
-  approvedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+  comparePassword(candidate: string): Promise<boolean>;
 }
 
 const agentSchema = new Schema<IAgent>(
   {
-    agentId: {
-      type: String,
-      unique: true,
-      sparse: true, // Allows multiple documents without agentId
-      // NOT required - will be auto-generated
-    },
-    fullName: {
-      type: String,
-      required: [true, 'Full name is required'],
-      trim: true,
-    },
-    companyName: {
-      type: String,
-      required: [true, 'Company name is required'],
-      trim: true,
-    },
-    email: {
-      type: String,
-      required: [true, 'Email is required'],
-      unique: true,
-      lowercase: true,
-      trim: true,
-      match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email'],
-    },
-    phone: {
-      type: String,
-      required: [true, 'Phone number is required'],
-      trim: true,
-    },
-    city: {
-      type: String,
-      required: [true, 'City is required'],
-      trim: true,
-    },
-    state: {
-      type: String,
-      required: [true, 'State is required'],
-      trim: true,
-    },
-    website: {
-      type: String,
-      trim: true,
-    },
-    experience: {
-      type: String,
-      required: [true, 'Experience is required'],
-      enum: ['0-1', '1-3', '3-5', '5-10', '10+'],
-    },
-    status: {
-      type: String,
-      enum: ['Pending', 'Approved', 'Rejected'],
-      default: 'Pending',
-    },
-    commissionRate: {
-      type: Number,
-      default: 10,
-      min: 0,
-      max: 100,
-    },
-    totalBookings: {
-      type: Number,
-      default: 0,
-    },
-    totalRevenue: {
-      type: Number,
-      default: 0,
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
-    notes: {
-      type: String,
-      trim: true,
-    },
-    approvedBy: {
-      type: Schema.Types.ObjectId,
-      ref: 'Admin',
-    },
-    approvedAt: {
-      type: Date,
-    },
+    fullName: { type: String, required: [true, 'Full name is required'], trim: true },
+    companyName: { type: String, required: [true, 'Company name is required'], trim: true },
+    email: { type: String, required: [true, 'Email is required'], unique: true, lowercase: true, trim: true },
+    phone: { type: String, required: [true, 'Phone is required'], trim: true },
+    city: { type: String, required: [true, 'City is required'], trim: true },
+    state: { type: String, required: [true, 'State is required'], trim: true },
+    website: { type: String, trim: true, default: '' },
+    experience: { type: String, required: [true, 'Experience is required'] },
+    status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
+    // password is NOT selected by default — must use .select('+password')
+    password: { type: String, select: false },
+    agentId: { type: String, unique: true, sparse: true },
+    isActive: { type: Boolean, default: true },
+    notes: { type: String, default: '' },
+    commissionRate: { type: Number, default: 10, min: 0, max: 100 },
+    totalBookings: { type: Number, default: 0 },
+    totalRevenue: { type: Number, default: 0 },
   },
-  {
-    timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
-  }
+  { timestamps: true }
 );
 
-// Generate agentId before saving with better collision handling
+agentSchema.index({ status: 1 });
+agentSchema.index({ email: 1 });
+
+// Hash password before save
 agentSchema.pre('save', async function (next) {
-  // Only generate agentId if it doesn't exist
-  if (!this.agentId) {
-    try {
-      const AgentModel = mongoose.model<IAgent>('Agent');
-      
-      // Find the highest existing agentId
-      const lastAgent = await AgentModel.findOne()
-        .sort({ agentId: -1 })
-        .select('agentId')
-        .lean();
-      
-      let nextNumber = 1;
-      if (lastAgent && lastAgent.agentId) {
-        // Extract number from AGT000001 format
-        const lastNumber = parseInt(lastAgent.agentId.replace('AGT', ''));
-        nextNumber = lastNumber + 1;
-      }
-      
-      this.agentId = `AGT${String(nextNumber).padStart(6, '0')}`;
-    } catch (error) {
-      return next(error as Error);
-    }
-  }
+  if (!this.isModified('password') || !this.password) return next();
+  this.password = await bcrypt.hash(this.password, 12);
   next();
 });
 
-// Indexes for better query performance
-agentSchema.index({ email: 1 });
-agentSchema.index({ status: 1 });
-agentSchema.index({ createdAt: -1 });
-agentSchema.index({ agentId: 1 });
+agentSchema.methods.comparePassword = async function (candidate: string): Promise<boolean> {
+  if (!this.password) return false;
+  return bcrypt.compare(candidate, this.password);
+};
 
 const Agent = mongoose.model<IAgent>('Agent', agentSchema);
-
 export default Agent;
