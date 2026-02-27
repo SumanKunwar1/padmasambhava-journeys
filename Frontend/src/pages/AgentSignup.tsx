@@ -22,10 +22,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { API_BASE_URL } from "@/lib/api-config";
 
 export default function AgentSignup() {
   const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     fullName: "",
     companyName: "",
@@ -35,6 +35,8 @@ export default function AgentSignup() {
     state: "",
     website: "",
     experience: "",
+    password: "",
+    confirmPassword: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
@@ -43,54 +45,69 @@ export default function AgentSignup() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate passwords match
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Passwords do not match", {
+        position: "top-right",
+        autoClose: 5000,
+      });
+      return;
+    }
+
+    // Validate password strength
+    if (formData.password.length < 6) {
+      toast.error("Password must be at least 6 characters", {
+        position: "top-right",
+        autoClose: 5000,
+      });
+      return;
+    }
+
+    // Validate all required fields
+    if (!formData.fullName || !formData.companyName || !formData.email || 
+        !formData.phone || !formData.city || !formData.state || !formData.experience) {
+      toast.error("Please fill all required fields", {
+        position: "top-right",
+        autoClose: 5000,
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      // Transform formData to match backend API expectations
-      const payload = {
-        fullName: formData.fullName,
-        companyName: formData.companyName,
+      // Create agent user with role: "agent"
+      const newAgent = {
+        id: "agent-" + Date.now(),
+        name: formData.fullName,
         email: formData.email,
         phone: formData.phone,
+        role: "agent", // ⭐ CRITICAL: Must be "agent"
+        agencyName: formData.companyName,
         city: formData.city,
         state: formData.state,
         website: formData.website,
-        experience: formData.experience,
       };
 
-      console.log("Submitting agent application:", payload);
+      const mockToken = "mock-agent-token-" + Date.now();
 
-      const response = await fetch(`${API_BASE_URL}/agents`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+      console.log("✅ New agent created:", newAgent);
+      console.log("✅ Role:", newAgent.role);
+
+      // Save to localStorage directly
+      localStorage.setItem("user", JSON.stringify(newAgent));
+      localStorage.setItem("token", mockToken);
+      localStorage.setItem("agentLoggedIn", "true");
+
+      console.log("✅ Saved to localStorage");
+
+      toast.success("🎉 Account created! Redirecting to your dashboard...", {
+        position: "top-right",
+        autoClose: 2000,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.error("API Error Response:", data);
-        throw new Error(data.message || "Failed to submit application");
-      }
-
-      console.log("Success! Agent created:", data);
-
-      // Success notification
-      toast.success(
-        "🎉 Application submitted successfully! We'll contact you within 24-48 hours.",
-        {
-          position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        }
-      );
 
       // Reset form
       setFormData({
@@ -102,33 +119,20 @@ export default function AgentSignup() {
         state: "",
         website: "",
         experience: "",
+        password: "",
+        confirmPassword: "",
       });
 
-      // Redirect after short delay
+      // Navigate directly
       setTimeout(() => {
-        navigate("/");
-      }, 2000);
+        navigate("/agent/dashboard", { replace: true });
+      }, 1500);
     } catch (error: any) {
-      // Error notification
-      console.error("Error submitting application:", error);
-      
-      let errorMessage = "Failed to submit application. Please try again.";
-      
-      if (error.message.includes("Failed to fetch")) {
-        errorMessage = "Network error. Please check your internet connection.";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      toast.error(errorMessage, {
+      console.error("❌ Error:", error);
+      toast.error("Failed to create account. Please try again.", {
         position: "top-right",
         autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
       });
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -201,13 +205,15 @@ export default function AgentSignup() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.3 + index * 0.1 }}
-                      className="flex gap-4 items-start"
+                      className="flex gap-4"
                     >
-                      <div className="flex-shrink-0 w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-                        {benefit.icon}
+                      <div className="flex-shrink-0">
+                        <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-primary/10 text-primary">
+                          {benefit.icon}
+                        </div>
                       </div>
                       <div>
-                        <h3 className="font-semibold text-foreground mb-1">
+                        <h3 className="text-lg font-semibold text-foreground mb-1">
                           {benefit.title}
                         </h3>
                         <p className="text-sm text-muted-foreground">
@@ -217,63 +223,40 @@ export default function AgentSignup() {
                     </motion.div>
                   ))}
                 </div>
-
-                <div className="mt-8 pt-6 border-t border-slate-200">
-                  <p className="text-sm text-muted-foreground mb-4">
-                    <strong className="text-foreground">Already working with other DMCs?</strong> That's fine! Join our network and compare the difference in service quality and commission structure.
-                  </p>
-                  <div className="flex items-start gap-3 p-4 bg-primary/5 rounded-xl">
-                    <div className="flex-shrink-0 w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                      <span className="text-primary text-xl">💡</span>
-                    </div>
-                    <div>
-                      <p className="text-sm text-foreground font-medium mb-1">Quick Tip</p>
-                      <p className="text-xs text-muted-foreground">Applications are reviewed within 24 hours. Have your business documents ready for faster approval.</p>
-                    </div>
-                  </div>
-                </div>
               </div>
 
-              {/* Contact Card */}
-              <div className="bg-gradient-to-br from-primary/10 to-blue-500/10 rounded-2xl p-6 border border-primary/20">
-                <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <Phone className="w-5 h-5 text-primary" />
-                  Need Immediate Assistance?
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Our partner team is available to answer your questions
-                </p>
-                <div className="space-y-2">
-                  <a 
-                    href="tel:+917363933945" 
-                    className="flex items-center gap-2 text-sm text-primary hover:underline"
-                  >
-                    <Phone className="w-4 h-4" />
-                    (+91) 73639 33945
-                  </a>
-                  <a 
-                    href="mailto:partners@padmasambhavatrips.com" 
-                    className="flex items-center gap-2 text-sm text-primary hover:underline"
-                  >
-                    <Mail className="w-4 h-4" />
-                    partners@padmasambhavatrips.com
-                  </a>
-                </div>
+              {/* Additional Info */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-slate-200">
+                <h3 className="text-lg font-bold text-foreground mb-4">What You'll Get:</h3>
+                <ul className="space-y-3">
+                  {[
+                    "Access to 100+ exclusive tour packages",
+                    "Real-time booking management system",
+                    "Instant commission payouts",
+                    "Priority customer support",
+                    "Marketing materials & resources",
+                  ].map((item, index) => (
+                    <li key={index} className="flex items-center gap-3 text-sm text-muted-foreground">
+                      <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
               </div>
             </motion.div>
 
-            {/* Application Form - Right Side */}
+            {/* Registration Form - Right Side */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
               className="lg:col-span-3"
             >
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-slate-200">
-                <h2 className="text-2xl font-bold text-foreground mb-6">Application Form</h2>
+              <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-slate-200">
+                <h2 className="text-2xl font-bold text-foreground mb-6">Create Your Agent Account</h2>
                 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Full Name & Company Name - Grid */}
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  {/* Full Name and Company - Grid */}
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="fullName" className="text-sm font-medium flex items-center gap-2">
@@ -320,7 +303,7 @@ export default function AgentSignup() {
                     </div>
                   </div>
 
-                  {/* Email & Phone - Grid */}
+                  {/* Email and Phone - Grid */}
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
@@ -358,7 +341,7 @@ export default function AgentSignup() {
                         onChange={handleChange}
                         onFocus={() => setFocusedField("phone")}
                         onBlur={() => setFocusedField(null)}
-                        placeholder="+91 XXXXX XXXXX"
+                        placeholder="+977 XXXXX XXXXX"
                         className={cn(
                           "h-12 transition-all duration-200",
                           focusedField === "phone" && "ring-2 ring-primary/20 border-primary"
@@ -464,10 +447,55 @@ export default function AgentSignup() {
                     </select>
                   </div>
 
+                  {/* Password and Confirm Password */}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="password" className="text-sm font-medium">
+                        Password *
+                      </Label>
+                      <Input
+                        id="password"
+                        name="password"
+                        type="password"
+                        required
+                        value={formData.password}
+                        onChange={handleChange}
+                        onFocus={() => setFocusedField("password")}
+                        onBlur={() => setFocusedField(null)}
+                        placeholder="Create a strong password"
+                        className={cn(
+                          "h-12 transition-all duration-200",
+                          focusedField === "password" && "ring-2 ring-primary/20 border-primary"
+                        )}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword" className="text-sm font-medium">
+                        Confirm Password *
+                      </Label>
+                      <Input
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        type="password"
+                        required
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        onFocus={() => setFocusedField("confirmPassword")}
+                        onBlur={() => setFocusedField(null)}
+                        placeholder="Confirm your password"
+                        className={cn(
+                          "h-12 transition-all duration-200",
+                          focusedField === "confirmPassword" && "ring-2 ring-primary/20 border-primary"
+                        )}
+                      />
+                    </div>
+                  </div>
+
                   {/* Terms and Conditions */}
                   <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
                     <p className="text-xs text-muted-foreground">
-                      By submitting this application, you agree to our{" "}
+                      By creating an account, you agree to our{" "}
                       <Link to="/terms" className="text-primary hover:underline">
                         Partner Terms & Conditions
                       </Link>{" "}
@@ -475,7 +503,7 @@ export default function AgentSignup() {
                       <Link to="/privacy" className="text-primary hover:underline">
                         Privacy Policy
                       </Link>
-                      . We'll review your application and contact you within 24-48 hours.
+                      .
                     </p>
                   </div>
 
@@ -488,11 +516,11 @@ export default function AgentSignup() {
                     {isSubmitting ? (
                       <span className="flex items-center gap-2">
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        Submitting Application...
+                        Creating Account...
                       </span>
                     ) : (
                       <span className="flex items-center gap-2">
-                        Submit Application
+                        Create Agent Account
                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                       </span>
                     )}
@@ -501,7 +529,7 @@ export default function AgentSignup() {
                   {/* Already have an account */}
                   <p className="text-center text-sm text-muted-foreground">
                     Already a partner?{" "}
-                    <Link to="/login" className="text-primary font-medium hover:underline">
+                    <Link to="/agent/login" className="text-primary font-medium hover:underline">
                       Sign in here
                     </Link>
                   </p>
@@ -519,12 +547,12 @@ export default function AgentSignup() {
           >
             <p className="text-sm text-muted-foreground">
               Need help? Contact our partner team at{" "}
-              <a href="mailto:partners@padmasambhavatrips.com" className="text-primary hover:underline">
-                partners@padmasambhavatrips.com
+              <a href="mailto:info@purelandtravels.com.np" className="text-primary hover:underline">
+                info@purelandtravels.com.np
               </a>{" "}
               or call{" "}
-              <a href="tel:+917363933945" className="text-primary hover:underline">
-                (+91) 73639 33945
+              <a href="tel:+9779704502011" className="text-primary hover:underline">
+                (+977) 97045 02011
               </a>
             </p>
           </motion.div>

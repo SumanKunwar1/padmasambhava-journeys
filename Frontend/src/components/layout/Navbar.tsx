@@ -69,10 +69,11 @@ const navItems: NavItem[] = [
     icon: <Plane className="w-4 h-4 text-sky-500" />,
   },
   {
-    label: "India Trips",
-    href: "/domestic-trips",
-    icon: <span className="text-base">🇮🇳</span>,
-  },
+  label: "Nepal Trips",
+  href: "/domestic-trips",
+  icon: <span className="text-base">🇳🇵</span>,
+},
+
   {
     label: "Deals",
     icon: <Tag className="w-4 h-4 text-amber-500" />,
@@ -127,6 +128,31 @@ export function Navbar() {
   const [showSearchResults, setShowSearchResults] = useState(false);
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  
+  // Check if user is an agent
+  const [isAgent, setIsAgent] = useState(false);
+  
+  useEffect(() => {
+    const checkAgentStatus = () => {
+      const storedUser = localStorage.getItem("user");
+      const agentLoggedIn = localStorage.getItem("agentLoggedIn");
+      
+      if (storedUser && agentLoggedIn === "true") {
+        try {
+          const userData = JSON.parse(storedUser);
+          if (userData.role === "agent") {
+            setIsAgent(true);
+            return;
+          }
+        } catch (error) {
+          console.error("Error parsing user data:", error);
+        }
+      }
+      setIsAgent(false);
+    };
+    
+    checkAgentStatus();
+  }, [user]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -156,8 +182,17 @@ export function Navbar() {
   };
 
   const handleLogout = () => {
-    logout();
-    navigate("/");
+    // Clear agent-specific data if logged in as agent
+    if (isAgent) {
+      localStorage.removeItem("agentLoggedIn");
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      setIsAgent(false);
+      navigate("/agent/login");
+    } else {
+      logout();
+      navigate("/");
+    }
     setMobileOpen(false);
   };
 
@@ -185,16 +220,16 @@ export function Navbar() {
           {/* Logo and Brand Name */}
           <Link to="/" className="flex items-center gap-3 flex-shrink-0">
             <img 
-              src="https://res.cloudinary.com/dihev9qxc/image/upload/v1768991877/453207561_122102729312441160_4787222294410407220_n-removebg-preview_voy795.png" 
-              alt="Padmasambhava Trips" 
+              src="https://res.cloudinary.com/dihev9qxc/image/upload/v1770224880/54852__1_-removebg-preview_rkyiuc.png" 
+              alt="Pure Land Tours & Travels" 
               className="h-28 w-auto"
             />
             <div className="hidden lg:flex flex-col">
               <span className="text-xl font-bold text-foreground leading-tight">
-                Padmasambhava Trips
+                Pure Land Tours & Travels
               </span>
               <span className="text-sm text-muted-foreground font-medium">
-                India DMC
+                Nepal DMC
               </span>
             </div>
           </Link>
@@ -244,30 +279,50 @@ export function Navbar() {
 
             {/* Phone Icon - Desktop */}
             <a
-              href="tel:+917363933945"
+              href="tel: +977 970-4502011"
               className="hidden lg:flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors"
             >
               <Phone className="w-5 h-5" />
-              <span>(+91) 73639 33945</span>
+              <span>(+977) 970-4502011</span>
             </a>
 
             {/* ===== AGENT LOGIN - ALWAYS VISIBLE AT TOP RIGHT ON ALL DEVICES ===== */}
-            <Link to="/agent-signup">
-              <Button size="sm" variant="outline" className="rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground hidden sm:inline-flex">
-                <Briefcase className="w-4 h-4 mr-1" />
-                Agent Login
-              </Button>
-            </Link>
+            {!isAgent ? (
+              <>
+                <Link to="/agent-signup">
+                  <Button size="sm" variant="outline" className="rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground hidden sm:inline-flex">
+                    <Briefcase className="w-4 h-4 mr-1" />
+                    Agent Login
+                  </Button>
+                </Link>
 
-            {/* Mobile Agent Button - Icon only */}
-            <Link to="/agent-signup" className="sm:hidden">
-              <Button size="sm" variant="outline" className="rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground">
-                <Briefcase className="w-4 h-4" />
-              </Button>
-            </Link>
+                {/* Mobile Agent Button - Icon only */}
+                <Link to="/agent-signup" className="sm:hidden">
+                  <Button size="sm" variant="outline" className="rounded-full border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+                    <Briefcase className="w-4 h-4" />
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to="/agent/dashboard">
+                  <Button size="sm" variant="default" className="rounded-full bg-primary text-primary-foreground hidden sm:inline-flex">
+                    <Briefcase className="w-4 h-4 mr-1" />
+                    Agent Portal
+                  </Button>
+                </Link>
+
+                {/* Mobile Agent Button - Icon only */}
+                <Link to="/agent/dashboard" className="sm:hidden">
+                  <Button size="sm" variant="default" className="rounded-full bg-primary text-primary-foreground">
+                    <Briefcase className="w-4 h-4" />
+                  </Button>
+                </Link>
+              </>
+            )}
 
             {/* User Auth Section - Login and Sign Up (Desktop) */}
-            {!user ? (
+            {!user && !isAgent ? (
               <div className="hidden sm:flex items-center gap-2">
                 <Link to="/login">
                   <Button variant="ghost" size="sm" className="rounded-full">
@@ -282,14 +337,14 @@ export function Navbar() {
                   </Button>
                 </Link>
               </div>
-            ) : (
+            ) : user && !isAgent ? (
               <Link to="/dashboard" className="hidden sm:inline-flex">
                 <Button variant="ghost" size="sm">
                   <LayoutDashboard className="w-4 h-4 mr-1" />
                   Dashboard
                 </Button>
               </Link>
-            )}
+            ) : null}
 
             {/* Mobile menu button */}
             <button
@@ -442,7 +497,7 @@ export function Navbar() {
 
                 {/* AUTH SECTION - LOGIN & SIGN UP AT BOTTOM */}
                 <div className="px-2 space-y-3 pb-4">
-                  {!user ? (
+                  {!user && !isAgent ? (
                     <>
                       <Link to="/login" onClick={() => setMobileOpen(false)}>
                         <Button variant="outline" className="w-full rounded-lg">
@@ -457,7 +512,24 @@ export function Navbar() {
                         </Button>
                       </Link>
                     </>
-                  ) : (
+                  ) : isAgent ? (
+                    <>
+                      <Link to="/agent/dashboard" onClick={() => setMobileOpen(false)}>
+                        <Button variant="outline" className="w-full rounded-lg bg-primary/10 border-primary text-primary">
+                          <Briefcase className="w-4 h-4 mr-2" />
+                          Agent Portal
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="outline"
+                        onClick={handleLogout}
+                        className="w-full rounded-lg"
+                      >
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Logout
+                      </Button>
+                    </>
+                  ) : user ? (
                     <>
                       <Link to="/dashboard" onClick={() => setMobileOpen(false)}>
                         <Button variant="outline" className="w-full rounded-lg">
@@ -474,7 +546,7 @@ export function Navbar() {
                         Logout
                       </Button>
                     </>
-                  )}
+                  ) : null}
 
                   {/* PHONE & CONTACT */}
                   <a
