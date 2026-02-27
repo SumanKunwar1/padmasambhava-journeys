@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { BookingFormModal } from "@/components/shared/BookingFormModal";
+import { AgentBookingFormModal } from "@/components/shared/AgentBookingFormModal";
 import { agentTripsService, AgentTrip as AgentTripType } from "@/services/agentTrips";
 
 const TRIP_TABS = ["Itinerary", "Inclusions", "B2B Pricing", "Notes"];
@@ -621,11 +621,11 @@ export default function AgentTripDetail() {
       </section>
 
       {/* Booking Modal */}
-      <BookingFormModal
+      <AgentBookingFormModal
         isOpen={isBookingModalOpen}
         onClose={() => setIsBookingModalOpen(false)}
         tripName={tripData.name}
-        tripId={tripData._id}
+        agentTripId={tripData._id}
         travelers={travelers}
         selectedDate={selectedDate?.date}
         selectedPrice={b2bPriceWithDate}
