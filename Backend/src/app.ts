@@ -24,6 +24,7 @@ import agentRoutes from './routes/agent.routes';
 import testimonialRoutes from './routes/testimonial.routes';
 import dalaiLamaBookingRoutes from './routes/dalaiLamaBooking.routes';
 import agentTripRoutes from './routes/agentTrip.routes';
+import agentBookingRoutes from './routes/agentBooking.routes';
 
 const app: Application = express();
 
@@ -160,6 +161,7 @@ app.use('/api/v1/agents', agentRoutes);
 app.use('/api/v1/testimonials', testimonialRoutes);
 app.use('/api/v1/dalai-lama-bookings', dalaiLamaBookingRoutes);
 app.use('/api/v1/agent-trips', agentTripRoutes);
+app.use('/api/v1/agent-bookings', agentBookingRoutes);
 
 // ========== 404 HANDLER ==========
 app.all('*', (req: Request, _res: Response, next: NextFunction) => {

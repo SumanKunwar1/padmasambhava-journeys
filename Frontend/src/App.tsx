@@ -67,6 +67,7 @@ import AdminAgents from "./pages/admin/AdminAgents";
 import { AdminTestimonials } from "./pages/admin/AdminTestimonials";
 import AdminDalaiLamaBookings from "./pages/admin/AdminDalaiLamaBookings";
 import AdminAgentTrips from "./pages/admin/AdminAgentTrips";
+import AdminAgentBookings from "./pages/admin/AdminAgentBookings";
 
 // Admin Homepage Management Pages
 import AdminHeroSection from "./pages/admin/AdminHeroSection";
@@ -242,6 +243,22 @@ const App = () => (
               element={
                 <ProtectedAdminRoute>
                   <AdminBookings />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/bookings"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminBookings />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/agent-bookings"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminAgentBookings />
                 </ProtectedAdminRoute>
               }
             />

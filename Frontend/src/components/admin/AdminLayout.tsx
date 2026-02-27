@@ -71,6 +71,7 @@ const menuItems = [
     icon: Calendar,
     path: "/admin/bookings",
   },
+  {title: "Agent Bookings", icon: Calendar, path: "/admin/agent-bookings"},
   {title: "Dalai Lama Bookings", icon: Calendar, path: "/admin/dalai-lama-bookings"},
   {
     title: "Blogs",

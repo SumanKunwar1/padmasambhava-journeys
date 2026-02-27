@@ -29,6 +29,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { toast } from "react-toastify";
+import AdminLayout from "@/components/admin/AdminLayout";
 
 interface ItineraryDay {
   day: number;
@@ -386,6 +387,7 @@ export default function AdminAgentTrips() {
   }, [formData.price, formData.b2bPrice]);
 
   return (
+    <AdminLayout>
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
@@ -1352,6 +1354,8 @@ export default function AdminAgentTrips() {
           </>
         )}
       </AnimatePresence>
+      
     </div>
+    </AdminLayout>
   );
 }
