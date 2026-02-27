@@ -69,9 +69,9 @@ const navItems: NavItem[] = [
     icon: <Plane className="w-4 h-4 text-sky-500" />,
   },
   {
-  label: "Nepal Trips",
+  label: "India Trips",
   href: "/domestic-trips",
-  icon: <span className="text-base">🇳🇵</span>,
+  icon: <span className="text-base">🇮🇳</span>,
 },
 
   {
@@ -220,16 +220,16 @@ export function Navbar() {
           {/* Logo and Brand Name */}
           <Link to="/" className="flex items-center gap-3 flex-shrink-0">
             <img 
-              src="https://res.cloudinary.com/dihev9qxc/image/upload/v1770224880/54852__1_-removebg-preview_rkyiuc.png" 
-              alt="Pure Land Tours & Travels" 
+              src="https://res.cloudinary.com/dihev9qxc/image/upload/v1768991877/453207561_122102729312441160_4787222294410407220_n-removebg-preview_voy795.png" 
+              alt="Padmasambhava trips Logo" 
               className="h-28 w-auto"
             />
             <div className="hidden lg:flex flex-col">
               <span className="text-xl font-bold text-foreground leading-tight">
-                Pure Land Tours & Travels
+                Padmasambhava Trips
               </span>
               <span className="text-sm text-muted-foreground font-medium">
-                Nepal DMC
+                India DMC
               </span>
             </div>
           </Link>
@@ -279,11 +279,11 @@ export function Navbar() {
 
             {/* Phone Icon - Desktop */}
             <a
-              href="tel: +977 970-4502011"
+              href="tel: +91 73639 33945"
               className="hidden lg:flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors"
             >
               <Phone className="w-5 h-5" />
-              <span>(+977) 970-4502011</span>
+              <span>(+91) 73639 33945</span>
             </a>
 
             {/* ===== AGENT LOGIN - ALWAYS VISIBLE AT TOP RIGHT ON ALL DEVICES ===== */}
@@ -550,11 +550,11 @@ export function Navbar() {
 
                   {/* PHONE & CONTACT */}
                   <a
-                    href="tel: +977 970-4502011"
+                    href="tel: +91 73639 33945"
                     className="flex items-center gap-2 text-sm text-foreground px-4 py-3 rounded-lg hover:bg-muted transition-colors"
                   >
                     <Phone className="w-4 h-4" />
-                    <span>(+977) 970-4502011</span>
+                    <span>(+91) 73639 33945</span>
                   </a>
                   <Link to="/contact" onClick={() => setMobileOpen(false)}>
                     <Button className="w-full rounded-lg">Plan Your Trip</Button>
