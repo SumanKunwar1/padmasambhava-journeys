@@ -600,11 +600,11 @@ export default function AgentTripDetail() {
                     Need help? Contact support
                   </p>
                   <a
-                    href="tel:+9779851045900"
+                    href="tel:+91 73639 33945"
                     className="flex items-center justify-center gap-2 text-sm text-primary hover:underline"
                   >
                     <Phone className="w-4 h-4" />
-                    +977 9851045900
+                    +91 73639 33945
                   </a>
                   <a
                     href="mailto:agent-support@example.com"
