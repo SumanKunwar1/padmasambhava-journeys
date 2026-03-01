@@ -43,7 +43,7 @@ const InternationalTrips = () => {
       tagline="Explore the World"
       subtitle="Your passport to unforgettable experiences across the globe."
       description="Discover the magic of international travel with our carefully curated packages. From the ancient temples of Japan to the vibrant streets of Thailand, the pristine beaches of Bali to the winter wonderlands of Georgia - we bring you the best of the world at your doorstep."
-      heroImage={destBali}
+      heroImage="https://static.vecteezy.com/system/resources/thumbnails/038/908/604/small/aerial-view-of-the-iconic-tower-bridge-connecting-londong-with-southwark-photo.jpg"
       filterDestinations={destinations}
       tripCategory="international-trips"
     />

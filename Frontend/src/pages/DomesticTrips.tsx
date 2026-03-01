@@ -14,7 +14,7 @@ const DomesticTrips = () => {
       tagline="Discover Incredible India"
       subtitle="From mountains to beaches, explore the beauty of our homeland."
       description="India is a land of diverse landscapes, rich culture, and endless adventures. Our domestic trips take you to the most breathtaking destinations across the country. Whether it's the snow-capped peaks of the Himalayas, the serene backwaters of Kerala, or the golden deserts of Rajasthan - experience the best of India."
-      heroImage={destLadakh}
+      heroImage="https://res.cloudinary.com/dihev9qxc/image/upload/v1772358193/india_blue_yxin3b.jpg"
       filterDestinations={destinations}
       tripCategory="india-trips"
     />

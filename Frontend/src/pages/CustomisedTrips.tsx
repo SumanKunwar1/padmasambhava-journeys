@@ -155,7 +155,7 @@ const CustomisedTrips = () => {
       {/* Hero Section */}
       <section className="relative h-[400px] overflow-hidden">
         <img 
-          src={destBali} 
+          src="https://cdn.vectorstock.com/i/500p/26/83/europe-travel-banner-tourist-attractions-vector-21652683.jpg"
           alt="Customised Trips"
           className="w-full h-full object-cover"
         />

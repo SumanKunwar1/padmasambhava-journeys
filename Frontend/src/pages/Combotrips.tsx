@@ -43,7 +43,7 @@ const ComboTrips = () => {
       tagline="Multi-Country Adventures"
       subtitle="Experience multiple destinations in one unforgettable journey."
       description="Discover the world with our carefully curated combo packages. Travel through multiple countries in a single trip and save on time, visas, and costs. From Southeast Asian circuits to European grand tours, create memories that span continents. Perfect for travelers who want to maximize their vacation and experience diverse cultures in one seamless journey."
-      heroImage={destCombo}
+      heroImage="https://res.cloudinary.com/dihev9qxc/image/upload/v1772353345/9321210_cleanup_qr0eru.png"
       filterDestinations={destinations}
       tripCategory="combo-trips"
     />

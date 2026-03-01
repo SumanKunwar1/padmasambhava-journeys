@@ -14,7 +14,7 @@ const WeekendTrips = () => {
       tagline="Escape the Ordinary"
       subtitle="Short trips, big memories. Because weekends are made for adventures."
       description="Need a quick escape from the daily grind? Our weekend trips are perfect for those who want to maximize their free time with unforgettable experiences. Just pack your bags and let us handle the rest. From mountain retreats to peaceful valleys, find your perfect 2-3 day escape."
-      heroImage={destSpiti}
+      heroImage="https://www.shutterstock.com/image-photo/beach-holidays-couple-luxury-hotel-260nw-2481818945.jpg"
       filterDestinations={destinations}
       tripCategory="travel-styles"
       tripType="weekend"

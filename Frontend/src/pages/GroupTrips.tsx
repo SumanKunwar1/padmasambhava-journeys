@@ -46,7 +46,7 @@ const GroupTrips = () => {
       tagline="Adventure Together"
       subtitle="Meet new friends, create memories, travel the world."
       description="Join our fixed-departure group trips and travel with like-minded explorers. No solo-travel blues, no planning hassles - just show up and have the time of your life! Our trips are designed for young travelers who want adventure, fun, and unforgettable experiences with new friends."
-      heroImage={destGeorgia}
+      heroImage="https://static.vecteezy.com/system/resources/previews/023/957/756/non_2x/website-travel-trip-header-or-banner-design-vector.jpg"
       filterDestinations={destinations}
       tripCategory="group-trips"
     />

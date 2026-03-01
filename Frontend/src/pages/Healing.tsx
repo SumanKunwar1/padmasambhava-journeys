@@ -13,7 +13,7 @@ const Healings = () => {
       tagline="Find Your Inner Peace"
       subtitle="Disconnect to reconnect. Rejuvenate your mind, body, and soul."
       description="Step away from the chaos of everyday life and immerse yourself in transformative retreat experiences. Our curated retreats offer meditation, yoga, spiritual practices, and wellness activities designed to help you find balance and inner peace. From Ayurvedic treatments in Kerala to yoga by the Ganges in Rishikesh."
-      heroImage="https://www.nomadicexpeditions.com/wp-content/uploads/2025/10/NOMADIC-BLOG-Essential-Guide-to-Wellness-and-Spiritual-Experiences-in-Bhutan-1.png"
+      heroImage="https://res.cloudinary.com/dihev9qxc/image/upload/v1772350096/WhatsApp_Image_2026-02-23_at_16.54.20_qc4oyc.jpg"
       filterDestinations={destinations}
       tripCategory="retreats"
       tripType="wellness"
