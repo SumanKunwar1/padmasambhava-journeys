@@ -229,7 +229,7 @@ export function Navbar() {
                 Padmasambhava Trips
               </span>
               <span className="text-sm text-muted-foreground font-medium">
-                India DMC
+                India · Nepal · Tibet · Bhutan DMC
               </span>
             </div>
           </Link>
