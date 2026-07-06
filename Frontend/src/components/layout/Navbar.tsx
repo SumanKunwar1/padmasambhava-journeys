@@ -210,9 +210,9 @@ export function Navbar() {
       )}
     >
       {/* Top announcement bar */}
-      <Link to="/dalai-lama-darshan" className="block bg-primary text-primary-foreground py-2 text-center text-sm hover:bg-primary/90 transition-colors cursor-pointer">
+      {/* <Link to="/dalai-lama-darshan" className="block bg-primary text-primary-foreground py-2 text-center text-sm hover:bg-primary/90 transition-colors cursor-pointer">
         <span className="font-medium">Secret Audience of His Holiness 14th Dalai Lama - Book An Appointment</span>
-      </Link>
+      </Link> */}
 
       <nav className="container-custom">
         {/* Top row: Logo + Brand Name + Agent Login (ALWAYS VISIBLE AT TOP) */}
