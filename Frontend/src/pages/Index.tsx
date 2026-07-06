@@ -18,9 +18,9 @@ const Index = () => {
       <Navbar />
       <main>
         <HeroSection />
-        {/* 🙏 NEW SECTION - DALAI LAMA DARSHAN */}
+        {/* 🙏 NEW SECTION - DALAI LAMA DARSHAN 
         <DalaiLamaDarshan />
-        {/* ↑ Place this section where you want it to appear on homepage */}
+        ↑ Place this section where you want it to appear on homepage */}
         
         <ExploreDestinations />
         <UpcomingTrips />

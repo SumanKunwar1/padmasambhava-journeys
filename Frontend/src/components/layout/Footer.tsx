@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
-import { 
-  MapPin, 
-  Phone, 
-  Mail
+import {
+  MapPin,
+  Phone,
+  Mail,
+  Globe
 } from "lucide-react";
 
 import destBhutan from "@/assets/dest-bhutan.jpg";
@@ -133,42 +134,62 @@ export function Footer() {
       <div className="container-custom py-10">
         <div className="grid md:grid-cols-3 gap-8">
           {/* Address Section */}
-          <div className="space-y-6">
-            <h3 className="font-display text-base font-bold text-foreground">Address</h3>
-            
-            {/* Siliguri office */}
+          <div className="space-y-8">
+            <h3 className="font-display text-base font-bold text-foreground">Our Offices</h3>
+
+            {/* India Offices */}
             <div>
-              <p className="font-semibold text-sm mb-2">Padmasambhava Trip Pvt Ltd - Siliguri</p>
-              <p className="text-sm text-muted-foreground flex items-start gap-2 mb-1">
-                <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
-                Matigara, Siliguri, India, 734001
-              </p>
-              <p className="text-sm text-muted-foreground flex items-center gap-2 mb-3">
-                <Phone className="w-4 h-4 shrink-0" />
-                 +91 73639 33945
-              </p>
-              <button className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-full text-sm hover:bg-muted transition-colors">
-                <MapPin className="w-4 h-4" />
-                View on Map
-              </button>
-            </div>
-            
-            {/* Kathmandu office */}
-            <div>
-              <p className="font-semibold text-sm mb-2">Padmasambhava Trip Pvt Ltd - Kathmandu</p>
-              <p className="text-sm text-muted-foreground mb-3">
-                Trinity Tower, Maharajgunj, Kathmandu, Nepal
-              </p>
-              <p className="text-sm text-muted-foreground flex items-center gap-2 mb-3">
-                (+977) 986-3593271
-              </p>
-              <button className="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-full text-sm hover:bg-muted transition-colors">
-                <MapPin className="w-4 h-4" />
-                View on Map
-              </button>
+              <p className="font-semibold text-sm text-foreground mb-1">Padma Sambhava Trip Pvt. Ltd.</p>
+              <p className="text-xs text-muted-foreground mb-3">India · Nepal · Tibet · Sri Lanka DMC</p>
+
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground flex items-start gap-2">
+                  <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
+                  Siliguri, West Bengal, India
+                </p>
+                <p className="text-sm text-muted-foreground flex items-start gap-2">
+                  <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
+                  Paharganj, Delhi, India
+                </p>
+                <p className="text-sm text-muted-foreground flex items-start gap-2">
+                  <Phone className="w-4 h-4 mt-0.5 shrink-0" />
+                  Mobile / WhatsApp: +91 73639 33945
+                </p>
+                <p className="text-sm text-muted-foreground flex items-start gap-2">
+                  <Mail className="w-4 h-4 mt-0.5 shrink-0" />
+                  <a href="mailto:info@padmasambhavatrip.com" className="hover:text-primary transition-colors">info@padmasambhavatrip.com</a>
+                </p>
+                <p className="text-sm text-muted-foreground flex items-start gap-2">
+                  <Globe className="w-4 h-4 mt-0.5 shrink-0" />
+                  <a href="https://www.padmasambhavatrip.com" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">www.padmasambhavatrip.com</a>
+                </p>
+              </div>
             </div>
 
-          
+            {/* Nepal Offices */}
+            <div>
+              <p className="font-semibold text-sm text-foreground mb-1">Pureland Travels</p>
+              <p className="text-xs text-muted-foreground mb-3">Nepal · Tibet · Bhutan · India · Sri Lanka DMC</p>
+
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground flex items-start gap-2">
+                  <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
+                  <span><span className="font-medium text-foreground/80">Corporate Office:</span> Maharajgunj Chakrapath, Kathmandu, Nepal</span>
+                </p>
+                <p className="text-sm text-muted-foreground flex items-start gap-2">
+                  <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
+                  <span><span className="font-medium text-foreground/80">Contact Office:</span> Jorpati, Pragati Marg, Kokarneswar-5, Kathmandu, Nepal</span>
+                </p>
+                <p className="text-sm text-muted-foreground flex items-start gap-2">
+                  <Phone className="w-4 h-4 mt-0.5 shrink-0" />
+                  Mobile / WhatsApp: +977 9704502011 / 9843347095 / 9818123174
+                </p>
+                <p className="text-sm text-muted-foreground flex items-start gap-2">
+                  <Mail className="w-4 h-4 mt-0.5 shrink-0" />
+                  <a href="mailto:info@purelandtravels.com.np" className="hover:text-primary transition-colors">info@purelandtravels.com.np</a>
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Quick Links */}
@@ -275,7 +296,7 @@ export function Footer() {
       <div className="border-t border-border/30">
         <div className="container-custom py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            © 2016 - 2026 Padmasambhava Trip Pvt Ltd. All rights reserved
+            © Padmasambhava Trip Pvt Ltd. All rights reserved
           </p>
           <div className="flex items-center gap-4">
             <span className="text-xs text-muted-foreground">We accept:</span>
