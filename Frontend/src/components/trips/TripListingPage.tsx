@@ -38,6 +38,8 @@ interface TripListingPageProps {
   filterDestinations?: string[];
   tripCategory?: string;
   tripType?: string;
+  /** Explore-destination slug, e.g. "nepal" - groups trips by country */
+  destinationSlug?: string;
 }
 
 const TripListingPage = ({
@@ -49,6 +51,7 @@ const TripListingPage = ({
   filterDestinations = ["All"],
   tripCategory,
   tripType,
+  destinationSlug,
 }: TripListingPageProps) => {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,7 +75,7 @@ const TripListingPage = ({
 
   useEffect(() => {
     fetchTrips();
-  }, [tripCategory, tripType]);
+  }, [tripCategory, tripType, destinationSlug]);
 
   const fetchTrips = async () => {
     try {
@@ -84,6 +87,9 @@ const TripListingPage = ({
       }
       if (tripType) {
         endpoint += `tripType=${tripType}&`;
+      }
+      if (destinationSlug) {
+        endpoint += `destinationSlug=${encodeURIComponent(destinationSlug)}&`;
       }
 
       const response = await axiosInstance.get(endpoint);

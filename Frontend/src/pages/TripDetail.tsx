@@ -317,7 +317,9 @@ export default function TripDetail() {
                 <p className="text-sm text-muted-foreground mb-1">Trip Starts From</p>
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-bold">
-                    ₹{selectedDate?.price.toLocaleString() || tripData.price.toLocaleString()}
+                    {/* Fall back on the numbers, not the formatted strings:
+                        (0).toLocaleString() is "0", which is truthy. */}
+                    ₹{(selectedDate?.price || tripData.price).toLocaleString()}
                   </span>
                   <span className="text-sm text-muted-foreground line-through">
                     ₹{tripData.originalPrice.toLocaleString()}
@@ -358,7 +360,7 @@ export default function TripDetail() {
                           <span>{date.date}</span>
                         </div>
                         <span className="text-sm text-muted-foreground">
-                          ₹{date.price.toLocaleString()}/Person
+                          ₹{(date.price || tripData.price).toLocaleString()}/Person
                         </span>
                       </label>
                     ))}

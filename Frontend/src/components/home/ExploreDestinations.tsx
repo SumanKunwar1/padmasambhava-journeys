@@ -11,6 +11,7 @@ type FilterType = "all" | "international" | "domestic" | "weekend";
 interface Destination {
   _id: string;
   name: string;
+  slug: string;
   image: string;
   type: "international" | "domestic" | "weekend";
   url: string;
@@ -124,7 +125,11 @@ export function ExploreDestinations() {
                   transition={{ delay: index * 0.05 }}
                 >
                   <Link
-                    to={destination.url}
+                    to={
+                      destination.slug
+                        ? `/destination/${destination.slug}`
+                        : destination.url
+                    }
                     className="flex flex-col items-center gap-3 cursor-pointer group"
                   >
                     <div className="destination-circle w-24 h-24 lg:w-full lg:h-auto lg:aspect-square shadow-md">

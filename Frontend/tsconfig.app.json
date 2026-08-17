@@ -22,8 +22,7 @@
     "noImplicitAny": false,
     "noFallthroughCasesInSwitch": false,
 
-    "ignoreDeprecations": "6.0",
-    "baseUrl": ".",
+    /* paths are resolved relative to this file - baseUrl is deprecated */
     "paths": {
       "@/*": ["./src/*"]
     }

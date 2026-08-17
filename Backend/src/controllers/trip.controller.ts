@@ -3,7 +3,29 @@ import { Request, Response, NextFunction } from 'express';
 import { catchAsync } from '../utils/catchAsync';
 import { AppError } from '../utils/appError';
 import Trip, { ITrip } from '../models/Trip.model';
+import ExploreDestination from '../models/ExploreDestination.model';
 import { uploadToCloudinary, deleteFromCloudinary } from '../utils/cloudinary';
+
+// Normalises a destinations payload (JSON string, single id, or array) into a
+// clean array of id strings.
+const parseDestinations = (raw: any): string[] => {
+  let value = raw;
+
+  if (typeof value === 'string') {
+    try {
+      value = JSON.parse(value);
+    } catch (e) {
+      value = [value];
+    }
+  }
+
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) value = [value];
+
+  return value
+    .map((item: any) => (item && item._id ? String(item._id) : String(item)))
+    .filter((item: string) => item && item !== 'undefined' && item !== 'null');
+};
 
 // @desc    Get all trips with filtering, sorting, and pagination
 // @route   GET /api/v1/trips
@@ -12,14 +34,39 @@ export const getAllTrips = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     // Build query
     const queryObj: Record<string, any> = { ...req.query };
-    const excludedFields = ['page', 'sort', 'limit', 'fields', 'search'];
+    const excludedFields = ['page', 'sort', 'limit', 'fields', 'search', 'destinationSlug'];
     excludedFields.forEach((el) => delete queryObj[el]);
 
     // Advanced filtering
     let queryStr = JSON.stringify(queryObj);
     queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
 
-    let query: any = Trip.find(JSON.parse(queryStr));
+    // Extra filters applied to both the result query and the total count
+    const extraFilters: Record<string, any> = {};
+
+    // Filter by explore-destination slug (e.g. /destination/nepal)
+    if (req.query.destinationSlug) {
+      const destination = await ExploreDestination.findOne({
+        slug: String(req.query.destinationSlug).toLowerCase().trim(),
+      });
+
+      // Unknown slug: return an empty set rather than every trip
+      if (!destination) {
+        res.status(200).json({
+          status: 'success',
+          results: 0,
+          total: 0,
+          page: 1,
+          totalPages: 0,
+          data: { trips: [] },
+        });
+        return;
+      }
+
+      extraFilters.destinations = destination._id;
+    }
+
+    let query: any = Trip.find(JSON.parse(queryStr)).find(extraFilters);
 
     // Filter by category (support both single and multiple categories)
     if (req.query.tripCategory) {
@@ -62,7 +109,10 @@ export const getAllTrips = catchAsync(
 
     // Execute query
     const trips = await query.exec();
-    const total = await Trip.countDocuments(JSON.parse(queryStr));
+    const total = await Trip.countDocuments({
+      ...JSON.parse(queryStr),
+      ...extraFilters,
+    });
 
     res.status(200).json({
       status: 'success',
@@ -155,6 +205,7 @@ export const createTrip = catchAsync(
     const trip = await Trip.create({
       ...req.body,
       tripCategory, // Use the parsed/array version
+      destinations: parseDestinations(req.body.destinations),
       image: imageUrl,
       discount,
       inclusions,
@@ -245,6 +296,10 @@ export const updateTrip = catchAsync(
       {
         ...req.body,
         tripCategory, // Use the parsed/array version
+        destinations:
+          req.body.destinations !== undefined
+            ? parseDestinations(req.body.destinations)
+            : trip.destinations,
         image: imageUrl,
         discount,
         inclusions,

@@ -2,7 +2,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Save, ArrowLeft, Plus, X, Upload } from "lucide-react";
+import {
+  Save,
+  ArrowLeft,
+  Plus,
+  X,
+  Upload,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -87,6 +95,7 @@ export default function AdminTripForm() {
   const [formData, setFormData] = useState({
     name: "",
     destination: "",
+    destinations: [] as string[], // Explore Destination ids (country grouping)
     tripCategory: [] as string[], // Changed to array for multiple categories
     tripType: "",
     tripRoute: "",
@@ -109,6 +118,7 @@ export default function AdminTripForm() {
   const [currentTab, setCurrentTab] = useState(0);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]); // Changed to array
   const [availableTypes, setAvailableTypes] = useState<any[]>([]);
+  const [availableDestinations, setAvailableDestinations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
@@ -120,6 +130,23 @@ export default function AdminTripForm() {
       fetchTripData(id);
     }
   }, [id, isEdit]);
+
+  // Load the country list straight from Explore Destinations, so adding or
+  // removing a destination there is reflected here automatically
+  useEffect(() => {
+    const fetchDestinations = async () => {
+      try {
+        const response = await axiosInstance.get('/explore-destinations/active');
+        if (response.data.status === 'success') {
+          setAvailableDestinations(response.data.data.exploreDestinations);
+        }
+      } catch (error) {
+        console.error("Error fetching explore destinations:", error);
+      }
+    };
+
+    fetchDestinations();
+  }, []);
 
   const fetchTripData = async (tripId: string) => {
     try {
@@ -135,6 +162,9 @@ export default function AdminTripForm() {
         setFormData({
           name: trip.name,
           destination: trip.destination,
+          destinations: (trip.destinations || []).map((d: any) =>
+            typeof d === 'string' ? d : d._id
+          ),
           tripCategory: categories,
           tripType: trip.tripType,
           tripRoute: trip.tripRoute,
@@ -210,6 +240,23 @@ export default function AdminTripForm() {
       
       return newCategories;
     });
+  };
+
+  // Step navigation - keeps the long form usable without scrolling back to the
+  // tab strip at the top
+  const goToTab = (index: number) => {
+    if (index < 0 || index > tabs.length - 1) return;
+    setCurrentTab(index);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleDestinationToggle = (destinationId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      destinations: prev.destinations.includes(destinationId)
+        ? prev.destinations.filter((d) => d !== destinationId)
+        : [...prev.destinations, destinationId],
+    }));
   };
 
   const handleTypeChange = (type: string) => {
@@ -575,6 +622,68 @@ export default function AdminTripForm() {
                   )}
                 </div>
 
+                {/* Country grouping - drives the Explore Destinations cards on the
+                    homepage. Does NOT affect navbar placement. */}
+                <div className="pt-2 border-t border-border">
+                  <label className="block text-sm font-medium mb-1">
+                    Countries / Destinations (You can select multiple)
+                  </label>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Controls which "Explore Destinations" card this trip appears
+                    under on the homepage. This is separate from the categories
+                    above and does not change where the trip sits in the navbar.
+                  </p>
+                  {availableDestinations.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No destinations found. Add them under Homepage → Explore
+                      Destinations.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                      {availableDestinations.map((dest) => (
+                        <div
+                          key={dest._id}
+                          onClick={() => handleDestinationToggle(dest._id)}
+                          className={cn(
+                            "p-3 border-2 rounded-lg cursor-pointer transition-all hover:shadow-sm flex items-center justify-between gap-2",
+                            formData.destinations.includes(dest._id)
+                              ? "border-primary bg-primary/5"
+                              : "border-border hover:border-primary/50"
+                          )}
+                        >
+                          <span className="text-sm font-medium truncate">
+                            {dest.name}
+                          </span>
+                          {formData.destinations.includes(dest._id) && (
+                            <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center shrink-0">
+                              <svg
+                                className="w-2.5 h-2.5 text-white"
+                                fill="none"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="3"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path d="M5 13l4 4L19 7"></path>
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {formData.destinations.length > 0 && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Selected:{" "}
+                      {availableDestinations
+                        .filter((d) => formData.destinations.includes(d._id))
+                        .map((d) => d.name)
+                        .join(", ")}
+                    </p>
+                  )}
+                </div>
+
                 {availableTypes.length > 0 && (
                   <div>
                     <label className="block text-sm font-medium mb-2">Trip Type *</label>
@@ -891,19 +1000,47 @@ export default function AdminTripForm() {
             )}
           </div>
 
-          {/* Submit Buttons */}
-          <div className="flex gap-4 justify-end mt-6">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate("/admin/trips")}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              <Save className="w-4 h-4 mr-2" />
-              {isLoading ? "Saving..." : isEdit ? "Update Trip" : "Create Trip"}
-            </Button>
+          {/* Step navigation + Submit */}
+          <div className="flex flex-col gap-4 mt-6 lg:flex-row lg:items-center lg:justify-between">
+            {/* Previous / Next */}
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => goToTab(currentTab - 1)}
+                disabled={currentTab === 0}
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                Previous
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => goToTab(currentTab + 1)}
+                disabled={currentTab === tabs.length - 1}
+              >
+                Next
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+              <span className="text-sm text-muted-foreground ml-1 whitespace-nowrap">
+                Step {currentTab + 1} of {tabs.length}
+              </span>
+            </div>
+
+            {/* Cancel / Save - available on every step */}
+            <div className="flex gap-4 justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate("/admin/trips")}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                <Save className="w-4 h-4 mr-2" />
+                {isLoading ? "Saving..." : isEdit ? "Update Trip" : "Create Trip"}
+              </Button>
+            </div>
           </div>
         </form>
       </div>

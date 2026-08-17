@@ -4,6 +4,7 @@ import {
   createExploreDestination,
   getAllExploreDestinations,
   getActiveExploreDestinations,
+  getExploreDestinationBySlug,
   getExploreDestination,
   updateExploreDestination,
   toggleExploreDestinationActive,
@@ -17,6 +18,9 @@ const router = express.Router();
 
 // Public routes - for frontend display
 router.get('/active', getActiveExploreDestinations);
+
+// Public lookup by slug - must come before /:id to avoid route conflicts
+router.get('/slug/:slug', getExploreDestinationBySlug);
 
 // Admin stats route (protected) - must come before /:id to avoid route conflicts
 router.get('/admin/stats', protect, getExploreDestinationStats);

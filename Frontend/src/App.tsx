@@ -17,6 +17,7 @@ import PilgrimageTrips from "./pages/PilgrimageTrips";
 import WeekendTrips from "./pages/WeekendTrips";
 import InternationalTrips from "./pages/InternationalTrips";
 import DomesticTrips from "./pages/DomesticTrips";
+import DestinationTrips from "./pages/DestinationTrips";
 import Retreats from "./pages/Retreats";
 import SeasonalDeals from "./pages/SeasonalDeals";
 import CustomisedTrips from "./pages/CustomisedTrips";
@@ -342,8 +343,8 @@ const App = () => (
             <Route path="/trips/cruise" element={<CruiseTrips />} />
             <Route path="/dalai-lama-darshan" element={<DalaiLamaDarshanPage />} />
 
-            {/* Destination Routes */}
-            <Route path="/destination/:slug" element={<TripDetail />} />
+            {/* Destination Routes - groups trips by Explore Destination country */}
+            <Route path="/destination/:slug" element={<DestinationTrips />} />
 
             {/* Retreats */}
             <Route path="/retreats" element={<Retreats />} />

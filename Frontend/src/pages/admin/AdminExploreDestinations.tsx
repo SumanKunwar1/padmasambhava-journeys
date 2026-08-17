@@ -21,9 +21,10 @@ type FilterType = "all" | "international" | "domestic" | "weekend";
 interface ExploreDestination {
   _id: string;
   name: string;
+  slug?: string;
   image: string;
   type: "international" | "domestic" | "weekend";
-  url: string;
+  url?: string;
   order: number;
   isActive: boolean;
   createdAt: string;
@@ -42,7 +43,6 @@ export default function AdminExploreDestinations() {
     name: "",
     image: "",
     type: "international" as "international" | "domestic" | "weekend",
-    url: "",
     order: 1,
     isActive: true,
   });
@@ -120,7 +120,6 @@ export default function AdminExploreDestinations() {
       name: "",
       image: "",
       type: "international",
-      url: "",
       order: destinations.length + 1,
       isActive: true,
     });
@@ -134,7 +133,6 @@ export default function AdminExploreDestinations() {
       name: destination.name,
       image: destination.image,
       type: destination.type,
-      url: destination.url,
       order: destination.order,
       isActive: destination.isActive,
     });
@@ -176,7 +174,7 @@ export default function AdminExploreDestinations() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name || !formData.image || !formData.url) {
+    if (!formData.name || !formData.image) {
       toast({
         title: "Error",
         description: "Please fill all required fields",
@@ -472,51 +470,63 @@ export default function AdminExploreDestinations() {
                     alt={destination.name}
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  
-                  {/* Action Buttons */}
-                  <div className="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => handleEdit(destination)}
-                      className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => toggleActive(destination._id)}
-                      className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors"
-                    >
-                      {destination.isActive ? (
-                        <Eye className="w-4 h-4" />
-                      ) : (
-                        <EyeOff className="w-4 h-4" />
-                      )}
-                    </button>
-                    <button
-                      onClick={() => handleDelete(destination._id)}
-                      className="p-2 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {/* Type Badge */}
-                  <div className="absolute top-2 right-2">
-                    <span className={cn(
-                      "px-2 py-1 rounded-full text-xs font-semibold",
-                      destination.type === "international" && "bg-blue-500 text-white",
-                      destination.type === "domestic" && "bg-green-500 text-white",
-                      destination.type === "weekend" && "bg-orange-500 text-white"
-                    )}>
-                      {destination.type === "international" ? "Int'l" : 
-                       destination.type === "domestic" ? "Dom" : "Wknd"}
-                    </span>
-                  </div>
                 </div>
 
                 <div className="mt-3 text-center">
                   <p className="text-sm font-medium line-clamp-1">{destination.name}</p>
                   <p className="text-xs text-muted-foreground mt-1">Order: {destination.order}</p>
+
+                  {/* Always-visible actions */}
+                  <div className="mt-2 flex items-center justify-center gap-1.5">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 px-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEdit(destination);
+                      }}
+                      title="Edit destination"
+                    >
+                      <Edit2 className="w-3.5 h-3.5 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 w-8 p-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleActive(destination._id);
+                      }}
+                      title={
+                        destination.isActive
+                          ? "Hide from homepage"
+                          : "Show on homepage"
+                      }
+                    >
+                      {destination.isActive ? (
+                        <Eye className="w-3.5 h-3.5" />
+                      ) : (
+                        <EyeOff className="w-3.5 h-3.5" />
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 w-8 p-0 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(destination._id);
+                      }}
+                      title="Delete destination"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -623,20 +633,26 @@ export default function AdminExploreDestinations() {
                   </div>
                 </div>
 
-                {/* URL/Link */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Destination URL *
-                  </label>
-                  <Input
-                    placeholder="/trip/bali-tour or https://example.com"
-                    value={formData.url}
-                    onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-                    required
-                    disabled={isSaving}
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Internal link (e.g., /trip/bali-tour) or external URL
+                {/* Where this card links to - handled automatically now */}
+                <div className="rounded-lg border border-border bg-muted/40 p-3">
+                  <p className="text-sm font-medium mb-1">Trip listing page</p>
+                  <p className="text-sm text-muted-foreground">
+                    {editingDestination?.slug ? (
+                      <>
+                        This card links to{" "}
+                        <code className="text-xs bg-background px-1.5 py-0.5 rounded">
+                          /destination/{editingDestination.slug}
+                        </code>{" "}
+                        and shows every active trip tagged with this
+                        destination. Tag trips under Trips → Categories &amp; Type.
+                      </>
+                    ) : (
+                      <>
+                        The link is created automatically from the name. This
+                        card will list every active trip tagged with this
+                        destination.
+                      </>
+                    )}
                   </p>
                 </div>
 

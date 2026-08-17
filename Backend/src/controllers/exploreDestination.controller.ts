@@ -11,8 +11,8 @@ export const createExploreDestination = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { name, image, type, url, order, isActive } = req.body;
 
-    // Validate required fields
-    if (!name || !image || !type || !url) {
+    // Validate required fields (url is optional - cards link by slug now)
+    if (!name || !image || !type) {
       return next(new AppError('Please provide all required fields', 400));
     }
 
@@ -26,7 +26,7 @@ export const createExploreDestination = catchAsync(
       name,
       image,
       type,
-      url,
+      url: url || '',
       order: order || 1,
       isActive: isActive !== undefined ? isActive : true,
     });
@@ -98,6 +98,29 @@ export const getActiveExploreDestinations = catchAsync(
       results: exploreDestinations.length,
       data: {
         exploreDestinations,
+      },
+    });
+  }
+);
+
+// @desc    Get single explore destination by slug (for /destination/:slug pages)
+// @route   GET /api/v1/explore-destinations/slug/:slug
+// @access  Public
+export const getExploreDestinationBySlug = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const exploreDestination = await ExploreDestination.findOne({
+      slug: String(req.params.slug).toLowerCase().trim(),
+      isActive: true,
+    });
+
+    if (!exploreDestination) {
+      return next(new AppError('Explore destination not found', 404));
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        exploreDestination,
       },
     });
   }
