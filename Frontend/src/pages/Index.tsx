@@ -23,12 +23,13 @@ const Index = () => {
         ↑ Place this section where you want it to appear on homepage */}
         
         <ExploreDestinations />
-        <UpcomingTrips />
-        <BookWithConfidence />
         <TrendingDestinations />
+        
+        <BookWithConfidence />
+        <UpcomingTrips />
         <VibeWithUs />
         
-        <Testimonials />
+        {/*<Testimonials /> */}
         <FAQSection />
         <BlogsSection />
       </main>

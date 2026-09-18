@@ -16,14 +16,14 @@ const getAdminToken = (): string | null => {
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5020";
 
-type FilterType = "all" | "international" | "domestic" | "weekend";
+type FilterType = "all" | "international" | "domestic" | "weekend" | "Retreats & Healing";
 
 interface ExploreDestination {
   _id: string;
   name: string;
   slug?: string;
   image: string;
-  type: "international" | "domestic" | "weekend";
+  type: "international" | "domestic" | "weekend" | "Retreats & Healing";
   url?: string;
   order: number;
   isActive: boolean;
@@ -42,7 +42,7 @@ export default function AdminExploreDestinations() {
   const [formData, setFormData] = useState({
     name: "",
     image: "",
-    type: "international" as "international" | "domestic" | "weekend",
+    type: "international" as "international" | "domestic" | "weekend" | "Retreats & Healing",
     order: 1,
     isActive: true,
   });
@@ -412,6 +412,7 @@ export default function AdminExploreDestinations() {
             { label: "International", value: "international" as FilterType },
             { label: "Domestic", value: "domestic" as FilterType },
             { label: "Weekend", value: "weekend" as FilterType },
+            { label: "Retreats & Healing", value: "Retreats & Healing" as FilterType },
           ].map((filter) => (
             <button
               key={filter.value}
@@ -579,7 +580,7 @@ export default function AdminExploreDestinations() {
                     value={formData.type}
                     onChange={(e) => setFormData({ 
                       ...formData, 
-                      type: e.target.value as "international" | "domestic" | "weekend" 
+                      type: e.target.value as "international" | "domestic" | "weekend" | "Retreats & Healing" 
                     })}
                     className="w-full px-3 py-2 border border-border rounded-lg bg-background"
                     required
@@ -588,6 +589,7 @@ export default function AdminExploreDestinations() {
                     <option value="international">International</option>
                     <option value="domestic">Domestic</option>
                     <option value="weekend">Weekend</option>
+                    <option value="Retreats & Healing">Retreats & Healing</option>
                   </select>
                 </div>
 

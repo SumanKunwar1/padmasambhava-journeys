@@ -5,7 +5,7 @@ export interface IExploreDestination extends Document {
   name: string;
   slug: string;
   image: string;
-  type: 'international' | 'domestic' | 'weekend';
+  type: 'international' | 'domestic' | 'weekend' | 'Retreats & Healing';
   /** Legacy manual link. Kept for old records; new cards link by slug. */
   url?: string;
   order: number;
@@ -49,8 +49,8 @@ const exploreDestinationSchema = new Schema<IExploreDestination>(
       type: String,
       required: [true, 'Destination type is required'],
       enum: {
-        values: ['international', 'domestic', 'weekend'],
-        message: 'Type must be either international, domestic, or weekend',
+        values: ['international', 'domestic', 'weekend', 'Retreats & Healing'],
+        message: 'Type must be either international, domestic, weekend, or Retreats & Healing',
       },
     },
     // Optional: trips are now grouped automatically via slug, so admins no
