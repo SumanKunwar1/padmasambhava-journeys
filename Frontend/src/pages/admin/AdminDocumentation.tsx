@@ -340,7 +340,7 @@ export default function AdminDocumentation() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-card rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-card rounded-lg max-w-4xl w-full max-h-[90svh] overflow-y-auto"
           >
             {/* Modal Header */}
             <div className="sticky top-0 bg-card border-b border-border p-6 flex items-center justify-between">

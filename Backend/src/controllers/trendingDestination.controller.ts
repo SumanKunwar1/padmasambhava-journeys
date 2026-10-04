@@ -9,7 +9,7 @@ import TrendingDestination from '../models/TrendingDestination.model';
 // @access  Private (Admin)
 export const createTrendingDestination = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { name, price, image, url, order, isActive } = req.body;
+    const { name, price, priceUSD, image, url, order, isActive } = req.body;
 
     // Validate required fields
     if (!name || price === undefined || !image || !url) {
@@ -22,9 +22,19 @@ export const createTrendingDestination = catchAsync(
     }
 
     // Create trending destination
+    // A blank field means 'convert from the INR price', so an empty string or
+    // null must store nothing rather than a zero — a stored 0 would read as a
+    // genuine free-of-charge price.
+    const optionalPrice = (value: unknown): number | undefined => {
+      if (value === undefined || value === null || value === '') return undefined;
+      const parsed = Number(value);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+    };
+
     const trendingDestination = await TrendingDestination.create({
       name,
       price,
+      priceUSD: optionalPrice(priceUSD),
       image,
       url,
       order: order || 1,
@@ -116,9 +126,26 @@ export const getTrendingDestination = catchAsync(
 // @access  Private (Admin)
 export const updateTrendingDestination = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { name, price, image, url, order, isActive } = req.body;
+    const { name, price, priceUSD, image, url, order, isActive } = req.body;
 
     const updateData: any = {};
+    const unsetData: any = {};
+
+    // Clearing a manual price has to $unset the field, not write 0 or null —
+    // the storefront treats 'absent' as 'convert from INR'.
+    const applyOptionalPrice = (field: string, value: unknown) => {
+      if (value === undefined) return;
+      if (value === null || value === '') {
+        unsetData[field] = '';
+        return;
+      }
+      const parsed = Number(value);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        updateData[field] = parsed;
+      } else {
+        unsetData[field] = '';
+      }
+    };
 
     if (name !== undefined) updateData.name = name;
     if (price !== undefined) {
@@ -127,6 +154,7 @@ export const updateTrendingDestination = catchAsync(
       }
       updateData.price = price;
     }
+    applyOptionalPrice('priceUSD', priceUSD);
     if (image !== undefined) updateData.image = image;
     if (url !== undefined) updateData.url = url;
     if (order !== undefined) updateData.order = order;
@@ -134,7 +162,10 @@ export const updateTrendingDestination = catchAsync(
 
     const trendingDestination = await TrendingDestination.findByIdAndUpdate(
       req.params.id,
-      updateData,
+      {
+        ...(Object.keys(updateData).length ? { $set: updateData } : {}),
+        ...(Object.keys(unsetData).length ? { $unset: unsetData } : {}),
+      },
       { new: true, runValidators: true }
     );
 

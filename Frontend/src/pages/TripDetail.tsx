@@ -19,6 +19,8 @@ import { Footer } from "@/components/layout/Footer";
 import { WhatsAppButton } from "@/components/shared/WhatsAppButton";
 import { BookingFormModal } from "@/components/shared/BookingFormModal";
 import { cn } from "@/lib/utils";
+import { Price } from "@/components/shared/Price";
+import { CurrencySwitcher } from "@/components/shared/CurrencySwitcher";
 import axiosInstance from "@/lib/axios";
 
 const WHATSAPP_CONTACT = "9779851045900";
@@ -51,6 +53,7 @@ interface Trip {
   duration: string;
   description: string;
   price: number;
+  priceUSD?: number;
   originalPrice: number;
   discount: number;
   image: string;
@@ -314,19 +317,35 @@ export default function TripDetail() {
             <div className="bg-card rounded-2xl border border-border shadow-lg p-6">
               {/* Price */}
               <div className="mb-6">
-                <p className="text-sm text-muted-foreground mb-1">Trip Starts From</p>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold">
-                    {/* Fall back on the numbers, not the formatted strings:
-                        (0).toLocaleString() is "0", which is truthy. */}
-                    ₹{(selectedDate?.price || tripData.price).toLocaleString()}
-                  </span>
-                  <span className="text-sm text-muted-foreground line-through">
-                    ₹{tripData.originalPrice.toLocaleString()}
-                  </span>
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <p className="text-sm text-muted-foreground">Trip Starts From</p>
+                  <CurrencySwitcher />
+                </div>
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                  {/* Fall back on the numbers, not the formatted strings:
+                      (0).toLocaleString() is "0", which is truthy. */}
+                  <Price
+                    amount={selectedDate?.price || tripData.price}
+                    relatedTo={tripData.price}
+                    priceUSD={tripData.priceUSD}
+                    className="text-2xl sm:text-3xl font-bold"
+                  />
+                  <Price
+                    amount={tripData.originalPrice}
+                    relatedTo={tripData.price}
+                    priceUSD={tripData.priceUSD}
+                    showApprox={false}
+                    className="text-sm text-muted-foreground line-through"
+                  />
                 </div>
                 <span className="text-sm text-primary font-medium">
-                  ₹{tripData.discount.toLocaleString()} Off
+                  <Price
+                    amount={tripData.discount}
+                    relatedTo={tripData.price}
+                    priceUSD={tripData.priceUSD}
+                    showApprox={false}
+                  />{" "}
+                  Off
                 </span>
                 <p className="text-sm text-muted-foreground mt-1">Per Person</p>
               </div>
@@ -360,7 +379,11 @@ export default function TripDetail() {
                           <span>{date.date}</span>
                         </div>
                         <span className="text-sm text-muted-foreground">
-                          ₹{(date.price || tripData.price).toLocaleString()}/Person
+                          <Price
+                            amount={date.price || tripData.price}
+                            relatedTo={tripData.price}
+                            priceUSD={tripData.priceUSD}
+                          />/Person
                         </span>
                       </label>
                     ))}
@@ -396,7 +419,11 @@ export default function TripDetail() {
                 <div className="flex items-center justify-between">
                   <span className="font-medium">Total Amount</span>
                   <span className="text-2xl font-bold">
-                    ₹{calculateTotalAmount().toLocaleString()}
+                    <Price
+                      amount={calculateTotalAmount()}
+                      relatedTo={tripData.price}
+                      priceUSD={tripData.priceUSD}
+                    />
                   </span>
                 </div>
               </div>

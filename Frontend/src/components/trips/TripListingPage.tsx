@@ -1,6 +1,6 @@
 // src/pages/TripListingPage.tsx
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Calendar, Filter, ChevronDown, Clock, CalendarDays, Gift, Search } from "lucide-react";
 import {
   Collapsible,
@@ -13,6 +13,8 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { WhatsAppButton } from "@/components/shared/WhatsAppButton";
 import axiosInstance from "@/lib/axios";
+import { Price } from "@/components/shared/Price";
+import { canonicalRouteFor } from "@/lib/trip-taxonomy";
 
 interface Trip {
   _id: string;
@@ -21,12 +23,15 @@ interface Trip {
   image: string;
   duration: string;
   price: number;
+  priceUSD?: number;
   originalPrice: number;
   discount: number;
   dates: Array<{ date: string; price: number }>;
   hasGoodies: boolean;
-  tripCategory: string;
-  tripType: string;
+  tripCategory: string[] | string;
+  // Arrays now; legacy rows still hold a bare string.
+  tripType: string[] | string;
+  tripRoute?: string[] | string;
 }
 
 interface TripListingPageProps {
@@ -38,6 +43,11 @@ interface TripListingPageProps {
   filterDestinations?: string[];
   tripCategory?: string;
   tripType?: string;
+  /**
+   * The listing URL to filter by. Defaults to the page's own path, which is
+   * what makes a trip with several types appear on every one of its listings.
+   */
+  tripRoute?: string;
   /** Explore-destination slug, e.g. "nepal" - groups trips by country */
   destinationSlug?: string;
 }
@@ -51,8 +61,17 @@ const TripListingPage = ({
   filterDestinations = ["All"],
   tripCategory,
   tripType,
+  tripRoute,
   destinationSlug,
 }: TripListingPageProps) => {
+  const location = useLocation();
+
+  // A trip stores one route per selected type, so asking for the current URL
+  // returns every trip that opted into this listing — no matter how many other
+  // types it also carries. Destination pages keep their own filter.
+  const routeFilter = destinationSlug
+    ? null
+    : (tripRoute ?? canonicalRouteFor(location.pathname));
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeDestination, setActiveDestination] = useState("All");
@@ -75,18 +94,25 @@ const TripListingPage = ({
 
   useEffect(() => {
     fetchTrips();
-  }, [tripCategory, tripType, destinationSlug]);
+  }, [tripCategory, tripType, routeFilter, destinationSlug]);
 
   const fetchTrips = async () => {
     try {
       setLoading(true);
       let endpoint = '/trips?';
       
-      if (tripCategory) {
-        endpoint += `tripCategory=${tripCategory}&`;
-      }
-      if (tripType) {
-        endpoint += `tripType=${tripType}&`;
+      if (routeFilter) {
+        // Route filtering stands alone. Narrowing it further by the page's
+        // category would hide a trip that opted into this listing through a
+        // type belonging to some other category.
+        endpoint += `tripRoute=${encodeURIComponent(routeFilter)}&`;
+      } else {
+        if (tripCategory) {
+          endpoint += `tripCategory=${tripCategory}&`;
+        }
+        if (tripType) {
+          endpoint += `tripType=${tripType}&`;
+        }
       }
       if (destinationSlug) {
         endpoint += `destinationSlug=${encodeURIComponent(destinationSlug)}&`;
@@ -372,15 +398,30 @@ const TripListingPage = ({
                           </h3>
 
                           {/* Price */}
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="text-lg font-bold text-foreground">
-                              ₹{trip.price.toLocaleString()}
-                            </span>
-                            <span className="text-sm text-muted-foreground line-through">
-                              ₹{trip.originalPrice.toLocaleString()}
-                            </span>
+                          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mb-3">
+                            <Price
+                              currency="USD"
+                              amount={trip.price}
+                              priceUSD={trip.priceUSD}
+                              className="text-lg font-bold text-foreground"
+                            />
+                            <Price
+                              currency="USD"
+                              amount={trip.originalPrice}
+                              relatedTo={trip.price}
+                              priceUSD={trip.priceUSD}
+                              showApprox={false}
+                              className="text-sm text-muted-foreground line-through"
+                            />
                             <span className="text-xs text-destructive font-medium">
-                              ₹{trip.discount.toLocaleString()} Off
+                              <Price
+                                currency="USD"
+                                amount={trip.discount}
+                                relatedTo={trip.price}
+                                priceUSD={trip.priceUSD}
+                                showApprox={false}
+                              />{" "}
+                              Off
                             </span>
                           </div>
 

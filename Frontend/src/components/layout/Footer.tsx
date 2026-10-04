@@ -295,9 +295,15 @@ export function Footer() {
       {/* Bottom Bar */}
       <div className="border-t border-border/30">
         <div className="container-custom py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            © Padmasambhava Trip Pvt Ltd. All rights reserved
-          </p>
+          <div className="text-center sm:text-left">
+            <p className="text-sm text-muted-foreground">
+              © Padmasambhava Trip Pvt Ltd. All rights reserved
+            </p>
+            <p className="text-xs text-muted-foreground/80 mt-1">
+              Prices are quoted in Indian Rupees. Amounts marked ≈ are converted
+              at today&apos;s exchange rate and are indicative only.
+            </p>
+          </div>
           <div className="flex items-center gap-4">
             <span className="text-xs text-muted-foreground">We accept:</span>
             <div className="flex items-center gap-3">

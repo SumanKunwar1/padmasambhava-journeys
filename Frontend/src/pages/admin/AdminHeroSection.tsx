@@ -551,7 +551,7 @@ export default function AdminHeroSection() {
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-card rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              className="bg-card rounded-lg max-w-2xl w-full max-h-[90svh] overflow-y-auto"
             >
               <div className="sticky top-0 bg-card border-b border-border p-6 flex items-center justify-between z-10">
                 <h2 className="text-2xl font-bold">
@@ -689,7 +689,7 @@ export default function AdminHeroSection() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-3 pt-4 border-t">
+                <div className="flex gap-3 pt-4 pb-6 -mb-6 -mx-6 px-6 border-t sticky bottom-0 z-10 bg-card">
                   <Button
                     type="button"
                     variant="outline"

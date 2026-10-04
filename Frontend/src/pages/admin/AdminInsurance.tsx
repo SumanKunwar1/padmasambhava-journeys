@@ -576,7 +576,7 @@ Medical Documents: ${app.medicalDocuments?.length || 0} file(s) uploaded
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-card rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+              className="bg-card rounded-lg shadow-2xl max-w-4xl w-full max-h-[90svh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
@@ -875,7 +875,7 @@ Medical Documents: ${app.medicalDocuments?.length || 0} file(s) uploaded
 
                 {/* Actions */}
                 {selectedApp.status === "Pending" && (
-                  <div className="flex gap-3 pt-4 border-t border-border">
+                  <div className="flex gap-3 pt-4 pb-6 -mb-6 -mx-6 px-6 border-t border-border sticky bottom-0 z-10 bg-card">
                     <Button
                       className="flex-1"
                       onClick={() => handleApprove(selectedApp._id)}

@@ -1,5 +1,5 @@
 // src/pages/admin/AdminTripForm.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -18,6 +18,9 @@ import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { cn } from "@/lib/utils";
 import axiosInstance from "@/lib/axios";
+import { TRIP_CATEGORIES } from "@/lib/trip-taxonomy";
+import { useCurrency } from "@/context/CurrencyContext";
+import { formatPrice, resolvePrice } from "@/lib/currency";
 
 
 interface ItineraryDay {
@@ -33,59 +36,6 @@ interface TripDate {
 }
 
 // Trip Categories based on Navbar structure
-const TRIP_CATEGORIES = {
-  "EMI Trips": {
-    value: "emi-trips",
-    subcategories: [
-      { label: "EMI Packages", value: "emi-package", route: "/trips/emi" },
-    ],
-  },
-  "International Trips": {
-    value: "international-trips",
-    subcategories: [
-      { label: "International Packages", value: "international-package", route: "/international-trips" },
-    ],
-  },
-  "India Trips": {
-    value: "india-trips",
-    subcategories: [
-      { label: "Domestic Packages", value: "domestic-package", route: "/domestic-trips" },
-    ],
-  },
-  "Deals": {
-    value: "deals",
-    subcategories: [
-      { label: "Seasonal Deals", value: "seasonal", route: "/deals/seasonal" },
-      { label: "Limited Time Offers", value: "limited", route: "/deals/limited" },
-    ],
-  },
-  "Travel Styles": {
-    value: "travel-styles",
-    subcategories: [
-      { label: "Pilgrimage Trips", value: "pilgrimage", route: "/trips/pilgrimage" },
-      { label: "Solo Trips", value: "solo", route: "/style/solo" },
-      { label: "Group Trips", value: "group", route: "/trips/group" },
-      { label: "Weekend Trips", value: "weekend", route: "/trips/weekend" },
-      { label: "Adventure Trips", value: "adventure", route: "/style/adventure" },
-      { label: "Cruise Trips", value: "cruise", route: "/trips/cruise" },
-      { label: "Customised Trips", value: "customised", route: "/custom" },
-    ],
-  },
-  "Combo Trips": {
-    value: "combo-trips",
-    subcategories: [
-      { label: "Combo Packages", value: "combo", route: "/trips/combo" },
-    ],
-  },
-  "Retreats & Healings": {
-    value: "retreats",
-    subcategories: [
-      { label: "Retreats", value: "meditation", route: "/retreats/meditation" },
-      { label: "Healings", value: "wellness", route: "/retreats/wellness" },
-    ],
-  },
-};
-
 export default function AdminTripForm() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -97,11 +47,12 @@ export default function AdminTripForm() {
     destination: "",
     destinations: [] as string[], // Explore Destination ids (country grouping)
     tripCategory: [] as string[], // Changed to array for multiple categories
-    tripType: "",
-    tripRoute: "",
+    tripType: [] as string[],
+    tripRoute: [] as string[],
     duration: "",
     description: "",
     price: "",
+    priceUSD: "",
     originalPrice: "",
     discount: "",
     status: "Active",
@@ -116,6 +67,17 @@ export default function AdminTripForm() {
   });
 
   const [currentTab, setCurrentTab] = useState(0);
+
+  // Shows the admin what an empty currency box will actually render as today,
+  // so 'leave it blank' is not a leap of faith.
+  const { rates } = useCurrency();
+  const autoPricePreview = useMemo(() => {
+    const base = parseFloat(formData.price);
+    if (!Number.isFinite(base) || base <= 0) return { USD: "" };
+    return {
+      USD: formatPrice(resolvePrice(base, {}, "USD", rates).amount, "USD"),
+    };
+  }, [formData.price, rates]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]); // Changed to array
   const [availableTypes, setAvailableTypes] = useState<any[]>([]);
   const [availableDestinations, setAvailableDestinations] = useState<any[]>([]);
@@ -166,11 +128,21 @@ export default function AdminTripForm() {
             typeof d === 'string' ? d : d._id
           ),
           tripCategory: categories,
-          tripType: trip.tripType,
-          tripRoute: trip.tripRoute,
+          // Legacy trips stored a single string for each of these.
+          tripType: Array.isArray(trip.tripType)
+            ? trip.tripType
+            : trip.tripType
+              ? [trip.tripType]
+              : [],
+          tripRoute: Array.isArray(trip.tripRoute)
+            ? trip.tripRoute
+            : trip.tripRoute
+              ? [trip.tripRoute]
+              : [],
           duration: trip.duration,
           description: trip.description,
           price: trip.price.toString(),
+          priceUSD: trip.priceUSD != null ? trip.priceUSD.toString() : "",
           originalPrice: trip.originalPrice.toString(),
           discount: trip.discount.toString(),
           status: trip.status,
@@ -259,13 +231,20 @@ export default function AdminTripForm() {
     }));
   };
 
-  const handleTypeChange = (type: string) => {
-    const selectedType = availableTypes.find((t) => t.value === type);
-    setFormData((prev) => ({
-      ...prev,
-      tripType: type,
-      tripRoute: selectedType?.route || "",
-    }));
+  // Types are multi-select; routes are derived from whatever is selected, so
+  // the two stay in step and the admin never types a route by hand.
+  const handleTypeToggle = (type: string) => {
+    setFormData((prev) => {
+      const nextTypes = prev.tripType.includes(type)
+        ? prev.tripType.filter((t) => t !== type)
+        : [...prev.tripType, type];
+
+      const nextRoutes = nextTypes
+        .map((value) => availableTypes.find((t) => t.value === value)?.route)
+        .filter((route): route is string => Boolean(route));
+
+      return { ...prev, tripType: nextTypes, tripRoute: nextRoutes };
+    });
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -386,6 +365,20 @@ export default function AdminTripForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Trip type moved from a <select required> to multi-select cards, which the
+    // browser will not validate for us.
+    if (formData.tripType.length === 0) {
+      toast({
+        title: "Trip type required",
+        description: "Select at least one trip type under Categories & Type.",
+        variant: "destructive",
+      });
+      setCurrentTab(1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -401,6 +394,8 @@ export default function AdminTripForm() {
         })),
         dates: formData.dates.filter((date) => date.date !== ""),
         price: parseFloat(formData.price),
+        // Empty means 'convert at the day's rate', so send null rather than 0.
+        priceUSD: formData.priceUSD === "" ? null : parseFloat(formData.priceUSD),
         originalPrice: parseFloat(formData.originalPrice),
         discount: parseFloat(formData.discount),
       };
@@ -685,28 +680,71 @@ export default function AdminTripForm() {
                 </div>
 
                 {availableTypes.length > 0 && (
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Trip Type *</label>
-                    <select
-                      value={formData.tripType}
-                      onChange={(e) => handleTypeChange(e.target.value)}
-                      className="w-full p-2 border border-border rounded-md bg-background"
-                      required
-                    >
-                      <option value="">Select trip type</option>
+                  <div className="pt-2 border-t border-border">
+                    <label className="block text-sm font-medium mb-1">
+                      Trip Type * (You can select multiple)
+                    </label>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Each type adds the trip to that section of the site. The
+                      homepage&apos;s &quot;Upcoming Trips&quot; shows only trips
+                      with <strong>Group Trips</strong> selected.
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                       {availableTypes.map((type) => (
-                        <option key={type.value} value={type.value}>
-                          {type.label}
-                        </option>
+                        <div
+                          key={type.value}
+                          onClick={() => handleTypeToggle(type.value)}
+                          className={cn(
+                            "p-3 border-2 rounded-lg cursor-pointer transition-all hover:shadow-sm flex items-center justify-between gap-2",
+                            formData.tripType.includes(type.value)
+                              ? "border-primary bg-primary/5"
+                              : "border-border hover:border-primary/50"
+                          )}
+                        >
+                          <span className="text-sm font-medium truncate">
+                            {type.label}
+                          </span>
+                          {formData.tripType.includes(type.value) && (
+                            <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center shrink-0">
+                              <svg
+                                className="w-2.5 h-2.5 text-white"
+                                fill="none"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="3"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path d="M5 13l4 4L19 7"></path>
+                              </svg>
+                            </div>
+                          )}
+                        </div>
                       ))}
-                    </select>
+                    </div>
+                    {formData.tripType.length === 0 && (
+                      <p className="text-sm text-destructive mt-2">
+                        Select at least one trip type.
+                      </p>
+                    )}
                   </div>
                 )}
 
-                {formData.tripRoute && (
+                {formData.tripRoute.length > 0 && (
                   <div>
-                    <label className="block text-sm font-medium mb-2">Trip Route</label>
-                    <Input value={formData.tripRoute} disabled className="bg-muted" />
+                    <label className="block text-sm font-medium mb-2">
+                      Trip Routes (set automatically from the types above)
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.tripRoute.map((route) => (
+                        <span
+                          key={route}
+                          className="px-3 py-1.5 rounded-full bg-muted text-sm text-muted-foreground border border-border"
+                        >
+                          {route}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -758,6 +796,48 @@ export default function AdminTripForm() {
                       disabled
                       className="bg-muted"
                     />
+                  </div>
+                </div>
+
+                {/* Per-currency prices */}
+                <div className="rounded-xl border border-border bg-muted/30 p-4 sm:p-5 space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-sm sm:text-base">
+                      Price in other currencies
+                    </h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                      Leave the box empty and the site converts the INR price at
+                      that day&apos;s exchange rate. Type a price and visitors
+                      see exactly that number instead.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        US Dollar price ($)
+                      </label>
+                      <Input
+                        name="priceUSD"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.priceUSD}
+                        onChange={handleInputChange}
+                        placeholder={
+                          autoPricePreview.USD
+                            ? `Auto: ${autoPricePreview.USD}`
+                            : "Leave blank to auto-convert"
+                        }
+                      />
+                      <p className="text-xs text-muted-foreground mt-1.5">
+                        {formData.priceUSD
+                          ? "Manual price — shown exactly as typed."
+                          : autoPricePreview.USD
+                            ? `Will show as ${autoPricePreview.USD} today.`
+                            : "Will be converted automatically."}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>

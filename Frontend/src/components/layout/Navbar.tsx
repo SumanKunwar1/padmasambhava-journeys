@@ -216,13 +216,13 @@ export function Navbar() {
 
       <nav className="container-custom">
         {/* Top row: Logo + Brand Name + Agent Login (ALWAYS VISIBLE AT TOP) */}
-        <div className="flex items-center justify-between h-24 border-b border-border">
+        <div className="flex items-center justify-between gap-2 h-16 sm:h-20 lg:h-24 border-b border-border">
           {/* Logo and Brand Name */}
-          <Link to="/" className="flex items-center gap-3 flex-shrink-0">
+          <Link to="/" className="flex items-center gap-3 min-w-0">
             <img 
               src="https://res.cloudinary.com/dihev9qxc/image/upload/v1768991877/453207561_122102729312441160_4787222294410407220_n-removebg-preview_voy795.png" 
               alt="Padmasambhava trips Logo" 
-              className="h-28 w-auto"
+              className="h-12 sm:h-16 lg:h-28 w-auto max-w-[140px] sm:max-w-none object-contain"
             />
             <div className="hidden lg:flex flex-col">
               <span className="text-xl font-bold text-foreground leading-tight">
@@ -235,7 +235,7 @@ export function Navbar() {
           </Link>
 
           {/* Right side content */}
-          <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
             {/* Search Bar - Desktop */}
             <div className="hidden md:block relative">
               <div className="relative">
@@ -424,7 +424,7 @@ export function Navbar() {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3 }}
-              className="lg:hidden border-t border-border overflow-hidden max-h-[80vh] overflow-y-auto"
+              className="lg:hidden border-t border-border overflow-hidden max-h-[80svh] overflow-y-auto"
             >
               <div className="py-4 space-y-1 px-2">
                 {/* ALL NAVIGATION ITEMS */}

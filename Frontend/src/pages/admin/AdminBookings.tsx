@@ -1,7 +1,7 @@
 // src/pages/admin/AdminBookings.tsx
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, Trash2 } from "lucide-react";
+import { Search, Trash2, Check, X, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -46,6 +46,8 @@ export default function AdminBookings() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  // Which row is mid-update, so its buttons cannot be double-clicked.
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchBookings();
@@ -94,6 +96,63 @@ export default function AdminBookings() {
       }
     } catch (error: any) {
       console.error("Error fetching stats:", error);
+    }
+  };
+
+  const handleStatusChange = async (
+    booking: Booking,
+    nextStatus: Booking["status"]
+  ) => {
+    if (booking.status === nextStatus) return;
+
+    // Cancelling is the one that is awkward to walk back for a customer, so it
+    // is the only transition that asks first.
+    if (
+      nextStatus === "Cancelled" &&
+      !confirm(
+        `Cancel ${booking.customerName}'s booking for ${booking.tripName}?`
+      )
+    ) {
+      return;
+    }
+
+    setUpdatingId(booking._id);
+
+    // Update the row immediately; the refetch below is the source of truth, but
+    // without this the badge sits on the old status for the whole round trip.
+    const previousStatus = booking.status;
+    setBookings((prev) =>
+      prev.map((item) =>
+        item._id === booking._id ? { ...item, status: nextStatus } : item
+      )
+    );
+
+    try {
+      await axiosInstance.patch(`/bookings/${booking._id}`, {
+        status: nextStatus,
+      });
+
+      toast({
+        title: `Booking ${nextStatus.toLowerCase()}`,
+        description: `${booking.customerName}'s booking is now ${nextStatus.toLowerCase()}.`,
+      });
+      fetchBookings();
+      fetchStats();
+    } catch (error: any) {
+      // Put the old status back so the table never shows a change that failed.
+      setBookings((prev) =>
+        prev.map((item) =>
+          item._id === booking._id ? { ...item, status: previousStatus } : item
+        )
+      );
+      toast({
+        title: "Error",
+        description:
+          error.response?.data?.message || "Failed to update booking status",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -254,11 +313,57 @@ export default function AdminBookings() {
                         </span>
                       </td>
                       <td className="p-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {booking.status !== "Confirmed" && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={updatingId === booking._id}
+                              onClick={() =>
+                                handleStatusChange(booking, "Confirmed")
+                              }
+                              className="border-green-600/40 text-green-700 hover:bg-green-50 hover:text-green-800 dark:text-green-300"
+                            >
+                              <Check className="w-4 h-4 sm:mr-1" />
+                              <span className="hidden sm:inline">Confirm</span>
+                            </Button>
+                          )}
+
+                          {booking.status !== "Cancelled" && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={updatingId === booking._id}
+                              onClick={() =>
+                                handleStatusChange(booking, "Cancelled")
+                              }
+                              className="border-destructive/40 text-destructive hover:bg-destructive/10"
+                            >
+                              <X className="w-4 h-4 sm:mr-1" />
+                              <span className="hidden sm:inline">Cancel</span>
+                            </Button>
+                          )}
+
+                          {booking.status !== "Pending" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={updatingId === booking._id}
+                              onClick={() =>
+                                handleStatusChange(booking, "Pending")
+                              }
+                              title="Move back to pending"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                            </Button>
+                          )}
+
                           <Button
                             variant="ghost"
                             size="sm"
+                            disabled={updatingId === booking._id}
                             onClick={() => handleDelete(booking._id)}
+                            title="Delete booking"
                           >
                             <Trash2 className="w-4 h-4 text-destructive" />
                           </Button>

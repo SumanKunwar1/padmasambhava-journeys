@@ -1,5 +1,5 @@
 // src/pages/admin/AdminTrendingDestinations.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Plus, Trash2, Edit2, Eye, EyeOff, Upload, Search, TrendingUp, IndianRupee } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { cn } from "@/lib/utils";
+import { useCurrency } from "@/context/CurrencyContext";
+import { formatPrice, resolvePrice } from "@/lib/currency";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5020";
 
@@ -14,6 +16,7 @@ interface TrendingDestination {
   _id: string;
   name: string;
   price: number;
+  priceUSD?: number | null;
   image: string;
   url: string;
   order: number;
@@ -81,11 +84,22 @@ export default function AdminTrendingDestinations() {
   const [formData, setFormData] = useState({
     name: "",
     price: 0,
+    priceUSD: "" as string | number,
     image: "",
     url: "",
     order: 1,
     isActive: true,
   });
+
+  // Shows what an empty currency box will render as today.
+  const { rates } = useCurrency();
+  const autoPricePreview = useMemo(() => {
+    const base = Number(formData.price);
+    if (!Number.isFinite(base) || base <= 0) return { USD: "" };
+    return {
+      USD: formatPrice(resolvePrice(base, {}, "USD", rates).amount, "USD"),
+    };
+  }, [formData.price, rates]);
 
   // ── Load data on mount ────────────────────────────────
   useEffect(() => {
@@ -172,6 +186,7 @@ export default function AdminTrendingDestinations() {
     setFormData({
       name: "",
       price: 0,
+      priceUSD: "",
       image: "",
       url: "",
       order: destinations.length + 1,
@@ -186,6 +201,7 @@ export default function AdminTrendingDestinations() {
     setFormData({
       name: dest.name,
       price: dest.price,
+      priceUSD: dest.priceUSD ?? "",
       image: dest.image,
       url: dest.url,
       order: dest.order,
@@ -541,9 +557,9 @@ export default function AdminTrendingDestinations() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-card rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+            className="bg-card rounded-xl max-w-2xl w-full max-h-[90svh] flex flex-col overflow-hidden shadow-2xl"
           >
-            <div className="sticky top-0 bg-card border-b border-border p-6 flex items-center justify-between z-10">
+            <div className="bg-card border-b border-border p-6 flex items-center justify-between shrink-0">
               <h2 className="text-2xl font-bold">
                 {editingDestination ? "Edit Destination" : "Add Destination"}
               </h2>
@@ -557,7 +573,13 @@ export default function AdminTrendingDestinations() {
               </Button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-5">
+            <form
+              onSubmit={handleSubmit}
+              className="flex flex-col flex-1 min-h-0"
+            >
+              {/* Only the fields scroll, so Cancel/Update stay reachable however
+                  long the form gets. */}
+              <div className="p-6 space-y-5 flex-1 overflow-y-auto">
 
               {/* Name */}
               <div>
@@ -585,6 +607,32 @@ export default function AdminTrendingDestinations() {
                   required
                   disabled={isSaving}
                 />
+              </div>
+
+              {/* USD price */}
+              <div>
+                <label className="block text-sm font-medium mb-1.5">
+                  US Dollar price ($)
+                </label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder={
+                    autoPricePreview.USD
+                      ? `Auto: ${autoPricePreview.USD}`
+                      : "Leave blank to auto-convert"
+                  }
+                  value={formData.priceUSD}
+                  onChange={(e) =>
+                    setFormData((p) => ({ ...p, priceUSD: e.target.value }))
+                  }
+                  disabled={isSaving}
+                />
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Leave empty and the site converts the INR price at that
+                  day&apos;s rate. Type a price and visitors see exactly that.
+                </p>
               </div>
 
               {/* Image */}
@@ -665,8 +713,10 @@ export default function AdminTrendingDestinations() {
                 </label>
               </div>
 
+              </div>
+
               {/* Actions */}
-              <div className="flex gap-3 pt-4 border-t">
+              <div className="flex gap-3 p-6 border-t border-border shrink-0 bg-card">
                 <Button
                   type="button"
                   variant="outline"

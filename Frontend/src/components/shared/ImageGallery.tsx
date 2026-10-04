@@ -150,7 +150,7 @@ export function ImageGallery({ images, maxDisplay = 6 }: ImageGalleryProps) {
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="pointer-events-auto w-full max-w-4xl max-h-[90vh] bg-background rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+                className="pointer-events-auto w-full max-w-4xl max-h-[90svh] bg-background rounded-2xl shadow-2xl overflow-hidden flex flex-col"
               >
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-border shrink-0">

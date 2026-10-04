@@ -8,6 +8,38 @@ import { uploadToCloudinary, deleteFromCloudinary } from '../utils/cloudinary';
 
 // Normalises a destinations payload (JSON string, single id, or array) into a
 // clean array of id strings.
+/**
+ * Normalises an optional manual price. Blank, null, zero and junk all collapse
+ * to `undefined`, which the storefront reads as "convert from the INR price".
+ * A stored 0 would otherwise read as a genuine free-of-charge price.
+ */
+const optionalPrice = (value: unknown): number | undefined => {
+  if (value === undefined || value === null || value === '') return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+};
+
+/**
+ * tripType and tripRoute became arrays. Multipart form fields, older clients
+ * and existing documents can all still send a bare string, so normalise
+ * everything to an array of non-empty strings.
+ */
+const toStringArray = (raw: any): string[] => {
+  if (raw === undefined || raw === null || raw === '') return [];
+  let value = raw;
+  if (typeof value === 'string') {
+    try {
+      value = JSON.parse(value);
+    } catch {
+      value = [value];
+    }
+  }
+  if (!Array.isArray(value)) value = [value];
+  return value
+    .map((entry: any) => (typeof entry === 'string' ? entry.trim() : entry))
+    .filter((entry: any) => typeof entry === 'string' && entry.length > 0);
+};
+
 const parseDestinations = (raw: any): string[] => {
   let value = raw;
 
@@ -205,7 +237,10 @@ export const createTrip = catchAsync(
     const trip = await Trip.create({
       ...req.body,
       tripCategory, // Use the parsed/array version
+      tripType: toStringArray(req.body.tripType),
+      tripRoute: toStringArray(req.body.tripRoute),
       destinations: parseDestinations(req.body.destinations),
+      priceUSD: optionalPrice(req.body.priceUSD),
       image: imageUrl,
       discount,
       inclusions,
@@ -296,6 +331,17 @@ export const updateTrip = catchAsync(
       {
         ...req.body,
         tripCategory, // Use the parsed/array version
+        tripType:
+          req.body.tripType !== undefined
+            ? toStringArray(req.body.tripType)
+            : trip.tripType,
+        tripRoute:
+          req.body.tripRoute !== undefined
+            ? toStringArray(req.body.tripRoute)
+            : trip.tripRoute,
+        // A blank box means 'convert from INR', so it must clear the stored
+        // override rather than persist an empty string or a zero.
+        priceUSD: optionalPrice(req.body.priceUSD) ?? null,
         destinations:
           req.body.destinations !== undefined
             ? parseDestinations(req.body.destinations)

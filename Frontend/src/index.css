@@ -103,10 +103,24 @@
 
   html {
     scroll-behavior: smooth;
+    /* `clip` rather than `hidden`: hidden turns the element into a scroll
+       container, which silently breaks `position: sticky` on the navbar. */
+    overflow-x: clip;
   }
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    overflow-x: clip;
+    width: 100%;
+  }
+
+  /* Media should never be the thing that widens a page past the viewport. */
+  img,
+  video,
+  canvas,
+  svg,
+  iframe {
+    max-width: 100%;
   }
 
   h1, h2, h3, h4, h5, h6 {
