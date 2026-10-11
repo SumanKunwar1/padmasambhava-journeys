@@ -24,6 +24,9 @@ import SeasonalDeals from "./pages/SeasonalDeals";
 import CustomisedTrips from "./pages/CustomisedTrips";
 import Contact from "./pages/Contact";
 import OptIn from "./pages/OptIn";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import CancellationPolicy from "./pages/CancellationPolicy";
+import TermsAndConditions from "./pages/TermsAndConditions";
 import AboutUs from "./pages/AboutUs";
 import Blogs from "./pages/Blogs";
 import NotFound from "./pages/NotFound";
@@ -405,9 +408,9 @@ const App = () => (
             <Route path="/about" element={<AboutUs />} />
             <Route path="/blogs" element={<Blogs />} />
             <Route path="/blog/:id" element={<Blogs />} />
-            <Route path="/privacy" element={<Contact />} />
-            <Route path="/cancellation" element={<Contact />} />
-            <Route path="/terms" element={<Contact />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/cancellation" element={<CancellationPolicy />} />
+            <Route path="/terms" element={<TermsAndConditions />} />
             <Route path="/corporate" element={<Contact />} />
             <Route path="/agent-signup" element={<AgentSignup />} />
             <Route path="/agent/login" element={<AgentLogin />} />
