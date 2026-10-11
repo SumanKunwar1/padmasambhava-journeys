@@ -23,6 +23,7 @@ import Retreats from "./pages/Retreats";
 import SeasonalDeals from "./pages/SeasonalDeals";
 import CustomisedTrips from "./pages/CustomisedTrips";
 import Contact from "./pages/Contact";
+import OptIn from "./pages/OptIn";
 import AboutUs from "./pages/AboutUs";
 import Blogs from "./pages/Blogs";
 import NotFound from "./pages/NotFound";
@@ -400,6 +401,7 @@ const App = () => (
 
             {/* Contact & More */}
             <Route path="/contact" element={<Contact />} />
+            <Route path="/opt-in" element={<OptIn />} />
             <Route path="/about" element={<AboutUs />} />
             <Route path="/blogs" element={<Blogs />} />
             <Route path="/blog/:id" element={<Blogs />} />

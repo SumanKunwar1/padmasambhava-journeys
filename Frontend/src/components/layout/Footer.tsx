@@ -54,6 +54,7 @@ const quickLinks = [
   { label: "About Us", href: "/about" },
   { label: "Blogs", href: "/blogs" },
   { label: "Contact Us", href: "/contact" },
+  { label: "Opt-In for Updates", href: "/opt-in" },
   { label: "Privacy Policy", href: "/privacy" },
   { label: "Cancellation Policy", href: "/cancellation" },
   { label: "Terms & Conditions", href: "/terms" },
