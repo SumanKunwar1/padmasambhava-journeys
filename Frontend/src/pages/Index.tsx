@@ -12,7 +12,6 @@ import { PartnerWithUs } from "@/components/home/PartnerWithUs";
 import { WatchOurTrip } from "@/components/home/WatchOurTrip";
 import { InquirySection } from "@/components/home/InquirySection";
 import { GoogleReviewCta } from "@/components/home/GoogleReviewCta";
-import { Testimonials } from "@/components/home/Testimonials";
 import { FAQSection } from "@/components/home/FAQSection";
 import { BlogsSection } from "@/components/home/BlogsSection";
 import { WhatsAppButton } from "@/components/shared/WhatsAppButton";
@@ -44,7 +43,6 @@ const Index = () => {
         <WatchOurTrip />
         <InquirySection />
 
-        <Testimonials />
         <GoogleReviewCta />
         <FAQSection />
         <BlogsSection />
