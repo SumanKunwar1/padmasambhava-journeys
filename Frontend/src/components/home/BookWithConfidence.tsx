@@ -77,7 +77,8 @@ const trustBadges = [
 
 export function BookWithConfidence() {
   return (
-    <section className="py-12 bg-cream-warm">
+    // Desktop and tablet only: on phones this block is hidden to keep the page short.
+    <section className="hidden md:block py-12 bg-cream-warm" data-testid="book-with-confidence">
       <div className="container-custom">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

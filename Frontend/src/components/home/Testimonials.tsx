@@ -131,6 +131,9 @@ export function Testimonials() {
                 alt={testimonial.name}
                 className="w-20 h-20 rounded-full object-cover border-4 border-primary/20"
                 onError={(e) => {
+                  // Fall back only once, otherwise a failing fallback re-triggers onError forever
+                  if (e.currentTarget.dataset.fallback) return;
+                  e.currentTarget.dataset.fallback = "true";
                   e.currentTarget.src =
                     "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=200&h=200&fit=crop&crop=face";
                 }}

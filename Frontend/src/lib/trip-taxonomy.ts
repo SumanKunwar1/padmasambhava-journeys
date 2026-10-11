@@ -70,6 +70,19 @@ export const TRIP_CATEGORIES: Record<string, TripCategory> = {
       { label: "Healings", value: "wellness", route: "/retreats/wellness" },
     ],
   },
+  // Each type here feeds one tour section on the homepage (see home-sections.ts).
+  // The Pilgrimage Tours section reuses "Pilgrimage Trips" under Travel Styles.
+  "Homepage Sections": {
+    value: "homepage-sections",
+    subcategories: [
+      // Labels are kept short: the admin form truncates long ones.
+      { label: "Kailash & Tibet Top Selling", value: "kailash-tibet", route: "/trips/kailash-tibet" },
+      { label: "Wellness Tours", value: "wellness-tours", route: "/trips/wellness" },
+      { label: "World Peace Prayer", value: "world-peace-prayer", route: "/trips/world-peace-prayer" },
+      { label: "Empowerment & Teachings", value: "dharma-events", route: "/trips/dharma-events" },
+      { label: "Trip by Activities", value: "activities", route: "/trips/activities" },
+    ],
+  },
 };
 
 /** Every type, flattened, in the order the admin form shows them. */

@@ -19,6 +19,7 @@ import {
   TrendingUp,
   Compass,
   Shield,
+  LayoutList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -53,6 +54,11 @@ const menuItems = [
         title: "Explore Destinations",
         icon: Compass,
         path: "/admin/homepage/explore",
+      },
+      {
+        title: "Tour Sections",
+        icon: LayoutList,
+        path: "/admin/homepage/sections",
       },
     ],
   },
@@ -307,7 +313,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         {/* Main Content */}
         <main
           className={cn(
-            "flex-1 p-4 md:p-8 transition-all duration-300",
+            // min-w-0 lets wide tables scroll inside their own box instead of
+            // stretching the whole page past the screen edge.
+            "flex-1 min-w-0 p-4 md:p-8 transition-all duration-300",
             sidebarOpen ? "lg:ml-64" : "lg:ml-0"
           )}
         >

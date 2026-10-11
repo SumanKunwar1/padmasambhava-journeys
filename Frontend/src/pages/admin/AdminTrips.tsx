@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { AdminPagination, ADMIN_PAGE_SIZE } from "@/components/admin/AdminPagination";
 import { cn } from "@/lib/utils";
 import axiosInstance from "@/lib/axios";
 
@@ -36,6 +37,10 @@ export default function AdminTrips() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("All");
   const [loading, setLoading] = useState(true);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   const [stats, setStats] = useState<Stats>({
     totalTrips: 0,
     activeTrips: 0,
@@ -43,18 +48,51 @@ export default function AdminTrips() {
     avgPrice: 0,
   });
 
+  // Wait for a pause in typing before asking the server, so a search costs one
+  // request instead of one per keystroke.
   useEffect(() => {
-    fetchTrips();
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+      setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
     fetchStats();
   }, []);
 
+  useEffect(() => {
+    fetchTrips();
+  }, [currentPage, debouncedSearch, filterCategory]);
+
+  // The server does the paging, searching and category filtering, and sends
+  // back only the columns this table shows.
   const fetchTrips = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/trips');
+      const response = await axiosInstance.get('/trips', {
+        params: {
+          page: currentPage,
+          limit: ADMIN_PAGE_SIZE,
+          fields: "name,destination,tripCategory,duration,price,status,bookings",
+          ...(debouncedSearch && { q: debouncedSearch }),
+          ...(filterCategory !== "All" && { tripCategory: filterCategory }),
+        },
+      });
 
       if (response.data.status === 'success') {
+        const pages = response.data.totalPages || 1;
+
+        // Deleting the last row of the last page leaves an empty page behind.
+        if (currentPage > pages) {
+          setCurrentPage(pages);
+          return;
+        }
+
         setTrips(response.data.data.trips);
+        setTotalPages(pages);
+        setTotalItems(response.data.total ?? response.data.data.trips.length);
       }
     } catch (error: any) {
       console.error("Error fetching trips:", error);
@@ -93,11 +131,12 @@ export default function AdminTrips() {
     try {
       await axiosInstance.delete(`/trips/${id}`);
 
-      setTrips(trips.filter((trip) => trip._id !== id));
       toast({
         title: "Trip deleted",
         description: "The trip has been deleted successfully",
       });
+      // Reload the page so the next trip moves up to fill the gap.
+      fetchTrips();
       fetchStats();
     } catch (error: any) {
       console.error("Error deleting trip:", error);
@@ -109,22 +148,6 @@ export default function AdminTrips() {
     }
   };
 
-  const filteredTrips = trips.filter((trip) => {
-    const matchesSearch =
-      trip.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      trip.destination.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    // Handle both single category (string) and multiple categories (array)
-    const tripCategories = Array.isArray(trip.tripCategory) 
-      ? trip.tripCategory 
-      : [trip.tripCategory];
-    
-    const matchesCategory =
-      filterCategory === "All" || tripCategories.includes(filterCategory);
-    
-    return matchesSearch && matchesCategory;
-  });
-
   const categories = [
     "All",
     "emi-trips",
@@ -134,6 +157,7 @@ export default function AdminTrips() {
     "travel-styles",
     "combo-trips",
     "retreats",
+    "homepage-sections",
   ];
 
   const formatCategoryName = (category: string) => {
@@ -176,7 +200,10 @@ export default function AdminTrips() {
                 key={category}
                 variant={filterCategory === category ? "default" : "outline"}
                 size="sm"
-                onClick={() => setFilterCategory(category)}
+                onClick={() => {
+                  setFilterCategory(category);
+                  setCurrentPage(1);
+                }}
               >
                 {formatCategoryName(category)}
               </Button>
@@ -226,14 +253,14 @@ export default function AdminTrips() {
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                     </td>
                   </tr>
-                ) : filteredTrips.length === 0 ? (
+                ) : trips.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="p-8 text-center text-muted-foreground">
                       No trips found
                     </td>
                   </tr>
                 ) : (
-                  filteredTrips.map((trip, index) => {
+                  trips.map((trip, index) => {
                     // Handle both single and multiple categories
                     const tripCategories = Array.isArray(trip.tripCategory) 
                       ? trip.tripCategory 
@@ -320,6 +347,15 @@ export default function AdminTrips() {
               </tbody>
             </table>
           </div>
+
+          <AdminPagination
+            page={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemLabel="trips"
+            onPageChange={setCurrentPage}
+            disabled={loading}
+          />
         </div>
       </div>
     </AdminLayout>

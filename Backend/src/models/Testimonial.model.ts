@@ -1,5 +1,6 @@
 // models/Testimonial.model.ts
 import mongoose, { Document, Schema } from 'mongoose';
+import { nextSequentialId } from '../utils/sequence';
 
 export interface ITestimonial extends Document {
   testimonialId: string;
@@ -75,8 +76,7 @@ testimonialSchema.pre('save', async function (next) {
   if (!this.testimonialId) {
     try {
       const TestimonialModel = mongoose.model<ITestimonial>('Testimonial');
-      const count = await TestimonialModel.countDocuments();
-      this.testimonialId = `TST${String(count + 1).padStart(6, '0')}`;
+      this.testimonialId = await nextSequentialId(TestimonialModel, 'testimonialId', 'TST');
     } catch (error) {
       return next(error as Error);
     }

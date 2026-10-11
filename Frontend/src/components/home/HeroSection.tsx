@@ -2,17 +2,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { BookingFormModal } from "@/components/shared/BookingFormModal";
+import { HeroCtaButton } from "@/components/home/HeroCtaButton";
 import { API_BASE_URL } from "@/lib/api-config";
+import type { HeroImage } from "@/lib/hero-banner";
 import axios from "axios";
-
-interface HeroImage {
-  _id: string;
-  imageUrl: string;
-  title?: string;
-  subtitle?: string;
-  order: number;
-  isActive: boolean;
-}
 
 const FALLBACK_IMAGES: HeroImage[] = [
   {
@@ -37,14 +30,37 @@ const DEFAULT_RATIO = 16 / 9;
 const MIN_RATIO = 0.75;
 const MAX_RATIO = 2;
 
+// Phones get their own portrait banner. It is always framed 4:5, which also
+// leaves room for a tagline and buttons that a landscape strip cannot hold.
+const MOBILE_RATIO = 4 / 5;
+const MOBILE_QUERY = "(max-width: 767px)";
+
+function useIsMobileViewport() {
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== "undefined" && window.matchMedia(MOBILE_QUERY).matches
+  );
+
+  useEffect(() => {
+    const mql = window.matchMedia(MOBILE_QUERY);
+    const onChange = () => setIsMobile(mql.matches);
+    onChange();
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+
+  return isMobile;
+}
+
 export function HeroSection() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [heroImages, setHeroImages] = useState<HeroImage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [ratios, setRatios] = useState<Record<string, number>>({});
+  const [isPaused, setIsPaused] = useState(false);
 
   const prefersReducedMotion = useReducedMotion();
+  const isMobile = useIsMobileViewport();
 
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -72,6 +88,17 @@ export function HeroSection() {
     fetchHeroImages();
   }, []);
 
+  // The banner this screen should show: the portrait upload on phones when
+  // there is one, otherwise the desktop banner.
+  const usesMobileImage = useCallback(
+    (image: HeroImage) => isMobile && Boolean(image.mobileImageUrl),
+    [isMobile]
+  );
+  const getImageSrc = useCallback(
+    (image: HeroImage) => (usesMobileImage(image) ? image.mobileImageUrl! : image.imageUrl),
+    [usesMobileImage]
+  );
+
   // Measure every banner up front. This doubles as a preload, so swipes and
   // auto-advances never flash an empty frame, and the mobile height is known
   // before a slide is shown instead of snapping after it loads.
@@ -88,13 +115,13 @@ export function HeroSection() {
           [image._id]: loader.naturalWidth / loader.naturalHeight,
         }));
       };
-      loader.src = image.imageUrl;
+      loader.src = getImageSrc(image);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [heroImages]);
+  }, [heroImages, getImageSrc]);
 
   const goToSlide = useCallback(
     (index: number) => {
@@ -108,16 +135,17 @@ export function HeroSection() {
   );
 
   // Auto-slide effect. Restarts whenever the slide changes, so a tap or swipe
-  // gives the viewer a full interval before the next auto advance.
+  // gives the viewer a full interval before the next auto advance. It holds
+  // still while someone is reading the text or reaching for a button.
   useEffect(() => {
-    if (heroImages.length <= 1) return;
+    if (heroImages.length <= 1 || isPaused) return;
 
     const interval = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % heroImages.length);
     }, SLIDE_DURATION);
 
     return () => clearInterval(interval);
-  }, [heroImages.length, currentImageIndex]);
+  }, [heroImages.length, currentImageIndex, isPaused]);
 
   const handleTouchStart = (event: React.TouchEvent) => {
     touchStartX.current = event.touches[0].clientX;
@@ -141,7 +169,7 @@ export function HeroSection() {
 
   if (isLoading) {
     return (
-      <section className="relative w-full aspect-[16/9] max-h-[92svh] flex items-center justify-center bg-gray-100 px-5">
+      <section className="relative w-full aspect-[4/5] md:aspect-[16/9] max-h-[92svh] flex items-center justify-center bg-gray-100 px-5">
         <div className="text-center">
           <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-sm sm:text-base text-muted-foreground">Loading...</p>
@@ -153,12 +181,19 @@ export function HeroSection() {
   const activeImage = heroImages[currentImageIndex];
   if (!activeImage) return null;
 
-  const measuredRatio = ratios[activeImage._id] ?? DEFAULT_RATIO;
-  const bannerRatio = Math.min(Math.max(measuredRatio, MIN_RATIO), MAX_RATIO);
+  const ctas = (activeImage.ctas ?? []).filter((cta) => cta.label && cta.url);
 
   // The banner artwork usually carries its own headline. Only dim the image and
-  // lay type over it when this slide actually has text to show.
-  const hasOverlayText = Boolean(activeImage.title || activeImage.subtitle);
+  // lay content over it when this slide actually has something to show.
+  const hasOverlayContent = Boolean(activeImage.title || activeImage.subtitle || ctas.length > 0);
+
+  // A landscape strip on a phone is too short to hold buttons, so a slide with
+  // buttons is framed 4:5 there even without a dedicated mobile banner.
+  const usesMobileFrame = isMobile && (Boolean(activeImage.mobileImageUrl) || ctas.length > 0);
+  const measuredRatio = ratios[activeImage._id] ?? DEFAULT_RATIO;
+  const bannerRatio = usesMobileFrame
+    ? MOBILE_RATIO
+    : Math.min(Math.max(measuredRatio, MIN_RATIO), MAX_RATIO);
 
   return (
     <>
@@ -169,6 +204,7 @@ export function HeroSection() {
         onTouchEnd={handleTouchEnd}
         aria-roledescription="carousel"
         aria-label="Featured destinations"
+        data-testid="hero-banner"
       >
         {/* Background banners. Crossfade only — any zoom would push the
             artwork past the edges and clip the headline baked into it. */}
@@ -182,25 +218,33 @@ export function HeroSection() {
             className="absolute inset-0"
           >
             <img
-              src={activeImage.imageUrl}
+              src={getImageSrc(activeImage)}
               alt={activeImage.title || "Sacred pilgrimage destination"}
               className="w-full h-full object-cover object-center select-none"
               loading={currentImageIndex === 0 ? "eager" : "lazy"}
               fetchPriority={currentImageIndex === 0 ? "high" : "auto"}
               decoding="async"
               draggable={false}
+              data-testid="hero-banner-image"
             />
-            {/* Gradient overlay, only where type sits on top of the artwork */}
-            {hasOverlayText && (
-              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/40 to-black/25 sm:from-black/65 sm:via-black/30 sm:to-black/10 md:from-black/60 md:via-black/20 md:to-transparent" />
+            {/* Scrim, only where content sits on top of the artwork: from the
+                bottom on phones, from the left on wider screens. */}
+            {hasOverlayContent && (
+              <>
+                <div
+                  className="absolute inset-0 md:hidden bg-gradient-to-t from-black/85 via-black/45 to-black/5"
+                  data-testid="hero-banner-scrim"
+                />
+                <div className="absolute inset-0 hidden md:block bg-gradient-to-r from-black/75 via-black/35 to-transparent" />
+              </>
             )}
           </motion.div>
         </AnimatePresence>
 
         {/* Hero Content — absolute so it never stretches the banner's ratio */}
-        {hasOverlayText && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center">
-            <div className="w-full text-center text-white px-5 sm:px-8 pb-12 sm:pb-16 md:pb-20 max-w-5xl mx-auto">
+        {hasOverlayContent && (
+          <div className="absolute inset-0 z-10 flex items-end md:items-center">
+            <div className="container-custom w-full pb-14 sm:pb-16 md:pb-0">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentImageIndex}
@@ -208,16 +252,32 @@ export function HeroSection() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: prefersReducedMotion ? 0 : -20 }}
                   transition={{ duration: prefersReducedMotion ? 0 : 0.8 }}
+                  className="max-w-xl lg:max-w-2xl text-left text-white"
+                  onMouseEnter={() => setIsPaused(true)}
+                  onMouseLeave={() => setIsPaused(false)}
+                  onFocus={() => setIsPaused(true)}
+                  onBlur={() => setIsPaused(false)}
+                  data-testid="hero-banner-content"
                 >
                   {activeImage.title && (
-                    <h1 className="text-[clamp(1.5rem,7vw,4.5rem)] leading-[1.15] font-display font-bold mb-2 sm:mb-4 md:mb-6 drop-shadow-2xl [text-wrap:balance] break-words">
-                      {activeImage.title}
-                    </h1>
+                    <>
+                      <span className="block h-1 w-12 sm:w-16 rounded-full bg-accent mb-3 sm:mb-5" aria-hidden="true" />
+                      <h1 className="text-[clamp(1.75rem,5.2vw,4.25rem)] leading-[1.08] font-display font-bold drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)] [text-wrap:balance] break-words">
+                        {activeImage.title}
+                      </h1>
+                    </>
                   )}
                   {activeImage.subtitle && (
-                    <p className="text-[clamp(0.875rem,3.5vw,1.5rem)] leading-relaxed drop-shadow-lg [text-wrap:balance] max-w-2xl mx-auto">
+                    <p className="mt-3 sm:mt-5 text-[clamp(0.9rem,1.7vw,1.3rem)] leading-relaxed text-white/90 drop-shadow-[0_1px_6px_rgba(0,0,0,0.5)] [text-wrap:pretty] max-w-lg">
                       {activeImage.subtitle}
                     </p>
+                  )}
+                  {ctas.length > 0 && (
+                    <div className="mt-5 sm:mt-8 flex flex-wrap gap-2.5 sm:gap-4" data-testid="hero-banner-ctas">
+                      {ctas.map((cta, index) => (
+                        <HeroCtaButton key={cta._id || index} cta={cta} />
+                      ))}
+                    </div>
                   )}
                 </motion.div>
               </AnimatePresence>

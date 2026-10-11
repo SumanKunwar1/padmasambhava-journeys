@@ -66,7 +66,7 @@ export const getAllTrips = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     // Build query
     const queryObj: Record<string, any> = { ...req.query };
-    const excludedFields = ['page', 'sort', 'limit', 'fields', 'search', 'destinationSlug'];
+    const excludedFields = ['page', 'sort', 'limit', 'fields', 'search', 'q', 'destinationSlug'];
     excludedFields.forEach((el) => delete queryObj[el]);
 
     // Advanced filtering
@@ -98,32 +98,53 @@ export const getAllTrips = catchAsync(
       extraFilters.destinations = destination._id;
     }
 
-    let query: any = Trip.find(JSON.parse(queryStr)).find(extraFilters);
+    // Every condition goes into one filter, used for both the page of results
+    // and the total — otherwise the page count drifts from what is listed.
+    const conditions: any[] = [JSON.parse(queryStr), extraFilters];
 
     // Filter by category (support both single and multiple categories)
     if (req.query.tripCategory) {
-      query = query.where('tripCategory').in([req.query.tripCategory]);
+      conditions.push({ tripCategory: { $in: [req.query.tripCategory] } });
     }
     if (req.query.tripType) {
-      query = query.where('tripType').equals(req.query.tripType);
+      conditions.push({ tripType: req.query.tripType });
     }
 
-    // Search functionality
+    // Search functionality (whole words, via the text index)
     if (req.query.search) {
-      query = query.where('$text').equals({ $search: req.query.search as string });
+      conditions.push({
+        $text: { $search: req.query.search as string },
+      });
+    }
+
+    // Type-as-you-go search for the admin table: matches part of a name or destination
+    if (req.query.q) {
+      const pattern = String(req.query.q).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      if (pattern) {
+        conditions.push({
+          $or: [
+            { name: { $regex: pattern, $options: 'i' } },
+            { destination: { $regex: pattern, $options: 'i' } },
+          ],
+        });
+      }
     }
 
     // Filter by status (only active trips for public)
     if (!req.query.status) {
-      query = query.where('status').equals('Active');
+      conditions.push({ status: 'Active' });
     }
+
+    const filter = { $and: conditions };
+    let query: any = Trip.find(filter);
 
     // Sorting
     if (req.query.sort) {
       const sortBy = (req.query.sort as string).split(',').join(' ');
       query = query.sort(sortBy);
     } else {
-      query = query.sort('-createdAt');
+      // _id breaks ties so a trip never repeats or goes missing between pages
+      query = query.sort('-createdAt -_id');
     }
 
     // Field limiting
@@ -141,10 +162,7 @@ export const getAllTrips = catchAsync(
 
     // Execute query
     const trips = await query.exec();
-    const total = await Trip.countDocuments({
-      ...JSON.parse(queryStr),
-      ...extraFilters,
-    });
+    const total = await Trip.countDocuments(filter);
 
     res.status(200).json({
       status: 'success',

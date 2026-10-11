@@ -2,14 +2,65 @@
 import { Request, Response, NextFunction } from 'express';
 import { catchAsync } from '../utils/catchAsync';
 import { AppError } from '../utils/appError';
-import HeroImage from '../models/HeroImage.model';
+import HeroImage, {
+  IHeroCta,
+  HERO_CTA_STYLES,
+  HEX_COLOR_REGEX,
+  HERO_CTA_URL_REGEX,
+} from '../models/HeroImage.model';
+
+// Clean up the CTA buttons sent by the admin panel. Buttons are optional, so
+// rows left completely blank are dropped; a half-filled row is an error.
+const normalizeCtas = (input: unknown): IHeroCta[] => {
+  if (input === undefined || input === null) return [];
+  if (!Array.isArray(input)) {
+    throw new AppError('Buttons must be sent as a list', 400);
+  }
+
+  const ctas: IHeroCta[] = [];
+
+  input.forEach((raw: any, index: number) => {
+    const label = typeof raw?.label === 'string' ? raw.label.trim() : '';
+    const url = typeof raw?.url === 'string' ? raw.url.trim() : '';
+
+    if (!label && !url) return;
+
+    if (!label || !url) {
+      throw new AppError(`Button ${index + 1} needs both a label and a link`, 400);
+    }
+    if (!HERO_CTA_URL_REGEX.test(url)) {
+      throw new AppError(
+        `Button ${index + 1} link must be a page path (/contact) or a full URL (https://...)`,
+        400
+      );
+    }
+
+    const bgColor = typeof raw.bgColor === 'string' && raw.bgColor.trim() ? raw.bgColor.trim() : '#188558';
+    const textColor = typeof raw.textColor === 'string' && raw.textColor.trim() ? raw.textColor.trim() : '#FFFFFF';
+
+    if (!HEX_COLOR_REGEX.test(bgColor) || !HEX_COLOR_REGEX.test(textColor)) {
+      throw new AppError(`Button ${index + 1} colors must be hex values like #188558`, 400);
+    }
+
+    ctas.push({
+      label,
+      url,
+      style: HERO_CTA_STYLES.includes(raw.style) ? raw.style : 'solid',
+      bgColor,
+      textColor,
+      openInNewTab: raw.openInNewTab === true,
+    });
+  });
+
+  return ctas;
+};
 
 // @desc    Create new hero image
 // @route   POST /api/v1/hero-images
 // @access  Private (Admin)
 export const createHeroImage = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { imageUrl, title, subtitle, order, isActive } = req.body;
+    const { imageUrl, mobileImageUrl, title, subtitle, ctas, order, isActive } = req.body;
 
     // Validate required fields
     if (!imageUrl) {
@@ -19,8 +70,10 @@ export const createHeroImage = catchAsync(
     // Create hero image
     const heroImage = await HeroImage.create({
       imageUrl,
+      mobileImageUrl: mobileImageUrl || '',
       title: title || '',
       subtitle: subtitle || '',
+      ctas: normalizeCtas(ctas),
       order: order || 1,
       isActive: isActive !== undefined ? isActive : true,
     });
@@ -103,13 +156,15 @@ export const getHeroImage = catchAsync(
 // @access  Private (Admin)
 export const updateHeroImage = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { imageUrl, title, subtitle, order, isActive } = req.body;
+    const { imageUrl, mobileImageUrl, title, subtitle, ctas, order, isActive } = req.body;
 
     const updateData: any = {};
 
     if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
+    if (mobileImageUrl !== undefined) updateData.mobileImageUrl = mobileImageUrl || '';
     if (title !== undefined) updateData.title = title;
     if (subtitle !== undefined) updateData.subtitle = subtitle;
+    if (ctas !== undefined) updateData.ctas = normalizeCtas(ctas);
     if (order !== undefined) updateData.order = order;
     if (isActive !== undefined) updateData.isActive = isActive;
 

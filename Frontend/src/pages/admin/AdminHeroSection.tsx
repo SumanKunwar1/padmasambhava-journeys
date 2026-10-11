@@ -1,58 +1,68 @@
 // src/pages/admin/AdminHeroSection.tsx
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, Trash2, Edit2, Eye, EyeOff, Upload, Image as ImageIcon } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Edit2,
+  Eye,
+  EyeOff,
+  Upload,
+  Image as ImageIcon,
+  Smartphone,
+  MousePointerClick,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/admin/AdminLayout";
+import { HeroCtaButton } from "@/components/home/HeroCtaButton";
 import { cn } from "@/lib/utils";
+import axiosInstance from "@/lib/axios"; // ✅ Import the configured axios instance
+import { compressImage, formatBytes, type CompressOptions } from "@/lib/image-compress";
+import {
+  createEmptyCta,
+  DEFAULT_CTA_BG,
+  DEFAULT_CTA_TEXT,
+  HERO_CTA_URL_REGEX,
+  HEX_COLOR_REGEX,
+  type HeroCta,
+  type HeroCtaStyle,
+  type HeroImage,
+} from "@/lib/hero-banner";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5020";
+type ImageField = "imageUrl" | "mobileImageUrl";
 
-interface HeroImage {
-  _id: string;
+interface HeroFormData {
   imageUrl: string;
-  title?: string;
-  subtitle?: string;
+  mobileImageUrl: string;
+  title: string;
+  subtitle: string;
+  ctas: HeroCta[];
   order: number;
   isActive: boolean;
-  createdAt: string;
 }
 
-// Helper function to get cookie
-const getCookie = (name: string): string | null => {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
-  return null;
+// Uploads are shrunk to these limits in the browser. Together the two images
+// stay well under 1 MB once encoded, the default request limit of most
+// production web servers.
+const IMAGE_LIMITS: Record<ImageField, CompressOptions> = {
+  imageUrl: { maxWidth: 1920, maxHeight: 1920, maxBytes: 400 * 1024 },
+  mobileImageUrl: { maxWidth: 1080, maxHeight: 1350, maxBytes: 240 * 1024 },
 };
 
-// Helper function to get auth token
-const getAuthToken = (): string | null => {
-  // Try adminToken first (set by AdminLogin)
-  const adminToken = localStorage.getItem("adminToken");
-  if (adminToken) {
-    console.log("✅ Token found in localStorage (adminToken)");
-    return adminToken;
-  }
+// Quick picks next to the color pickers: brand green, amber, deep red, charcoal, white.
+const COLOR_PRESETS = ["#188558", "#F59E0B", "#B91C1C", "#1F2937", "#FFFFFF"];
 
-  // Fallback: try legacy 'token' key
-  const localToken = localStorage.getItem("token");
-  if (localToken) {
-    console.log("✅ Token found in localStorage (token)");
-    return localToken;
+// <input type="color"> only understands 6-digit hex.
+const toPickerHex = (value: string, fallback: string) => {
+  if (!HEX_COLOR_REGEX.test(value)) return fallback;
+  if (value.length === 4) {
+    return `#${value[1]}${value[1]}${value[2]}${value[2]}${value[3]}${value[3]}`;
   }
-  
-  // Then try cookie
-  const cookieToken = getCookie("jwt");
-  if (cookieToken) {
-    console.log("✅ Token found in cookie");
-    return cookieToken;
-  }
-  
-  console.error("❌ No token found in localStorage or cookie");
-  return null;
+  return value;
 };
 
 export default function AdminHeroSection() {
@@ -61,12 +71,14 @@ export default function AdminHeroSection() {
   const [isLoading, setIsLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingImage, setEditingImage] = useState<HeroImage | null>(null);
-  const [previewImage, setPreviewImage] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
-  const [formData, setFormData] = useState({
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const [formData, setFormData] = useState<HeroFormData>({
     imageUrl: "",
+    mobileImageUrl: "",
     title: "",
     subtitle: "",
+    ctas: [],
     order: 1,
     isActive: true,
   });
@@ -78,67 +90,36 @@ export default function AdminHeroSection() {
   const loadHeroImages = async () => {
     try {
       setIsLoading(true);
-      const token = getAuthToken();
+      console.log("🔄 Fetching hero images...");
 
-      if (!token) {
-        console.error("❌ No token available for loadHeroImages");
+      // ✅ Use axios instance - it handles auth automatically
+      const response = await axiosInstance.get('/hero-images');
+
+      console.log("✅ Hero images loaded:", response.data.results);
+
+      if (response.data.status === "success") {
+        setHeroImages(response.data.data.heroImages);
+      }
+    } catch (error: any) {
+      console.error("❌ Error loading hero images:", error);
+
+      // Check if it's an auth error (axios interceptor handles 401)
+      if (error.response?.status === 401) {
         toast({
-          title: "Authentication Required",
-          description: "Please login to access this page",
+          title: "Session Expired",
+          description: "Your session has expired. Please login again.",
           variant: "destructive",
         });
         setTimeout(() => {
           window.location.href = '/admin/login';
         }, 1500);
-        return;
+      } else {
+        toast({
+          title: "Error",
+          description: error.response?.data?.message || error.message || "Failed to load hero images",
+          variant: "destructive",
+        });
       }
-
-      console.log("🔄 Fetching hero images with token...");
-
-      const response = await fetch(`${API_URL}/api/v1/hero-images`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        credentials: 'include',
-      });
-
-      console.log("📡 Response status:", response.status);
-
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          console.error("❌ Authentication failed:", response.status);
-          // Clear invalid tokens
-          localStorage.removeItem("adminToken");
-          localStorage.removeItem("token");
-          
-          toast({
-            title: "Session Expired",
-            description: "Your session has expired. Please login again.",
-            variant: "destructive",
-          });
-          setTimeout(() => {
-            window.location.href = '/admin/login';
-          }, 1500);
-          return;
-        }
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log("✅ Hero images loaded:", data.results);
-      
-      if (data.status === "success") {
-        setHeroImages(data.data.heroImages);
-      }
-    } catch (error: any) {
-      console.error("❌ Error loading hero images:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to load hero images",
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
     }
@@ -148,12 +129,13 @@ export default function AdminHeroSection() {
     setEditingImage(null);
     setFormData({
       imageUrl: "",
+      mobileImageUrl: "",
       title: "",
       subtitle: "",
+      ctas: [],
       order: heroImages.length + 1,
       isActive: true,
     });
-    setPreviewImage("");
     setShowModal(true);
   };
 
@@ -161,23 +143,24 @@ export default function AdminHeroSection() {
     setEditingImage(image);
     setFormData({
       imageUrl: image.imageUrl,
+      mobileImageUrl: image.mobileImageUrl || "",
       title: image.title || "",
       subtitle: image.subtitle || "",
+      ctas: (image.ctas || []).map((cta) => ({ ...createEmptyCta(), ...cta })),
       order: image.order,
       isActive: image.isActive,
     });
-    setPreviewImage(image.imageUrl);
     setShowModal(true);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (field: ImageField) => async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
+      // Validate file size (max 20MB; the image is shrunk below before upload)
+      if (file.size > 20 * 1024 * 1024) {
         toast({
           title: "Error",
-          description: "Image size should be less than 5MB",
+          description: "Image size should be less than 20MB",
           variant: "destructive",
         });
         return;
@@ -193,19 +176,83 @@ export default function AdminHeroSection() {
         return;
       }
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setPreviewImage(result);
-        setFormData({ ...formData, imageUrl: result });
-      };
-      reader.readAsDataURL(file);
+      try {
+        setIsProcessingImage(true);
+        // Resize and re-encode in the browser. Sent as-is, a full-size photo
+        // makes the save request too large and the server rejects it (413).
+        const compressed = await compressImage(file, IMAGE_LIMITS[field]);
+        setFormData((prev) => ({ ...prev, [field]: compressed.dataUrl }));
 
-      toast({
-        title: "Image Loaded",
-        description: "Image preview created. For production, implement cloud upload (Cloudinary/AWS S3).",
-      });
+        toast({
+          title: "Image ready",
+          description: `Optimised from ${formatBytes(file.size)} to ${formatBytes(compressed.bytes)} (${compressed.width} × ${compressed.height} px).`,
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: error instanceof Error ? error.message : "The image could not be processed",
+          variant: "destructive",
+        });
+      } finally {
+        setIsProcessingImage(false);
+        // Lets the same file be picked again after a failure.
+        e.target.value = "";
+      }
     }
+  };
+
+  const addCta = () => {
+    setFormData((prev) => ({ ...prev, ctas: [...prev.ctas, createEmptyCta()] }));
+  };
+
+  const updateCta = (index: number, changes: Partial<HeroCta>) => {
+    setFormData((prev) => ({
+      ...prev,
+      ctas: prev.ctas.map((cta, i) => (i === index ? { ...cta, ...changes } : cta)),
+    }));
+  };
+
+  const removeCta = (index: number) => {
+    setFormData((prev) => ({ ...prev, ctas: prev.ctas.filter((_, i) => i !== index) }));
+  };
+
+  const moveCta = (index: number, direction: -1 | 1) => {
+    setFormData((prev) => {
+      const target = index + direction;
+      if (target < 0 || target >= prev.ctas.length) return prev;
+      const ctas = [...prev.ctas];
+      [ctas[index], ctas[target]] = [ctas[target], ctas[index]];
+      return { ...prev, ctas };
+    });
+  };
+
+  // Buttons are optional: untouched rows are dropped, half-filled ones are reported.
+  const validateCtas = (): { ctas: HeroCta[]; error?: string } => {
+    const ctas: HeroCta[] = [];
+
+    for (let i = 0; i < formData.ctas.length; i++) {
+      const cta = formData.ctas[i];
+      const label = cta.label.trim();
+      const url = cta.url.trim();
+
+      if (!label && !url) continue;
+      if (!label || !url) {
+        return { ctas, error: `Button ${i + 1} needs both a label and a link` };
+      }
+      if (!HERO_CTA_URL_REGEX.test(url)) {
+        return {
+          ctas,
+          error: `Button ${i + 1} link must be a page path like /contact or a full URL like https://example.com`,
+        };
+      }
+      if (!HEX_COLOR_REGEX.test(cta.bgColor) || !HEX_COLOR_REGEX.test(cta.textColor)) {
+        return { ctas, error: `Button ${i + 1} colors must be hex values like #188558` };
+      }
+
+      ctas.push({ ...cta, label, url });
+    }
+
+    return { ctas };
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -220,95 +267,51 @@ export default function AdminHeroSection() {
       return;
     }
 
+    const { ctas, error } = validateCtas();
+    if (error) {
+      toast({
+        title: "Error",
+        description: error,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSaving(true);
 
     try {
-      const token = getAuthToken();
+      const payload = { ...formData, ctas };
 
-      if (!token) {
-        console.error("❌ No token available for submit");
+      // ✅ Use axios instance
+      if (editingImage) {
+        // Send an image only when it was actually replaced. Re-sending the
+        // stored pictures on every small edit makes the request needlessly
+        // large, and is what the server was rejecting.
+        const { imageUrl, mobileImageUrl, ...changes } = payload;
+        const update: Partial<HeroFormData> = { ...changes };
+        if (imageUrl !== editingImage.imageUrl) update.imageUrl = imageUrl;
+        if (mobileImageUrl !== (editingImage.mobileImageUrl || "")) update.mobileImageUrl = mobileImageUrl;
+
+        await axiosInstance.patch(`/hero-images/${editingImage._id}`, update);
         toast({
-          title: "Authentication Required",
-          description: "Please login to continue",
-          variant: "destructive",
+          title: "Success",
+          description: "Hero image updated successfully",
         });
-        setTimeout(() => {
-          window.location.href = '/admin/login';
-        }, 1500);
-        return;
+      } else {
+        await axiosInstance.post('/hero-images', payload);
+        toast({
+          title: "Success",
+          description: "Hero image created successfully",
+        });
       }
 
-      const url = editingImage 
-        ? `${API_URL}/api/v1/hero-images/${editingImage._id}`
-        : `${API_URL}/api/v1/hero-images`;
-
-      const method = editingImage ? 'PATCH' : 'POST';
-
-      console.log(`🔄 ${method} request to:`, url);
-      console.log("📤 Request data:", { ...formData, imageUrl: formData.imageUrl.substring(0, 50) + '...' });
-
-      const response = await fetch(url, {
-        method: method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        credentials: 'include',
-        body: JSON.stringify(formData),
-      });
-
-      console.log("📡 Response status:", response.status);
-
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          console.error("❌ Authentication failed during submit:", response.status);
-          // Clear invalid token
-          localStorage.removeItem("token");
-          
-          toast({
-            title: "Session Expired",
-            description: "Your session has expired. Please login again.",
-            variant: "destructive",
-          });
-          setTimeout(() => {
-            window.location.href = '/admin/login';
-          }, 1500);
-          return;
-        }
-        
-        const errorData = await response.json();
-        console.error("❌ Server error:", errorData);
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log("✅ Operation successful:", data);
-
-      if (data.status === "success") {
-        if (editingImage) {
-          setHeroImages(
-            heroImages.map((img) =>
-              img._id === editingImage._id ? data.data.heroImage : img
-            ).sort((a, b) => a.order - b.order)
-          );
-          toast({
-            title: "Success",
-            description: "Hero image updated successfully",
-          });
-        } else {
-          setHeroImages([...heroImages, data.data.heroImage].sort((a, b) => a.order - b.order));
-          toast({
-            title: "Success",
-            description: "Hero image created successfully",
-          });
-        }
-        setShowModal(false);
-      }
+      setShowModal(false);
+      loadHeroImages();
     } catch (error: any) {
-      console.error("❌ Error in handleSubmit:", error);
+      console.error("❌ Error saving hero image:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to save hero image",
+        description: error.response?.data?.message || error.message || "Failed to save hero image",
         variant: "destructive",
       });
     } finally {
@@ -318,60 +321,20 @@ export default function AdminHeroSection() {
 
   const toggleActive = async (id: string) => {
     try {
-      const token = getAuthToken();
+      // ✅ Use axios instance
+      await axiosInstance.patch(`/hero-images/${id}/toggle-active`);
 
-      if (!token) {
-        toast({
-          title: "Authentication Required",
-          description: "Please login to continue",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const response = await fetch(`${API_URL}/api/v1/hero-images/${id}/toggle-active`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        credentials: 'include',
+      toast({
+        title: "Success",
+        description: "Hero image status updated",
       });
 
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          localStorage.removeItem("token");
-          toast({
-            title: "Session Expired",
-            description: "Please login again.",
-            variant: "destructive",
-          });
-          setTimeout(() => {
-            window.location.href = '/admin/login';
-          }, 1500);
-          return;
-        }
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.status === "success") {
-        setHeroImages(
-          heroImages.map((img) =>
-            img._id === id ? data.data.heroImage : img
-          )
-        );
-        toast({
-          title: "Success",
-          description: data.message,
-        });
-      }
+      loadHeroImages();
     } catch (error: any) {
-      console.error("Error toggling active status:", error);
+      console.error("❌ Error toggling hero image:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to update status",
+        description: error.response?.data?.message || error.message || "Failed to update status",
         variant: "destructive",
       });
     }
@@ -383,60 +346,26 @@ export default function AdminHeroSection() {
     }
 
     try {
-      const token = getAuthToken();
+      // ✅ Use axios instance
+      await axiosInstance.delete(`/hero-images/${id}`);
 
-      if (!token) {
-        toast({
-          title: "Authentication Required",
-          description: "Please login to continue",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const response = await fetch(`${API_URL}/api/v1/hero-images/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        credentials: 'include',
+      toast({
+        title: "Success",
+        description: "Hero image deleted successfully",
       });
 
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          localStorage.removeItem("token");
-          toast({
-            title: "Session Expired",
-            description: "Please login again.",
-            variant: "destructive",
-          });
-          setTimeout(() => {
-            window.location.href = '/admin/login';
-          }, 1500);
-          return;
-        }
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.status === "success") {
-        setHeroImages(heroImages.filter((img) => img._id !== id));
-        toast({
-          title: "Success",
-          description: "Hero image deleted successfully",
-        });
-      }
+      loadHeroImages();
     } catch (error: any) {
-      console.error("Error deleting hero image:", error);
+      console.error("❌ Error deleting hero image:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to delete hero image",
+        description: error.response?.data?.message || error.message || "Failed to delete hero image",
         variant: "destructive",
       });
     }
   };
+
+  const previewCtas = formData.ctas.filter((cta) => cta.label.trim());
 
   return (
     <AdminLayout>
@@ -444,45 +373,51 @@ export default function AdminHeroSection() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Hero Banner Management</h1>
+            <h1 className="text-3xl font-bold">Hero Section Management</h1>
             <p className="text-muted-foreground mt-1">
-              Manage homepage hero slider images
+              Manage homepage hero banner images and slideshow
             </p>
           </div>
-          <Button onClick={handleCreate} size="lg">
-            <Plus className="w-5 h-5 mr-2" />
+          <Button onClick={handleCreate}>
+            <Plus className="w-4 h-4 mr-2" />
             Add Hero Image
           </Button>
         </div>
 
         {/* Loading State */}
-        {isLoading ? (
+        {isLoading && (
           <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-muted-foreground">Loading hero images...</p>
-            </div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
           </div>
-        ) : heroImages.length === 0 ? (
-          <div className="text-center py-12 bg-card rounded-lg border-2 border-dashed">
-            <ImageIcon className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No Hero Images Yet</h3>
-            <p className="text-muted-foreground mb-6">
-              Create your first hero banner image to get started
+        )}
+
+        {/* Empty State */}
+        {!isLoading && heroImages.length === 0 && (
+          <div className="bg-card rounded-lg border border-dashed border-border p-12 text-center">
+            <ImageIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No hero images yet</h3>
+            <p className="text-muted-foreground mb-4">
+              Create your first hero image to display on the homepage
             </p>
             <Button onClick={handleCreate}>
-              <Plus className="w-5 h-5 mr-2" />
-              Add First Hero Image
+              <Plus className="w-4 h-4 mr-2" />
+              Add Hero Image
             </Button>
           </div>
-        ) : (
+        )}
+
+        {/* Hero Images Grid */}
+        {!isLoading && heroImages.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {heroImages.map((image) => (
               <motion.div
                 key={image._id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-card rounded-lg overflow-hidden shadow-lg border"
+                className={cn(
+                  "bg-card rounded-lg border overflow-hidden transition-all hover:shadow-lg",
+                  !image.isActive && "opacity-60"
+                )}
               >
                 <div className="relative aspect-video">
                   <img
@@ -518,7 +453,24 @@ export default function AdminHeroSection() {
                   </div>
                 </div>
 
-                <div className="p-4">
+                <div className="p-4 space-y-3">
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1 rounded-full px-2 py-1",
+                        image.mobileImageUrl
+                          ? "bg-primary/10 text-primary"
+                          : "bg-muted text-muted-foreground"
+                      )}
+                    >
+                      <Smartphone className="w-3 h-3" />
+                      {image.mobileImageUrl ? "Mobile banner" : "No mobile banner"}
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-muted-foreground">
+                      <MousePointerClick className="w-3 h-3" />
+                      {image.ctas?.length || 0} {image.ctas?.length === 1 ? "button" : "buttons"}
+                    </span>
+                  </div>
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
@@ -571,51 +523,109 @@ export default function AdminHeroSection() {
                 {/* Image Upload */}
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Hero Image *
+                    Hero Image (Desktop) *
                   </label>
                   <div className="space-y-4">
                     <div className="flex items-center gap-4">
                       <Input
                         type="file"
                         accept="image/*"
-                        onChange={handleImageUpload}
+                        onChange={handleImageUpload("imageUrl")}
                         className="cursor-pointer"
                         disabled={isSaving}
+                        aria-label="Desktop banner image"
                       />
                       <Upload className="w-5 h-5 text-muted-foreground" />
                     </div>
-                    
-                    {previewImage && (
+
+                    {formData.imageUrl && (
                       <div className="relative aspect-video rounded-lg overflow-hidden border">
                         <img
-                          src={previewImage}
+                          src={formData.imageUrl}
                           alt="Preview"
                           className="w-full h-full object-cover"
                         />
                       </div>
                     )}
-                    
+
                     <p className="text-sm text-muted-foreground">
                       Or enter image URL:
                     </p>
                     <Input
                       placeholder="https://example.com/image.jpg"
                       value={formData.imageUrl}
-                      onChange={(e) => {
-                        setFormData({ ...formData, imageUrl: e.target.value });
-                        setPreviewImage(e.target.value);
-                      }}
+                      onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
                       disabled={isSaving}
+                      aria-label="Desktop banner image URL"
                     />
+                  </div>
+                </div>
+
+                {/* Mobile Image Upload */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Mobile Banner (Optional)
+                  </label>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Portrait image shown on phones instead of the desktop banner. Use a
+                    4:5 image (e.g. 1080 × 1350 px). Leave empty to show the desktop banner on phones too.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="w-32 shrink-0">
+                      <div className="relative aspect-[4/5] rounded-lg overflow-hidden border bg-muted flex items-center justify-center">
+                        {formData.mobileImageUrl ? (
+                          <img
+                            src={formData.mobileImageUrl}
+                            alt="Mobile preview"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="text-center text-muted-foreground px-2">
+                            <Smartphone className="w-6 h-6 mx-auto mb-1" />
+                            <span className="text-[11px]">4:5</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex-1 space-y-3">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload("mobileImageUrl")}
+                        className="cursor-pointer"
+                        disabled={isSaving}
+                        aria-label="Mobile banner image"
+                      />
+                      <Input
+                        placeholder="Or enter image URL: https://example.com/mobile.jpg"
+                        value={formData.mobileImageUrl}
+                        onChange={(e) => setFormData({ ...formData, mobileImageUrl: e.target.value })}
+                        disabled={isSaving}
+                        aria-label="Mobile banner image URL"
+                      />
+                      {formData.mobileImageUrl && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setFormData({ ...formData, mobileImageUrl: "" })}
+                          disabled={isSaving}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Remove mobile banner
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {/* Title */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Title (Optional)
+                  <label htmlFor="hero-title" className="block text-sm font-medium mb-2">
+                    Main Tagline (Optional)
                   </label>
                   <Input
+                    id="hero-title"
                     placeholder="e.g., Sacred Pilgrimages"
                     value={formData.title}
                     onChange={(e) =>
@@ -631,10 +641,11 @@ export default function AdminHeroSection() {
 
                 {/* Subtitle */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Subtitle (Optional)
+                  <label htmlFor="hero-subtitle" className="block text-sm font-medium mb-2">
+                    Sub Line (Optional)
                   </label>
                   <Input
+                    id="hero-subtitle"
                     placeholder="e.g., Journey to Divine Destinations"
                     value={formData.subtitle}
                     onChange={(e) =>
@@ -644,8 +655,218 @@ export default function AdminHeroSection() {
                     disabled={isSaving}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Subheading displayed below the title
+                    Subheading displayed below the main tagline
                   </p>
+                </div>
+
+                {/* CTA Buttons */}
+                <div>
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <div>
+                      <span className="block text-sm font-medium">Buttons (Optional)</span>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Add as many call-to-action buttons as you need. Each one gets its own link and colors.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addCta}
+                      disabled={isSaving}
+                      className="shrink-0"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Button
+                    </Button>
+                  </div>
+
+                  {formData.ctas.length > 0 && (
+                    <div className="space-y-3">
+                      {formData.ctas.map((cta, index) => {
+                        const n = index + 1;
+                        return (
+                          <div
+                            key={index}
+                            className="rounded-lg border border-border bg-muted/40 p-4 space-y-3"
+                            data-testid={`hero-cta-row-${n}`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-semibold">Button {n}</span>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => moveCta(index, -1)}
+                                  disabled={isSaving || index === 0}
+                                  aria-label={`Move button ${n} up`}
+                                >
+                                  <ArrowUp />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => moveCta(index, 1)}
+                                  disabled={isSaving || index === formData.ctas.length - 1}
+                                  aria-label={`Move button ${n} down`}
+                                >
+                                  <ArrowDown />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                  onClick={() => removeCta(index)}
+                                  disabled={isSaving}
+                                  aria-label={`Remove button ${n}`}
+                                >
+                                  <Trash2 />
+                                </Button>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-medium mb-1" htmlFor={`cta-label-${index}`}>
+                                  Label
+                                </label>
+                                <Input
+                                  id={`cta-label-${index}`}
+                                  placeholder="e.g., Explore Trips"
+                                  value={cta.label}
+                                  onChange={(e) => updateCta(index, { label: e.target.value })}
+                                  maxLength={40}
+                                  disabled={isSaving}
+                                  aria-label={`Button ${n} label`}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium mb-1" htmlFor={`cta-url-${index}`}>
+                                  Link
+                                </label>
+                                <Input
+                                  id={`cta-url-${index}`}
+                                  placeholder="/group-trips or https://example.com"
+                                  value={cta.url}
+                                  onChange={(e) => updateCta(index, { url: e.target.value })}
+                                  maxLength={500}
+                                  disabled={isSaving}
+                                  aria-label={`Button ${n} link`}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <div>
+                                <label className="block text-xs font-medium mb-1" htmlFor={`cta-style-${index}`}>
+                                  Style
+                                </label>
+                                <select
+                                  id={`cta-style-${index}`}
+                                  value={cta.style}
+                                  onChange={(e) => updateCta(index, { style: e.target.value as HeroCtaStyle })}
+                                  disabled={isSaving}
+                                  aria-label={`Button ${n} style`}
+                                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  <option value="solid">Filled</option>
+                                  <option value="outline">Outline</option>
+                                </select>
+                              </div>
+
+                              {(
+                                [
+                                  {
+                                    key: "bgColor",
+                                    title: cta.style === "outline" ? "Border color" : "Button color",
+                                    name: "color",
+                                    fallback: DEFAULT_CTA_BG,
+                                  },
+                                  { key: "textColor", title: "Text color", name: "text color", fallback: DEFAULT_CTA_TEXT },
+                                ] as const
+                              ).map((field) => (
+                                <div key={field.key}>
+                                  <span className="block text-xs font-medium mb-1">{field.title}</span>
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="color"
+                                      value={toPickerHex(cta[field.key], field.fallback)}
+                                      onChange={(e) => updateCta(index, { [field.key]: e.target.value.toUpperCase() })}
+                                      disabled={isSaving}
+                                      aria-label={`Button ${n} ${field.name} picker`}
+                                      className="h-10 w-10 shrink-0 cursor-pointer rounded-md border border-input bg-background p-1"
+                                    />
+                                    <Input
+                                      value={cta[field.key]}
+                                      onChange={(e) => updateCta(index, { [field.key]: e.target.value.trim() })}
+                                      maxLength={7}
+                                      disabled={isSaving}
+                                      aria-label={`Button ${n} ${field.name}`}
+                                      className={cn(
+                                        "font-mono uppercase",
+                                        !HEX_COLOR_REGEX.test(cta[field.key]) && "border-destructive"
+                                      )}
+                                    />
+                                  </div>
+                                  <div className="flex gap-1.5 mt-2">
+                                    {COLOR_PRESETS.map((preset) => (
+                                      <button
+                                        key={preset}
+                                        type="button"
+                                        onClick={() => updateCta(index, { [field.key]: preset })}
+                                        disabled={isSaving}
+                                        title={preset}
+                                        aria-label={`Set button ${n} ${field.name} to ${preset}`}
+                                        className={cn(
+                                          "h-5 w-5 rounded-full border border-border transition-transform hover:scale-110",
+                                          cta[field.key].toUpperCase() === preset && "ring-2 ring-ring ring-offset-1"
+                                        )}
+                                        style={{ backgroundColor: preset }}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                id={`cta-newtab-${index}`}
+                                checked={cta.openInNewTab}
+                                onChange={(e) => updateCta(index, { openInNewTab: e.target.checked })}
+                                className="w-4 h-4"
+                                disabled={isSaving}
+                              />
+                              <label htmlFor={`cta-newtab-${index}`} className="text-xs font-medium cursor-pointer">
+                                Open button {n} in a new tab (recommended for other websites)
+                              </label>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {/* Button preview, on a backdrop close to the real banner */}
+                      {previewCtas.length > 0 && (
+                        <div
+                          className="rounded-lg p-5 bg-gradient-to-r from-charcoal via-slate-700 to-slate-500"
+                          data-testid="hero-cta-preview"
+                        >
+                          <p className="text-[11px] uppercase tracking-widest text-white/60 mb-3">Preview</p>
+                          <div className="flex flex-wrap gap-3">
+                            {previewCtas.map((cta, index) => (
+                              <HeroCtaButton key={index} cta={cta} preview />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Order */}
@@ -699,7 +920,7 @@ export default function AdminHeroSection() {
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" className="flex-1" disabled={isSaving}>
+                  <Button type="submit" className="flex-1" disabled={isSaving || isProcessingImage}>
                     {isSaving ? (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />

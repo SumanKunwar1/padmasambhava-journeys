@@ -195,18 +195,18 @@ const CustomisedTrips = () => {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-6 mt-12 p-6 bg-muted/50 rounded-xl">
+            <div className="grid grid-cols-3 gap-3 sm:gap-6 mt-8 sm:mt-12 p-4 sm:p-6 bg-muted/50 rounded-xl">
               <div className="text-center">
-                <div className="text-3xl font-bold text-primary">500+</div>
-                <div className="text-sm text-muted-foreground">Custom Trips</div>
+                <div className="text-2xl sm:text-3xl font-bold text-primary">500+</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Custom Trips</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-primary">50+</div>
-                <div className="text-sm text-muted-foreground">Destinations</div>
+                <div className="text-2xl sm:text-3xl font-bold text-primary">50+</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Destinations</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-primary">98%</div>
-                <div className="text-sm text-muted-foreground">Satisfaction</div>
+                <div className="text-2xl sm:text-3xl font-bold text-primary">98%</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Satisfaction</div>
               </div>
             </div>
           </div>

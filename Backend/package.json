@@ -9,7 +9,8 @@
     "build": "tsc",
     "watch": "tsc -w",
     "lint": "eslint . --ext .ts",
-    "format": "prettier --write \"src/**/*.ts\""
+    "format": "prettier --write \"src/**/*.ts\"",
+    "diagnose:bookings": "ts-node src/scripts/diagnose-bookings.ts"
   },
   "keywords": [
     "travel",

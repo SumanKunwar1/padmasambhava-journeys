@@ -17,9 +17,18 @@ const handleCastErrorDB = (err: any): AppError => {
 };
 
 const handleDuplicateFieldsDB = (err: any): AppError => {
-  const value = err.errmsg?.match(/(["'])(\\?.)*?\1/)?.[0];
-  const message = `Duplicate field value: ${value}. Please use another value!`;
-  return new AppError(message, 400);
+  // err.keyValue is set by the driver and is the only reliable source here -
+  // errmsg is missing on some driver versions, which used to render this
+  // message as "Duplicate field value: undefined".
+  const entry = Object.entries(err.keyValue || {})[0];
+  if (!entry) {
+    return new AppError('Duplicate field value. Please use another value!', 400);
+  }
+  const [field, value] = entry;
+  return new AppError(
+    `A record with this ${field} already exists (${String(value)}). Please use another value!`,
+    400
+  );
 };
 
 const handleValidationErrorDB = (err: any): AppError => {

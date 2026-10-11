@@ -1,5 +1,6 @@
 // models/AgentBooking.model.ts
 import mongoose, { Document, Schema } from 'mongoose';
+import { nextSequentialId } from '../utils/sequence';
 
 export interface IAgentBooking extends Document {
   // Trip reference — points to AgentTrip, NOT the public Trip model
@@ -104,15 +105,16 @@ agentBookingSchema.index({ status: 1, createdAt: -1 });
 agentBookingSchema.index({ agentTripId: 1 });
 agentBookingSchema.index({ agentId: 1 });
 agentBookingSchema.index({ email: 1 });
-agentBookingSchema.index({ bookingId: 1 });
 
 // Auto-generate bookingId (AB000001, AB000002, ...)
 agentBookingSchema.pre('save', async function (next) {
-  if (!this.bookingId) {
-    const count = await mongoose.model('AgentBooking').countDocuments();
-    this.bookingId = `AB${String(count + 1).padStart(6, '0')}`;
+  if (this.bookingId) return next();
+  try {
+    this.bookingId = await nextSequentialId(mongoose.model('AgentBooking'), 'bookingId', 'AB');
+    next();
+  } catch (error) {
+    next(error as Error);
   }
-  next();
 });
 
 const AgentBooking = mongoose.model<IAgentBooking>('AgentBooking', agentBookingSchema);

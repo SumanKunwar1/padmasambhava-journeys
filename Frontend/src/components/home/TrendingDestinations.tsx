@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { API_BASE_URL } from "@/lib/api-config";
 import axios from "axios";
 import { Price } from "@/components/shared/Price";
+import { SectionHeading } from "@/components/home/SectionHeading";
 
 interface TrendingDestination {
   _id: string;
@@ -63,9 +64,13 @@ export function TrendingDestinations() {
   // Show loading state
   if (isLoading) {
     return (
-      <section className="bg-muted py-8 border-b border-border">
+      <section className="bg-muted py-12 md:py-16 lg:py-20 border-b border-border" aria-labelledby="trending-heading" data-testid="trending-destinations">
         <div className="container-custom">
-          <h2 className="text-xl font-display font-bold mb-4">Trending Destinations</h2>
+          <SectionHeading
+          id="trending-heading"
+          title="Trending Destinations"
+          description="The journeys our travellers are booking most right now."
+        />
           {/* Same scroller as the real list, so the skeleton cannot push the
               page wider than the viewport while data loads. */}
           <div className="overflow-x-auto hide-scrollbar -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
@@ -86,11 +91,15 @@ export function TrendingDestinations() {
   // Show error state
   if (error && destinations.length === 0) {
     return (
-      <section className="bg-muted py-8 border-b border-border">
+      <section className="bg-muted py-12 md:py-16 lg:py-20 border-b border-border" aria-labelledby="trending-heading" data-testid="trending-destinations">
         <div className="container-custom">
-          <h2 className="text-xl font-display font-bold mb-4">Trending Destinations</h2>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <p className="text-yellow-800">
+          <SectionHeading
+          id="trending-heading"
+          title="Trending Destinations"
+          description="The journeys our travellers are booking most right now."
+        />
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4">
+            <p className="text-sm sm:text-base text-yellow-800">
               Destinations will be available soon.
             </p>
           </div>
@@ -105,23 +114,23 @@ export function TrendingDestinations() {
   }
 
   return (
-    <section className="bg-muted py-8 border-b border-border">
+    <section className="bg-muted py-12 md:py-16 lg:py-20 border-b border-border" aria-labelledby="trending-heading" data-testid="trending-destinations">
       <div className="container-custom">
-        <motion.h2
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-xl font-display font-bold mb-4"
-        >
-          Trending Destinations
-        </motion.h2>
+        <SectionHeading
+          id="trending-heading"
+          title="Trending Destinations"
+          description="The journeys our travellers are booking most right now."
+        />
 
+        {/* The negative margin has to track the container's own padding at every
+            breakpoint, otherwise the row stops bleeding to the screen edge and
+            the last card looks arbitrarily cut. */}
         <div
           className="overflow-x-auto hide-scrollbar snap-x snap-mandatory overscroll-x-contain -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
           role="region"
           aria-label="Trending destinations"
         >
-          <div className="flex gap-3 sm:gap-5 lg:gap-6 pb-1 min-w-max">
+          <div className="flex gap-3 sm:gap-5 lg:gap-6 pb-1 w-max mx-auto">
             {destinations.map((destination, index) => (
               <motion.div
                 key={destination._id}
@@ -140,6 +149,7 @@ export function TrendingDestinations() {
                     alt={destination.name}
                     className="w-full h-full object-cover transition-transform duration-500 md:group-hover:scale-110"
                     loading="lazy"
+                    decoding="async"
                   />
                   <div className="gradient-overlay" />
                   <div className="absolute bottom-0 left-0 right-0 p-2.5 sm:p-3 text-primary-foreground">
