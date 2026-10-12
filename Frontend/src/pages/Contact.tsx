@@ -42,6 +42,7 @@ const Contact = () => {
     phone: "",
     subject: "",
     message: "",
+    rcsConsent: false,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -184,6 +185,20 @@ const Contact = () => {
                     value={formData.message}
                     onChange={(e) => setFormData({...formData, message: e.target.value})}
                   />
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="rcsConsent"
+                    required
+                    checked={formData.rcsConsent}
+                    onChange={(e) => setFormData({...formData, rcsConsent: e.target.checked})}
+                    className="w-4 h-4 cursor-pointer shrink-0"
+                  />
+                  <label htmlFor="rcsConsent" className="text-sm text-foreground cursor-pointer">
+                    I agree to receive messages for communication via RCS. *
+                  </label>
                 </div>
 
                 <Button type="submit" className="w-full sm:w-auto" size="lg">

@@ -77,9 +77,15 @@ const sections: PolicySection[] = [
     ],
   },
   {
+    heading: "Consent to Communication",
+    paragraphs: [
+      "We collect personal details like your name, email address, and phone number etc. By sharing your information, you authorize Padmasambhava Trip to contact you via SMS, RCS, WhatsApp, Email, and other communication channels. This consent overrides any NDNC/DND registration as per TRAI regulations.",
+    ],
+  },
+  {
     heading: "Messages From Us",
     paragraphs: [
-      "When you make an enquiry or booking, we will contact you about it by phone, email, SMS or WhatsApp. Promotional messages are sent only to people who have opted in, and you can opt out at any time as described in our Privacy Policy.",
+      "When you make an enquiry or booking, we will contact you about it by phone, email, SMS, RCS or WhatsApp. Promotional messages are sent only to people who have opted in, and you can opt out at any time as described in our Privacy Policy.",
     ],
   },
   {
@@ -100,7 +106,7 @@ const TermsAndConditions = () => (
   <PolicyPage
     title="Terms & Conditions"
     intro="The terms that apply when you use our website or book a trip with us."
-    lastUpdated="11 October 2026"
+    lastUpdated="12 October 2026"
     sections={sections}
   />
 );
