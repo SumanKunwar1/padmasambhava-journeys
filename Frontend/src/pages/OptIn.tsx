@@ -15,13 +15,19 @@ import { customTripService } from "@/services/customTrips";
 const channels = [
   { id: "whatsapp", label: "WhatsApp" },
   { id: "sms", label: "SMS" },
+  { id: "rcs", label: "RCS" },
   { id: "email", label: "Email" },
 ] as const;
 
 type ChannelId = (typeof channels)[number]["id"];
 
 const emptyForm = { name: "", email: "", phone: "" };
-const noChannels: Record<ChannelId, boolean> = { whatsapp: false, sms: false, email: false };
+const noChannels: Record<ChannelId, boolean> = {
+  whatsapp: false,
+  sms: false,
+  rcs: false,
+  email: false,
+};
 
 const OptIn = () => {
   const { toast } = useToast();
@@ -215,8 +221,8 @@ const OptIn = () => {
         <div className="max-w-2xl mx-auto mt-8 text-sm text-muted-foreground space-y-2">
           <h2 className="text-base font-display font-bold text-foreground">How to opt out</h2>
           <p>
-            You can stop receiving messages at any time. Reply <strong>STOP</strong> to any WhatsApp
-            or SMS message, use the unsubscribe link in any email, or write to{" "}
+            You can stop receiving messages at any time. Reply <strong>STOP</strong> to any
+            WhatsApp, SMS or RCS message, use the unsubscribe link in any email, or write to{" "}
             <a href="mailto:info@padmasambhavatrip.com" className="text-primary hover:underline">
               info@padmasambhavatrip.com
             </a>
