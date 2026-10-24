@@ -62,6 +62,8 @@ import AdminTripForm from "./pages/admin/AdminTripForm";
 import AdminBlogs from "./pages/admin/AdminBlogs";
 import AdminBlogForm from "./pages/admin/AdminBlogForm";
 import AdminBookings from "./pages/admin/AdminBookings";
+import AdminInvoices from "./pages/admin/AdminInvoices";
+import InvoiceDocument from "./pages/admin/InvoiceDocument";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminApplications from "./pages/admin/AdminApplications";
 import AdminSettings from "./pages/admin/AdminSettings";
@@ -270,6 +272,30 @@ const App = () => (
               element={
                 <ProtectedAdminRoute>
                   <AdminBookings />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/invoices"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminInvoices />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/invoices/:id/print"
+              element={
+                <ProtectedAdminRoute>
+                  <InvoiceDocument />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/admin/invoices/:id/receipts/:paymentId"
+              element={
+                <ProtectedAdminRoute>
+                  <InvoiceDocument />
                 </ProtectedAdminRoute>
               }
             />

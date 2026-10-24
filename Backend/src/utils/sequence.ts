@@ -65,4 +65,33 @@ export const nextSequentialId = async (
   throw new Error(`Could not generate a unique ${field} for ${model.modelName}`);
 };
 
+/**
+ * Hands out the next yearly document number (INV-2026-0001, RCT-2026-0001, ...).
+ * The count restarts at 1 every calendar year. `exists` lets the caller check
+ * ids that live in an embedded array, which a plain model lookup cannot.
+ */
+export const nextYearlyId = async (
+  counterKey: string,
+  prefix: string,
+  exists: (id: string) => Promise<unknown>,
+  year = new Date().getFullYear(),
+  pad = 4
+): Promise<string> => {
+  const counterName = `${counterKey}.${year}`;
+
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const counter = await Counter.findByIdAndUpdate(
+      counterName,
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
+    const id = `${prefix}-${year}-${String(counter!.seq).padStart(pad, '0')}`;
+    if (!(await exists(id))) {
+      return id;
+    }
+  }
+
+  throw new Error(`Could not generate a unique ${prefix} number`);
+};
+
 export default Counter;

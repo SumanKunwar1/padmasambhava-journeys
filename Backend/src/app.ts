@@ -27,6 +27,7 @@ import agentTripRoutes from './routes/agentTrip.routes';
 import agentBookingRoutes from './routes/agentBooking.routes';
 import exchangeRateRoutes from './routes/exchangeRate.routes';
 import homeSectionRoutes from './routes/homeSection.routes';
+import invoiceRoutes from './routes/invoice.routes';
 
 const app: Application = express();
 
@@ -166,6 +167,7 @@ app.use('/api/v1/agent-trips', agentTripRoutes);
 app.use('/api/v1/agent-bookings', agentBookingRoutes);
 app.use('/api/v1/exchange-rates', exchangeRateRoutes);
 app.use('/api/v1/home-sections', homeSectionRoutes);
+app.use('/api/v1/invoices', invoiceRoutes);
 
 // ========== 404 HANDLER ==========
 app.all('*', (req: Request, _res: Response, next: NextFunction) => {
