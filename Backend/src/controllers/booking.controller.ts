@@ -16,8 +16,11 @@ export const createBooking = catchAsync(
       customerName, 
       email, 
       phone, 
-      message, 
-      travelers, 
+      message,
+      whatsapp,
+      pickupLocation,
+      meditationRequired,
+      travelers,
       selectedDate, 
       selectedPrice, 
       totalAmount 
@@ -42,6 +45,12 @@ export const createBooking = catchAsync(
       email,
       phone,
       message: message || '',
+      // Retreat details are only kept for trips that ask for them.
+      ...(trip.showRetreatForm && {
+        whatsapp: whatsapp || '',
+        pickupLocation: pickupLocation || '',
+        meditationRequired: meditationRequired === true || meditationRequired === 'true',
+      }),
       travelers,
       selectedDate: selectedDate || '',
       selectedPrice: selectedPrice || trip.price,

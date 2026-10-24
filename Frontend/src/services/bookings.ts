@@ -8,6 +8,9 @@ export interface BookingData {
   email: string;
   phone: string;
   message?: string;
+  whatsapp?: string;
+  pickupLocation?: string;
+  meditationRequired?: boolean;
   travelers: number;
   selectedDate?: string;
   selectedPrice?: number;
