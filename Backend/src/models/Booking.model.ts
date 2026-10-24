@@ -9,6 +9,10 @@ export interface IBooking extends Document {
   email: string;
   phone: string;
   message?: string;
+  // Only collected on trips with showRetreatForm ticked.
+  whatsapp?: string;
+  pickupLocation?: string;
+  meditationRequired?: boolean;
   travelers: number;
   selectedDate?: string;
   selectedPrice?: number;
@@ -50,6 +54,17 @@ const bookingSchema = new Schema<IBooking>(
     message: {
       type: String,
       trim: true,
+    },
+    whatsapp: {
+      type: String,
+      trim: true,
+    },
+    pickupLocation: {
+      type: String,
+      trim: true,
+    },
+    meditationRequired: {
+      type: Boolean,
     },
     travelers: {
       type: Number,

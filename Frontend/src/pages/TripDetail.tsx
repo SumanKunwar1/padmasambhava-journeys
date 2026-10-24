@@ -62,6 +62,7 @@ interface Trip {
   notes: string[];
   itinerary: ItineraryDay[];
   dates: TripDate[];
+  showRetreatForm?: boolean;
 }
 
 export default function TripDetail() {
@@ -466,6 +467,7 @@ export default function TripDetail() {
         selectedDate={selectedDate?.date}
         selectedPrice={selectedDate?.price || tripData.price}
         totalAmount={calculateTotalAmount()}
+        showRetreatFields={tripData.showRetreatForm}
       />
     </div>
   );

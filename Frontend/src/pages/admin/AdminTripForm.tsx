@@ -147,6 +147,7 @@ export default function AdminTripForm() {
     dates: [{ date: "", price: 0, available: 20 }] as TripDate[],
     tags: "",
     hasGoodies: false,
+    showRetreatForm: false,
   });
 
   const [currentTab, setCurrentTab] = useState(0);
@@ -239,6 +240,7 @@ export default function AdminTripForm() {
           dates: trip.dates.length > 0 ? trip.dates : [{ date: "", price: 0, available: 20 }],
           tags: trip.tags || "",
           hasGoodies: trip.hasGoodies || false,
+          showRetreatForm: trip.showRetreatForm || false,
         });
         setSelectedCategories(categories);
       }
@@ -733,6 +735,22 @@ export default function AdminTripForm() {
                       className="w-4 h-4"
                     />
                     <span className="text-sm font-medium">Has Goodies/Special Offers</span>
+                  </label>
+
+                  <label className="flex items-start gap-2.5 p-3 rounded-lg border border-border cursor-pointer hover:border-primary/50 transition-colors">
+                    <input
+                      type="checkbox"
+                      name="showRetreatForm"
+                      checked={formData.showRetreatForm}
+                      onChange={handleInputChange}
+                      className="w-4 h-4 mt-0.5"
+                    />
+                    <span>
+                      <span className="block text-sm font-medium">Show retreat details in booking form</span>
+                      <span className="block text-xs text-muted-foreground">
+                        Also asks for WhatsApp number, pick-up location and whether meditation is required.
+                      </span>
+                    </span>
                   </label>
                 </div>
               </div>

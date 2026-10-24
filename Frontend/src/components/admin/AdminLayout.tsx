@@ -20,6 +20,7 @@ import {
   Compass,
   Shield,
   LayoutList,
+  Receipt,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -76,6 +77,11 @@ const menuItems = [
     title: "Bookings",
     icon: Calendar,
     path: "/admin/bookings",
+  },
+  {
+    title: "Invoices & Receipts",
+    icon: Receipt,
+    path: "/admin/invoices",
   },
   {title: "Agent Bookings", icon: Calendar, path: "/admin/agent-bookings"},
   {title: "Dalai Lama Bookings", icon: Calendar, path: "/admin/dalai-lama-bookings"},
